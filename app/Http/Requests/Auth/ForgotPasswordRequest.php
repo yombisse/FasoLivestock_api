@@ -6,10 +6,10 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class LoginRequest extends FormRequest
+class ForgotPasswordRequest extends FormRequest
 {
     /**
-     * Autoriser la requête
+     * Autorisation
      */
     public function authorize(): bool
     {
@@ -23,24 +23,21 @@ class LoginRequest extends FormRequest
     {
         return [
             'login' => 'required|string',
-            'password' => 'required|string|min:12',
         ];
     }
 
     /**
-     * Messages personnalisés
+     * Messages
      */
     public function messages(): array
     {
         return [
-            'login.required' => 'Email ou téléphone obligatoire.',
-            'password.required' => 'Mot de passe obligatoire.',
-            'password.min' => 'Le mot de passe doit contenir au moins 12 caractères.',
+            'login.required' => 'Email ou téléphone requis.',
         ];
     }
 
     /**
-     * Format JSON des erreurs
+     * JSON validation error
      */
     protected function failedValidation(Validator $validator)
     {

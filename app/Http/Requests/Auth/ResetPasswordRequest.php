@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class LoginRequest extends FormRequest
+class ResetPasswordRequest extends FormRequest
 {
     /**
      * Autoriser la requête
@@ -17,13 +17,14 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Validation
+     * Règles de validation
      */
     public function rules(): array
     {
         return [
-            'login' => 'required|string',
-            'password' => 'required|string|min:12',
+            'login' => 'required|string', // email ou téléphone
+            'token' => 'required|string',
+            'password' => 'required|string|min:12|confirmed',
         ];
     }
 
@@ -33,14 +34,16 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'login.required' => 'Email ou téléphone obligatoire.',
-            'password.required' => 'Mot de passe obligatoire.',
+            'login.required' => 'Email ou téléphone requis.',
+            'token.required' => 'Token requis.',
+            'password.required' => 'Mot de passe requis.',
+            'password.confirmed' => 'Les mots de passe ne correspondent pas.',
             'password.min' => 'Le mot de passe doit contenir au moins 12 caractères.',
         ];
     }
 
     /**
-     * Format JSON des erreurs
+     * Réponse JSON propre (IMPORTANT pour API)
      */
     protected function failedValidation(Validator $validator)
     {

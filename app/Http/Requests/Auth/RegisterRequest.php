@@ -25,7 +25,7 @@ class RegisterRequest extends FormRequest
             'name' => 'required|string|max:100',
             'email' => 'required|email|unique:users,email',
             'telephone' => 'required|string|max:20|unique:users,telephone',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|string|min:12|confirmed',
         ];
     }
 
@@ -43,7 +43,7 @@ class RegisterRequest extends FormRequest
             'telephone.unique' => 'Ce numéro est déjà utilisé.',
 
             'password.required' => 'Le mot de passe est obligatoire.',
-            'password.min' => 'Le mot de passe doit contenir au moins 6 caractères.',
+            'password.min' => 'Le mot de passe doit contenir au moins 12 caractères.',
             'password.confirmed' => 'Les mots de passe ne correspondent pas.',
         ];
     }
