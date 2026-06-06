@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
+use App\Http\Requests\Auth\Verify2FARequest;
 use App\Services\AuthService;
 use App\Exceptions\AuthenticationException;
 use App\Exceptions\InvalidTokenException;
@@ -105,6 +106,27 @@ class AuthController extends Controller
             return ApiResponse::error($e->getMessage(), null, 400);
         }
     }
+
+    public function verify2fa(Verify2FARequest $request)
+    {
+        try {
+            $result = $this->authService->verify2fa(
+                $request->validated()
+            );
+
+            return ApiResponse::success(
+                $result,
+                '2FA vérifiée avec succès'
+            );
+        } catch (InvalidTokenException $e) {
+            return ApiResponse::error($e->getMessage(), null, 422);
+        } catch (\Exception $e) {
+            return ApiResponse::error($e->getMessage(), null, 400);
+        }
+    }
+
+
+
 
     public function me(Request $request)
     {

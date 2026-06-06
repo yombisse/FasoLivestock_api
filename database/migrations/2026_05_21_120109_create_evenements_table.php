@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('evenements', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->foreignUuid('farm_id')->constrained('farms')->cascadeOnDelete();
             $table->foreignUuid('type_evenement_id')
                 ->constrained('type_evenements')
                 ->cascadeOnDelete();
@@ -22,15 +23,19 @@ return new class extends Migration
             $table->date('date_evenement');
             $table->string('description')->nullable();
             $table->decimal('cout', 10, 2)->nullable();
-            $table->boolean('synced')->default(false);
-            $table->timestamp('last_sync_at')->nullable();
-            $table->softDeletes();
+
+            $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
+            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
+
             $table->timestamps();
-            
+            $table->softDeletes();
+
             // Indices pour performance
+            $table->index('farm_id');
             $table->index('type_evenement_id');
             $table->index('animal_id');
             $table->index('date_evenement');
+            $table->index('sync_status');
         });
     }
 

@@ -15,13 +15,6 @@ class TypeEvenement extends Model
     protected $fillable = [
         'nom_type',
         'description',
-        'synced',
-        'last_sync_at',
-    ];
-
-    protected $casts = [
-        'synced' => 'boolean',
-        'last_sync_at' => 'datetime',
     ];
 
 

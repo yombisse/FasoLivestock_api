@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('naissances', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->foreignUuid('farm_id')->constrained('farms')->cascadeOnDelete();
             $table->foreignUuid('mother_id')
                 ->constrained('animals')
                 ->cascadeOnDelete();
@@ -20,10 +21,15 @@ return new class extends Migration
             $table->integer('nombre_petits')->unsigned()->default(0);
             $table->decimal('poids_naissance', 10, 2)->nullable();
             $table->text('observation')->nullable();
-            $table->boolean('synced')->default(false);
-            $table->timestamp('last_sync_at')->nullable();
+
+            $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
+            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
+
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('farm_id');
+            $table->index('sync_status');
         });
     }
 

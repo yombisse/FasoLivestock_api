@@ -11,18 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('especes', function (Blueprint $table) {
+        Schema::create('farms', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('nom')->unique();
-            $table->string('description')->nullable();
-
-            $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
-            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
-
+            $table->string('name');
+            $table->string('location')->nullable();
+            $table->text('description')->nullable();
+            $table->foreignUuid('owner_id')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index('sync_status');
+            $table->index('owner_id');
         });
     }
 
@@ -31,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('especes');
+        Schema::dropIfExists('farms');
     }
 };

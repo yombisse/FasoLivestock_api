@@ -1,13 +1,17 @@
 <?php
 
 namespace App\Services;
+
 use App\Models\User;
 use App\Models\PasswordResetToken;
+use App\Models\TwoFactorVerification;
+use App\Mail\TwoFactorEmailVerification;
 use App\Exceptions\AuthenticationException;
 use App\Exceptions\InvalidTokenException;
 use App\Exceptions\UserNotFoundException;
 use App\Helpers\AuthLogger;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class AuthService
@@ -36,18 +40,18 @@ class AuthService
          */
         $user->assignRole('gerant');
 
-        /**
-         * Création token Sanctum
-         */
-        $token = $user
-            ->createToken('auth_token')
-            ->plainTextToken;
-
         AuthLogger::userRegistered($user->id, $user->email, $user->telephone);
+
+        $channel = !empty($data['email']) ? 'email' : 'phone';
+        $identifier = !empty($data['email']) ? $data['email'] : $data['telephone'];
+
+        $verification = $this->createAndSend2FA($user, $channel, $identifier);
 
         return [
             'user' => $user,
-            'token' => $token,
+            'pending_2fa' => true,
+            'verification_id' => $verification->id,
+            'channel' => $channel,
             'roles' => $user->getRoleNames(),
         ];
     }
@@ -90,15 +94,18 @@ class AuthService
             'last_sync_at' => now(),
         ]);
 
-        $token = $user
-            ->createToken('auth_token')
-            ->plainTextToken;
-
         AuthLogger::loginSuccessful($user->id, $user->email);
+
+        $channel = !empty($user->email) && $login === $user->email ? 'email' : 'phone';
+        $identifier = $channel === 'email' ? $user->email : $user->telephone;
+
+        $verification = $this->createAndSend2FA($user, $channel, $identifier);
 
         return [
             'user' => $user,
-            'token' => $token,
+            'pending_2fa' => true,
+            'verification_id' => $verification->id,
+            'channel' => $channel,
             'roles' => $user->getRoleNames(),
         ];
     }
@@ -239,5 +246,65 @@ class AuthService
         ];
     }
 
-    
+    private function createAndSend2FA(User $user, string $channel, string $identifier): TwoFactorVerification
+    {
+        // MVP: email uniquement (code numérique envoyé par mail)
+        if ($channel !== 'email') {
+            throw new AuthenticationException('2FA par téléphone non disponible pour le moment.');
+        }
+
+        $code = (string) random_int(100000, 999999);
+        $codeHash = Hash::make($code);
+
+        $verification = TwoFactorVerification::create([
+            'user_id' => $user->id,
+            'channel' => $channel,
+            'identifier' => $identifier,
+            'code_hash' => $codeHash,
+            'expires_at' => now()->addMinutes(10),
+            'used' => false,
+            'attempts' => 0,
+        ]);
+
+        Mail::to($identifier)->send(new TwoFactorEmailVerification($code, $identifier, 10));
+
+        return $verification;
+    }
+
+    public function verify2fa(array $data): array
+    {
+        $verification = TwoFactorVerification::where('id', $data['verification_id'])
+            ->valid()
+            ->first();
+
+        if (!$verification) {
+            throw new InvalidTokenException('2FA invalide ou expirée.');
+        }
+
+        if ($verification->attempts >= 5) {
+            throw new InvalidTokenException('Trop de tentatives.');
+        }
+
+        if (!Hash::check($data['code'], $verification->code_hash)) {
+            $verification->increment('attempts');
+            throw new InvalidTokenException('Code 2FA incorrect.');
+        }
+
+        $verification->update([
+            'used' => true,
+            'used_at' => now(),
+        ]);
+
+        $user = $verification->user;
+
+        $token = $user
+            ->createToken('auth_token')
+            ->plainTextToken;
+
+        return [
+            'user' => $user,
+            'token' => $token,
+            'roles' => $user->getRoleNames(),
+        ];
+    }
 }

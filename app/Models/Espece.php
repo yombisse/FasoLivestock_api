@@ -15,13 +15,6 @@ class Espece extends Model
     protected $fillable = [
         'nom',
         'description',
-        'synced',
-        'last_sync_at',
-    ];
-
-    protected $casts = [
-        'synced' => 'boolean',
-        'last_sync_at' => 'datetime',
     ];
 
 

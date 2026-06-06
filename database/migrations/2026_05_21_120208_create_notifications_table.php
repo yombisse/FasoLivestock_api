@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->foreignUuid('farm_id')->nullable()->constrained('farms')->nullOnDelete();
             $table->foreignUuid('animal_id')
                 ->nullable()
                 ->constrained('animals')
@@ -20,14 +21,18 @@ return new class extends Migration
             $table->string('titre')->nullable();
             $table->text('message');
             $table->timestamp('sent_at')->nullable();
-            $table->boolean('synced')->default(false);
-            $table->timestamp('last_sync_at')->nullable();
-            $table->softDeletes();
+
+            $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
+            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
+
             $table->timestamps();
-            
+            $table->softDeletes();
+
             // Indices pour performance
+            $table->index('farm_id');
             $table->index('animal_id');
             $table->index('sent_at');
+            $table->index('sync_status');
         });
     }
 

@@ -15,10 +15,14 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('nom_type')->unique();
             $table->string('description')->nullable();
-            $table->boolean('synced')->default(false);
-            $table->timestamp('last_sync_at')->nullable();
-            $table->softDeletes();
+
+            $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
+            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
+
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->index('sync_status');
         });
     }
 

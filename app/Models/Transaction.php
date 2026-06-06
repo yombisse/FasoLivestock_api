@@ -5,14 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use App\Traits\HasFarmScope;
 
 class Transaction extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids, SoftDeletes, HasFarmScope;
 
     protected $table = 'transactions';
 
     protected $fillable = [
+        'farm_id',
         'type_transaction',
         'montant',
         'date_transaction',
@@ -20,16 +22,21 @@ class Transaction extends Model
         'animal_id',
         'categorie_id',
         'description',
-        'synced',
-        'last_sync_at',
+        'sync_status',
+        'last_modified_by',
+        'version',
     ];
 
     protected $casts = [
         'montant' => 'decimal:2',
         'date_transaction' => 'date',
-        'synced' => 'boolean',
-        'last_sync_at' => 'datetime',
+        'sync_status' => 'string',
     ];
+
+    public function farm()
+    {
+        return $this->belongsTo(Farm::class);
+    }
 
     public function user()
     {

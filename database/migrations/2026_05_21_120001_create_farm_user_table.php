@@ -11,20 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('lots', function (Blueprint $table) {
+        Schema::create('farm_user', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('farm_id')->constrained('farms')->cascadeOnDelete();
-            $table->string('nom_lot');
-            $table->integer('nombre')->unsigned()->default(0);
-
-            $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
-            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
-
+            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
+            $table->enum('role', ['owner', 'manager', 'vet', 'worker'])->default('worker');
             $table->timestamps();
-            $table->softDeletes();
 
+            $table->unique(['farm_id', 'user_id']);
             $table->index('farm_id');
-            $table->index('sync_status');
+            $table->index('user_id');
         });
     }
 
@@ -33,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('lots');
+        Schema::dropIfExists('farm_user');
     }
 };

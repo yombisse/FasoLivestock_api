@@ -5,27 +5,34 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use App\Traits\HasFarmScope;
 
 class Notification extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids, SoftDeletes, HasFarmScope;
 
     protected $table = 'notifications';
 
     protected $fillable = [
+        'farm_id',
         'animal_id',
         'titre',
         'message',
         'sent_at',
-        'synced',
-        'last_sync_at',
+        'sync_status',
+        'last_modified_by',
+        'version',
     ];
 
     protected $casts = [
         'sent_at' => 'datetime',
-        'synced' => 'boolean',
-        'last_sync_at' => 'datetime',
+        'sync_status' => 'string',
     ];
+
+    public function farm()
+    {
+        return $this->belongsTo(Farm::class);
+    }
 
     public function animal()
     {

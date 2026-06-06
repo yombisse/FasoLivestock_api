@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('animals', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->foreignUuid('farm_id')->constrained('farms')->cascadeOnDelete();
             $table->string('nom')->nullable();
             $table->string('race')->nullable();
             $table->enum('sexe', ['M', 'F'])->nullable();
@@ -23,17 +24,20 @@ return new class extends Migration
             $table->foreignUuid('espece_id')->constrained('especes');
             $table->foreignUuid('lot_id')->nullable()->constrained('lots');
             $table->uuid('mother_id')->nullable();
-            
-            $table->boolean('synced')->default(false);
-            $table->timestamp('last_sync_at')->nullable();
+
+            $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
+            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
+
             $table->timestamps();
             $table->softDeletes();
-            
+
             // Indices pour performance
+            $table->index('farm_id');
             $table->index('espece_id');
             $table->index('lot_id');
             $table->index('mother_id');
             $table->index('statut');
+            $table->index('sync_status');
         });
     }
 

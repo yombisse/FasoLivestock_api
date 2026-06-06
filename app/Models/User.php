@@ -50,4 +50,16 @@ class User extends Authenticatable
             ->withPivot('is_read', 'read_at')
             ->withTimestamps();
     }
+
+    public function ownedFarms()
+    {
+        return $this->hasMany(Farm::class, 'owner_id');
+    }
+
+    public function farms()
+    {
+        return $this->belongsToMany(Farm::class, 'farm_user')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
 }

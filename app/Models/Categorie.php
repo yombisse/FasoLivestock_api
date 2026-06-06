@@ -15,13 +15,6 @@ class Categorie extends Model
     protected $fillable = [
         'nom_categorie',
         'type',
-        'synced',
-        'last_sync_at',
-    ];
-
-    protected $casts = [
-        'synced' => 'boolean',
-        'last_sync_at' => 'datetime',
     ];
 
 
