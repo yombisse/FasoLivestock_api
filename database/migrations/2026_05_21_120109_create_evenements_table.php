@@ -24,18 +24,39 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->decimal('cout', 10, 2)->nullable();
 
+            // ─── Colonnes mouvement ───────────────────────────────────
+            // Pour les transferts : ferme de destination
+            $table->foreignUuid('farm_destination_id')
+                ->nullable()
+                ->constrained('farms')
+                ->nullOnDelete();
+
+            // Traçabilité du changement de statut de l'animal
+            $table->enum('statut_avant', ['ACTIF', 'VENDU', 'MORT', 'PERDU'])
+                ->nullable();
+            $table->enum('statut_apres', ['ACTIF', 'VENDU', 'MORT', 'PERDU'])
+                ->nullable();
+
+            // transaction_id retiré ici — ajouté après création
+            // de transactions via add_transaction_id_to_evenements_table
+            // ─────────────────────────────────────────────────────────
+
             $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
-            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('last_modified_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
 
             $table->timestamps();
             $table->softDeletes();
 
-            // Indices pour performance
+            // Indices
             $table->index('farm_id');
             $table->index('type_evenement_id');
             $table->index('animal_id');
             $table->index('date_evenement');
             $table->index('sync_status');
+            $table->index('farm_destination_id');
         });
     }
 

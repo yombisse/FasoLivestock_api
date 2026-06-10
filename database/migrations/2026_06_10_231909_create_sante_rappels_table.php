@@ -6,22 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('naissances', function (Blueprint $table) {
+        Schema::create('sante_rappels', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('farm_id')->constrained('farms')->cascadeOnDelete();
-            $table->foreignUuid('mother_id')
-                ->constrained('animals')
-                ->cascadeOnDelete();
-            $table->date('date_naissance');
-            $table->integer('nombre_petits')->unsigned()->default(0);
-            $table->decimal('poids_naissance', 10, 2)->nullable();
-            $table->text('observation')->nullable();
+            $table->foreignUuid('animal_id')->constrained('animals')->cascadeOnDelete();
+            $table->enum('type_rappel', [
+                'VACCINATION',
+                'TRAITEMENT',
+                'CONTROLE',
+            ]);
+            $table->date('date_prevue');
+            $table->date('date_realisee')->nullable();
+            $table->enum('statut', [
+                'EN_ATTENTE',
+                'REALISE',
+                'EN_RETARD',
+            ])->default('EN_ATTENTE');
+            $table->text('note')->nullable();
 
+            // Lien vers l'événement quand le rappel est réalisé
             $table->foreignUuid('evenement_id')
                 ->nullable()
                 ->constrained('evenements')
@@ -37,18 +42,17 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->index('farm_id');
-            $table->index('mother_id');
+            $table->index('animal_id');
+            $table->index('date_prevue');
+            $table->index('statut');
+            $table->index('type_rappel');
             $table->index('evenement_id');
-            $table->index('date_naissance');
             $table->index('sync_status');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('naissances');
+        Schema::dropIfExists('sante_rappels');
     }
 };

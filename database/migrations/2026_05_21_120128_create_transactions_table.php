@@ -29,6 +29,17 @@ return new class extends Migration
                 ->cascadeOnDelete();
             $table->string('description')->nullable();
 
+            // ─── Nouveau champ ────────────────────────────────────────
+            // Lien vers l'événement déclencheur (vente, achat...)
+            // nullable car toutes les transactions ne viennent pas
+            // d'un événement (ex: achat d'aliments, frais vétérinaires)
+            $table->foreignUuid('evenement_id')
+                ->nullable()
+                ->constrained('evenements')
+                ->nullOnDelete()
+                ->after('description');
+            // ─────────────────────────────────────────────────────────
+
             $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
             $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
 
@@ -43,6 +54,10 @@ return new class extends Migration
             $table->index('date_transaction');
             $table->index(['user_id', 'date_transaction']);
             $table->index('sync_status');
+
+            // ─── Nouvel indice ────────────────────────────────────────
+            $table->index('evenement_id');
+            // ─────────────────────────────────────────────────────────
         });
     }
 

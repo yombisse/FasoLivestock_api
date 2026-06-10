@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('farm_id')->nullable()->constrained('farms')->nullOnDelete();
+            $table->foreignUuid('farm_id')
+                ->nullable()
+                ->constrained('farms')
+                ->nullOnDelete();
             $table->foreignUuid('animal_id')
                 ->nullable()
                 ->constrained('animals')
@@ -22,17 +25,43 @@ return new class extends Migration
             $table->text('message');
             $table->timestamp('sent_at')->nullable();
 
+            // ─── Nouveaux champs ──────────────────────────────────────
+            // Événement déclencheur de la notification
+            $table->foreignUuid('evenement_id')
+                ->nullable()
+                ->constrained('evenements')
+                ->nullOnDelete();
+
+            // Type pour catégoriser et filtrer les alertes
+            $table->enum('type', [
+                'VACCINATION',
+                'TRAITEMENT',
+                'NAISSANCE',
+                'MOUVEMENT',
+                'ALERTE',
+                'INFO',
+            ])->default('INFO');
+            // ─────────────────────────────────────────────────────────
+
             $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
-            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('last_modified_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
 
             $table->timestamps();
             $table->softDeletes();
 
-            // Indices pour performance
+            // Indices existants
             $table->index('farm_id');
             $table->index('animal_id');
             $table->index('sent_at');
             $table->index('sync_status');
+
+            // ─── Nouveaux indices ─────────────────────────────────────
+            $table->index('evenement_id');
+            $table->index('type');
+            // ─────────────────────────────────────────────────────────
         });
     }
 
