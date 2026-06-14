@@ -22,37 +22,29 @@ class AuthService
     public function register(array $data): array
     {
         $user = User::create([
-            'id' => (string) Str::uuid(),
-
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'telephone' => $data['telephone'],
-
-            'password' => Hash::make($data['password']),
-
-            // offline-first sync
+            'id'           => (string) Str::uuid(),
+            'name'         => $data['name'],
+            'email'        => $data['email'] ?? null,
+            'telephone'    => $data['telephone'] ?? null,
+            'password'     => Hash::make($data['password']),
             'last_sync_at' => now(),
         ]);
 
-        /**
-         * Attribution rôle par défaut
-         * (Spatie Permission)
-         */
-        $user->assignRole('gerant');
+        $user->assignRole('superadmin'); // Par défaut, on assigne le rôle SuperAdmin (à changer en production)
+
+        // Eager load roles une seule fois
+        $user->load('roles');
 
         AuthLogger::userRegistered($user->id, $user->email, $user->telephone);
 
-        $channel = !empty($data['email']) ? 'email' : 'phone';
-        $identifier = !empty($data['email']) ? $data['email'] : $data['telephone'];
-
-        $verification = $this->createAndSend2FA($user, $channel, $identifier);
+        $verification = $this->createAndSend2FA($user);
 
         return [
-            'user' => $user,
-            'pending_2fa' => true,
+            'user'            => $user,
+            'pending_2fa'     => true,
             'verification_id' => $verification->id,
-            'channel' => $channel,
-            'roles' => $user->getRoleNames(),
+            'channel'         => $verification->channel,
+            'roles'           => $user->getRoleNames(),
         ];
     }
 
@@ -63,217 +55,161 @@ class AuthService
     {
         $login = $data['login'];
 
-        /**
-         * Recherche email OU téléphone
-         */
-        $user = User::where('email', $login)
+        $user = User::with('roles')
+            ->where('email', $login)
             ->orWhere('telephone', $login)
             ->first();
 
-        /**
-         * Utilisateur inexistant
-         */
         if (!$user) {
             AuthLogger::loginFailedUserNotFound($login);
-            throw new UserNotFoundException(
-                'Utilisateur introuvable.'
-            );
+            throw new UserNotFoundException('Utilisateur introuvable.');
         }
 
-        /**
-         * Vérification mot de passe
-         */
         if (!Hash::check($data['password'], $user->password)) {
             AuthLogger::loginFailedWrongPassword($user->id);
-            throw new AuthenticationException(
-                'Mot de passe incorrect.'
-            );
+            throw new AuthenticationException('Mot de passe incorrect.');
         }
 
-        $user->update([
-            'last_sync_at' => now(),
-        ]);
+        $user->update(['last_sync_at' => now()]);
 
         AuthLogger::loginSuccessful($user->id, $user->email);
 
-        $channel = !empty($user->email) && $login === $user->email ? 'email' : 'phone';
-        $identifier = $channel === 'email' ? $user->email : $user->telephone;
-
-        $verification = $this->createAndSend2FA($user, $channel, $identifier);
+        $verification = $this->createAndSend2FA($user);
 
         return [
-            'user' => $user,
-            'pending_2fa' => true,
+            'user'            => $user,
+            'pending_2fa'     => true,
             'verification_id' => $verification->id,
-            'channel' => $channel,
-            'roles' => $user->getRoleNames(),
+            'channel'         => $verification->channel,
+            'roles'           => $user->getRoleNames(),
         ];
     }
 
+    /**
+     * Demande de réinitialisation de mot de passe
+     */
     public function forgotPassword(array $data): array
     {
-        /**
-         * Recherche utilisateur
-         */
         $user = User::where('email', $data['login'])
             ->orWhere('telephone', $data['login'])
             ->first();
 
-        /**
-         * Utilisateur inexistant
-         */
         if (!$user) {
             AuthLogger::passwordResetRequestUserNotFound($data['login']);
-            throw new UserNotFoundException(
-                'Utilisateur introuvable.'
-            );
+            throw new UserNotFoundException('Utilisateur introuvable.');
         }
 
-        /**
-         * Génération token sécurisé
-         */
         $token = Str::random(64);
 
-        /**
-         * Suppression anciens tokens - Transaction atomique
-         */
-        PasswordResetToken::where('user_id', $user->id)->delete();
-
-        /**
-         * Création nouveau token
-         */
-        PasswordResetToken::create([
-            'user_id' => $user->id,
-            'token' => Hash::make($token),
-            'expires_at' => now()->addMinutes(60),
-            'used' => false,
-        ]);
+        // Upsert atomique : supprime l'ancien et crée le nouveau en une passe
+        PasswordResetToken::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'token'      => Hash::make($token),
+                'expires_at' => now()->addMinutes(60),
+                'used'       => false,
+                'used_at'    => null,
+            ]
+        );
 
         AuthLogger::passwordResetTokenGenerated($user->id, $user->email);
 
         /**
-         * TODO:
-         * email / sms pour envoyer le token
+         * TODO: envoyer le token par email / SMS
          */
 
         return [
             'reset_token' => $token,
-            'message' => 'Un email de réinitialisation a été envoyé.',
+            'message'     => 'Un email de réinitialisation a été envoyé.',
         ];
     }
 
+    /**
+     * Réinitialisation du mot de passe
+     */
     public function resetPassword(array $data): array
     {
-        /**
-         * Trouver l'utilisateur d'abord
-         */
-        $user = User::where('email', $data['login'])
-            ->orWhere('telephone', $data['login'])
+        // Jointure directe user + token en une seule requête
+        $reset = PasswordResetToken::with('user')
+            ->whereHas('user', function ($q) use ($data) {
+                $q->where('email', $data['login'])
+                  ->orWhere('telephone', $data['login']);
+            })
+            ->valid()
             ->first();
+
+        if (!$reset) {
+            AuthLogger::passwordResetInvalidToken(null);
+            throw new InvalidTokenException('Token invalide ou expiré.');
+        }
+
+        $user = $reset->user;
 
         if (!$user) {
             AuthLogger::passwordResetUserNotFound($data['login']);
             throw new UserNotFoundException('Utilisateur introuvable.');
         }
 
-        /**
-         * Chercher le token de réinitialisation valide
-         */
-        $reset = PasswordResetToken::where('user_id', $user->id)
-            ->valid()
-            ->first();
-
-        if (!$reset) {
+        if (!Hash::check($data['token'], $reset->token)) {
             AuthLogger::passwordResetInvalidToken($user->id);
             throw new InvalidTokenException('Token invalide.');
         }
 
-        /**
-         * Vérifier token sécurisé
-         */
-        if (!Hash::check($data['token'], $reset->token)) {
-            AuthLogger::passwordResetInvalidToken($reset->user_id);
-            throw new InvalidTokenException('Token invalide.');
-        }
-
-        /**
-         * Vérifier expiration
-         */
         if ($reset->expires_at < now()) {
-            AuthLogger::passwordResetExpiredToken($reset->user_id);
+            AuthLogger::passwordResetExpiredToken($user->id);
             throw new InvalidTokenException('Token expiré.');
         }
 
-        /**
-         * Update password
-         */
         $user->update([
-            'password' => Hash::make($data['password']),
+            'password'     => Hash::make($data['password']),
             'last_sync_at' => now(),
         ]);
 
-        /**
-         * Marquer le token comme utilisé
-         */
         $reset->update([
-            'used' => true,
+            'used'    => true,
             'used_at' => now(),
         ]);
 
         AuthLogger::passwordResetSuccessful($user->id, $user->email);
 
-        return [
-            'message' => 'Mot de passe réinitialisé avec succès'
-        ];
+        return ['message' => 'Mot de passe réinitialisé avec succès'];
     }
-    public function me($user): array
+
+    /**
+     * Profil utilisateur connecté
+     */
+    public function me(User $user): array
     {
+        // Eager load en une seule requête si pas déjà chargé
+        $user->loadMissing('roles', 'permissions');
+
         return [
-            'user' => $user,
-            'roles' => $user->getRoleNames(),
+            'user'        => $user,
+            'roles'       => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions()->pluck('name'),
         ];
     }
 
-    public function logout($user): array
+    /**
+     * Déconnexion
+     */
+    public function logout(User $user): array
     {
         $user->currentAccessToken()->delete();
 
         AuthLogger::userLoggedOut($user->id, $user->email);
 
-        return [
-            'message' => 'Déconnexion réussie'
-        ];
+        return ['message' => 'Déconnexion réussie'];
     }
 
-    private function createAndSend2FA(User $user, string $channel, string $identifier): TwoFactorVerification
-    {
-        // MVP: email uniquement (code numérique envoyé par mail)
-        if ($channel !== 'email') {
-            throw new AuthenticationException('2FA par téléphone non disponible pour le moment.');
-        }
-
-        $code = (string) random_int(100000, 999999);
-        $codeHash = Hash::make($code);
-
-        $verification = TwoFactorVerification::create([
-            'user_id' => $user->id,
-            'channel' => $channel,
-            'identifier' => $identifier,
-            'code_hash' => $codeHash,
-            'expires_at' => now()->addMinutes(10),
-            'used' => false,
-            'attempts' => 0,
-        ]);
-
-        Mail::to($identifier)->send(new TwoFactorEmailVerification($code, $identifier, 10));
-
-        return $verification;
-    }
-
+    /**
+     * Vérification du code 2FA
+     */
     public function verify2fa(array $data): array
     {
-        $verification = TwoFactorVerification::where('id', $data['verification_id'])
+        // Eager load user + roles en une seule requête
+        $verification = TwoFactorVerification::with(['user.roles'])
+            ->where('id', $data['verification_id'])
             ->valid()
             ->first();
 
@@ -291,20 +227,58 @@ class AuthService
         }
 
         $verification->update([
-            'used' => true,
+            'used'    => true,
             'used_at' => now(),
         ]);
 
-        $user = $verification->user;
-
-        $token = $user
-            ->createToken('auth_token')
-            ->plainTextToken;
+        $user  = $verification->user;
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return [
-            'user' => $user,
+            'user'  => $user,
             'token' => $token,
             'roles' => $user->getRoleNames(),
         ];
+    }
+
+    /**
+     * Création et envoi du code 2FA.
+     * Le channel est déduit automatiquement depuis le modèle User.
+     */
+    private function createAndSend2FA(User $user): TwoFactorVerification
+    {
+        // Priorité email, fallback téléphone
+        if (!empty($user->email)) {
+            $channel    = 'email';
+            $identifier = $user->email;
+        } elseif (!empty($user->telephone)) {
+            $channel    = 'phone';
+            $identifier = $user->telephone;
+        } else {
+            throw new AuthenticationException('Aucun contact valide pour envoyer le code 2FA.');
+        }
+
+        if ($channel !== 'email') {
+            throw new AuthenticationException('2FA par téléphone non disponible pour le moment.');
+        }
+
+        $code     = (string) random_int(100000, 999999);
+        $codeHash = Hash::make($code);
+
+        $verification = TwoFactorVerification::create([
+            'user_id'    => $user->id,
+            'channel'    => $channel,
+            'identifier' => $identifier,
+            'code_hash'  => $codeHash,
+            'expires_at' => now()->addMinutes(10),
+            'used'       => false,
+            'attempts'   => 0,
+        ]);
+
+        Mail::to($identifier)->send(
+            new TwoFactorEmailVerification($code, $identifier, 10)
+        );
+
+        return $verification;
     }
 }
