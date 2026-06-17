@@ -51,6 +51,9 @@ class AuthService
     /**
      * Connexion utilisateur
      */
+        /**
+     * Connexion utilisateur — token direct sans 2FA
+     */
     public function login(array $data): array
     {
         $login = $data['login'];
@@ -70,21 +73,24 @@ class AuthService
             throw new AuthenticationException('Mot de passe incorrect.');
         }
 
+        // ─── Vérifier compte actif ────────────────────────────
+        if (!$user->is_active) {
+            throw new AuthenticationException('Votre compte est désactivé.');
+        }
+
         $user->update(['last_sync_at' => now()]);
 
         AuthLogger::loginSuccessful($user->id, $user->email);
 
-        $verification = $this->createAndSend2FA($user);
+        // ─── Token direct — sans 2FA ──────────────────────────
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return [
-            'user'            => $user,
-            'pending_2fa'     => true,
-            'verification_id' => $verification->id,
-            'channel'         => $verification->channel,
-            'roles'           => $user->getRoleNames(),
+            'user'  => $user,
+            'token' => $token,
+            'roles' => $user->getRoleNames(),
         ];
     }
-
     /**
      * Demande de réinitialisation de mot de passe
      */

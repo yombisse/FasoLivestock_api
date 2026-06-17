@@ -7,7 +7,7 @@ use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Helpers\ApiResponse;
 use App\Models\User;
-use App\Models\Role;
+use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -238,17 +238,29 @@ class UserController extends Controller
      */
     private function formatUser(User $user): array
     {
+        // Défensif : éviter des 500 si les relations roles/permissions ne sont pas
+        // (ou partiellement) chargées.
+        $roles = $user->relationLoaded('roles')
+            ? ($user->roles ?? collect())
+            : ($user->roles ?? collect());
+
         return [
             'id'           => $user->id,
             'name'         => $user->name,
             'email'        => $user->email,
             'telephone'    => $user->telephone,
             'is_active'    => $user->is_active,
-            'roles'        => $user->roles->map(fn ($r) => [
-                'id'          => $r->id,
-                'name'        => $r->name,
-                'permissions' => $r->permissions->pluck('name')->sort()->values(),
-            ]),
+
+            'roles' => $roles->map(fn ($r) => [
+                'id'   => $r->id,
+                'name' => $r->name,
+
+                'permissions' => (isset($r->permissions) ? $r->permissions : collect())
+                    ->pluck('name')
+                    ->sort()
+                    ->values(),
+            ])->values(),
+
             'farms_count'  => $user->farms_count ?? $user->farms()->count(),
             'last_sync_at' => $user->last_sync_at,
             'deleted_at'   => $user->deleted_at,

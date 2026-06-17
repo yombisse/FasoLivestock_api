@@ -13,12 +13,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('roles', [RoleController::class, 'store'])
         ->middleware('permission:roles.create');
 
-    Route::get('roles/{role}', [RoleController::class, 'show'])
+    Route::get('roles/{id}', [RoleController::class, 'show'])
         ->middleware('permission:roles.view');
 
-    Route::put('roles/{role}', [RoleController::class, 'update'])
+    Route::put('roles/{id}', [RoleController::class, 'update'])
         ->middleware('permission:roles.update');
 
-    Route::delete('roles/{role}', [RoleController::class, 'destroy'])
+    Route::delete('roles/{id}', [RoleController::class, 'destroy'])
         ->middleware('permission:roles.delete');
 });

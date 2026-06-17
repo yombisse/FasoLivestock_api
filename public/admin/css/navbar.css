@@ -1,0 +1,203 @@
+/* ═══════════════════════════════════════════════════════════
+   FasoLivestock Admin — Navbar CSS
+═══════════════════════════════════════════════════════════ */
+
+#top-navbar {
+    position: sticky;
+    top: 0;
+    height: var(--navbar-height);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    gap: .85rem;
+    z-index: 900;
+    box-shadow: var(--shadow-sm);
+    flex-shrink: 0;
+}
+
+/* ─── Toggle sidebar ────────────────────────────────────── */
+.btn-toggle-sidebar {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: .35rem .45rem;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.btn-toggle-sidebar:hover {
+    background: var(--bg);
+    color: var(--primary);
+}
+
+/* ─── Search ────────────────────────────────────────────── */
+.navbar-search {
+    position: relative;
+    flex: 1;
+    max-width: 320px;
+}
+
+.navbar-search input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: .4rem 1rem .4rem 2.25rem;
+    font-size: .82rem;
+    color: var(--text);
+    transition: all var(--transition);
+    outline: none;
+}
+
+.navbar-search input:focus {
+    border-color: var(--primary-light);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(76,175,80,.12);
+}
+
+.navbar-search input::placeholder { color: var(--text-light); }
+
+.navbar-search .search-icon {
+    position: absolute;
+    left: .75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: .85rem;
+    pointer-events: none;
+}
+
+/* ─── Page title ────────────────────────────────────────── */
+.navbar-page-title {
+    font-size: .95rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+    display: none;
+}
+
+@media (max-width: 576px) {
+    .navbar-search { display: none; }
+    .navbar-page-title { display: block; }
+}
+
+/* ─── Actions droite ────────────────────────────────────── */
+.navbar-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+/* Bouton icône navbar */
+.btn-nav-icon {
+    background: none;
+    border: none;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+}
+
+.btn-nav-icon:hover {
+    background: var(--bg);
+    color: var(--primary);
+}
+
+/* Badge notification */
+.notif-badge {
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 16px; height: 16px;
+    background: var(--danger);
+    color: #fff;
+    font-size: .58rem;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--surface);
+}
+
+/* ─── User dropdown ─────────────────────────────────────── */
+.navbar-user {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .35rem .65rem .35rem .35rem;
+    border-radius: 20px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: all var(--transition);
+}
+
+.navbar-user:hover { border-color: var(--primary-light); background: var(--primary-xlight); }
+
+.navbar-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    color: #fff;
+    font-size: .78rem;
+    flex-shrink: 0;
+}
+
+.navbar-user-name {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--text);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.navbar-user-chevron {
+    font-size: .65rem;
+    color: var(--text-muted);
+}
+
+/* Dropdown menu */
+.navbar-dropdown {
+    min-width: 200px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    padding: .4rem 0;
+}
+
+.navbar-dropdown .dropdown-item {
+    font-size: .845rem;
+    padding: .5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    color: var(--text);
+    transition: background var(--transition);
+}
+
+.navbar-dropdown .dropdown-item:hover { background: var(--bg); }
+.navbar-dropdown .dropdown-item.text-danger:hover { background: var(--danger-light); }
+
+.navbar-dropdown .dropdown-header {
+    font-size: .75rem;
+    color: var(--text-muted);
+    padding: .4rem 1rem;
+}
+
+@media (max-width: 576px) {
+    .navbar-user-name { display: none; }
+}

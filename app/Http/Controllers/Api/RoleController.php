@@ -6,23 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Role\StoreRoleRequest;
 use App\Http\Requests\Role\UpdateRoleRequest;
 use App\Helpers\ApiResponse;
-use App\Models\Role;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
-    // =========================================================
-    // MÉTHODES PUBLIQUES
-    // =========================================================
-
     /**
      * Lister tous les rôles avec leurs permissions et le nombre d'utilisateurs.
-     * Utilise withCount pour éviter le N+1 sur users_count.
      */
     public function index()
     {
         $roles = $this->baseQuery()
-            ->withCount('users')
             ->get()
             ->map(fn ($role) => $this->formatRole($role));
 
@@ -42,23 +37,28 @@ class RoleController extends Controller
             'guard_name' => 'api',
         ]);
 
-        $role->syncPermissions($request->permissions);
+        $role->syncPermissions($request->permissions ?? []);
 
+        // load('permissions')/loadCount('users') dépend de la configuration Spatie (relation users_count)
         return ApiResponse::success(
-            $this->formatRole($role->loadCount('users')->load('permissions')),
+            $this->formatRole($role->load('permissions')->loadCount('users')),
             'Rôle créé avec succès.',
             201
         );
     }
 
     /**
-     * Détail d'un rôle avec ses permissions et le nombre d'utilisateurs.
+     * Détail d'un rôle.
      */
     public function show(string $id)
     {
-        $role = $this->baseQuery()
-            ->withCount('users')
-            ->findOrFail($id);
+            $role = $this->baseQuery()
+            ->find($id);
+
+
+        if (!$role) {
+            return ApiResponse::error('Rôle introuvable', null, 404);
+        }
 
         return ApiResponse::success(
             $this->formatRole($role),
@@ -72,7 +72,12 @@ class RoleController extends Controller
      */
     public function update(UpdateRoleRequest $request, string $id)
     {
-        $role = $this->baseQuery()->withCount('users')->findOrFail($id);
+        $role = $this->baseQuery()->find($id);
+
+
+        if (!$role) {
+            return ApiResponse::error('Rôle introuvable', null, 404);
+        }
 
         if ($this->isSuperAdmin($role)) {
             return ApiResponse::error(
@@ -82,11 +87,11 @@ class RoleController extends Controller
             );
         }
 
-        if ($request->has('name')) {
+        if ($request->filled('name')) {
             $role->update(['name' => $request->name]);
         }
 
-        if ($request->has('permissions')) {
+        if ($request->filled('permissions')) {
             $role->syncPermissions($request->permissions);
         }
 
@@ -97,12 +102,18 @@ class RoleController extends Controller
     }
 
     /**
-     * Archiver un rôle (soft delete).
-     * Bloqué si des utilisateurs sont encore assignés à ce rôle.
+     * Supprimer un rôle.
+     * ATTENTION : Spatie Role n'implémente pas soft delete par défaut.
      */
     public function destroy(string $id)
     {
-        $role = $this->baseQuery()->withCount('users')->findOrFail($id);
+        $role = Role::where('guard_name', 'api')
+            ->find($id);
+
+
+        if (!$role) {
+            return ApiResponse::error('Rôle introuvable', null, 404);
+        }
 
         if ($this->isSuperAdmin($role)) {
             return ApiResponse::error(
@@ -112,9 +123,9 @@ class RoleController extends Controller
             );
         }
 
-        if ($role->users_count > 0) {
+        if (($role->users_count ?? 0) > 0) {
             return ApiResponse::error(
-                "Ce rôle est assigné à {$role->users_count} utilisateur(s). Réassignez-les avant de supprimer.",
+                "Ce rôle est assigné à {$role->users_count} utilisateur(s).",
                 null,
                 422
             );
@@ -122,48 +133,14 @@ class RoleController extends Controller
 
         $role->delete();
 
-        return ApiResponse::success(null, 'Rôle archivé avec succès.');
-    }
-
-    /**
-     * Restaurer un rôle archivé.
-     */
-    public function restore(string $id)
-    {
-        $role = Role::where('guard_name', 'api')
-            ->onlyTrashed()
-            ->withCount('users')
-            ->with('permissions')
-            ->findOrFail($id);
-
-        $role->restore();
-
-        return ApiResponse::success(
-            $this->formatRole($role),
-            'Rôle restauré avec succès.'
-        );
-    }
-
-    /**
-     * Lister les rôles archivés.
-     */
-    public function trashed()
-    {
-        $roles = Role::where('guard_name', 'api')
-            ->onlyTrashed()
-            ->withCount('users')
-            ->with('permissions')
-            ->get()
-            ->map(fn ($role) => $this->formatRole($role));
-
-        return ApiResponse::success($roles, 'Rôles archivés récupérés.');
+        return ApiResponse::success(null, 'Rôle supprimé avec succès.');
     }
 
     /**
      * Retourner toutes les permissions groupées par module.
      * Utilisé par le frontend pour afficher les cases à cocher.
      */
-    public function permissions()
+    public function permissions(Request $request = null)
     {
         return ApiResponse::success(
             $this->getPermissionsGrouped(),
@@ -171,29 +148,19 @@ class RoleController extends Controller
         );
     }
 
-    // =========================================================
-    // MÉTHODES PRIVÉES
-    // =========================================================
-
-    /**
-     * Query de base réutilisable — filtre sur guard api + charge permissions.
-     */
     private function baseQuery()
     {
+        // Important : on filtre guard_name='api' (cohérent avec tes services/assignRole)
         return Role::where('guard_name', 'api')->with('permissions');
     }
 
-    /**
-     * Vérifie si le rôle est le superadmin système.
-     */
     private function isSuperAdmin(Role $role): bool
     {
         return $role->name === 'superadmin';
     }
 
     /**
-     * Formate un rôle pour la réponse API.
-     * Utilise users_count si déjà chargé via withCount, sinon fallback.
+     * Formater un rôle pour la réponse API.
      */
     private function formatRole(Role $role): array
     {
@@ -203,14 +170,14 @@ class RoleController extends Controller
             'is_system'   => $this->isSuperAdmin($role),
             'permissions' => $role->permissions->pluck('name')->sort()->values(),
             'users_count' => $role->users_count ?? $role->users()->count(),
-            'deleted_at'  => $role->deleted_at,
+            // Spatie Role peut ne pas avoir deleted_at si soft delete non activé.
+            'deleted_at'  => $role->deleted_at ?? null,
             'created_at'  => $role->created_at,
         ];
     }
 
     /**
-     * Retourne les permissions groupées par module pour le frontend.
-     * Sécurise explode() contre les permissions mal nommées.
+     * Retourne les permissions groupées par module.
      */
     private function getPermissionsGrouped(): array
     {
@@ -232,4 +199,30 @@ class RoleController extends Controller
             ->values()
             ->toArray();
     }
+
+    /**
+     * Lister les rôles archivés.
+     * Note: si soft delete Spatie est désactivé, cet endpoint n'est pas supporté.
+     */
+    public function trashed()
+    {
+        return ApiResponse::error(
+            'Soft delete non supporté pour Spatie\Permission\Models\Role (à activer si besoin).',
+            null,
+            400
+        );
+    }
+
+    /**
+     * Restaurer un rôle archivé.
+     */
+    public function restore(string $id)
+    {
+        return ApiResponse::error(
+            'Soft delete non supporté pour Spatie\Permission\Models\Role (à activer si besoin).',
+            null,
+            400
+        );
+    }
 }
+

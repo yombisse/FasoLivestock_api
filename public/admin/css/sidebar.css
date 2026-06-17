@@ -1,0 +1,250 @@
+/* ═══════════════════════════════════════════════════════════
+   FasoLivestock Admin — Sidebar CSS
+═══════════════════════════════════════════════════════════ */
+
+#sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: linear-gradient(180deg, #1B5E20 0%, #2E7D32 60%, #388E3C 100%);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform var(--transition), width var(--transition);
+    box-shadow: 2px 0 12px rgba(0,0,0,.12);
+}
+
+/* ─── Brand ─────────────────────────────────────────────── */
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: 1rem 1.1rem;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.sidebar-brand-logo {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,.15);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    transition: background var(--transition);
+}
+
+.sidebar-brand:hover .sidebar-brand-logo {
+    background: rgba(255,255,255,.25);
+}
+
+.sidebar-brand-text {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    line-height: 1.2;
+}
+
+.sidebar-brand-text small {
+    display: block;
+    font-size: .65rem;
+    font-weight: 400;
+    color: rgba(255,255,255,.5);
+    letter-spacing: .3px;
+}
+
+/* ─── Navigation ────────────────────────────────────────── */
+.sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: .6rem 0;
+    scrollbar-width: none;
+}
+
+.sidebar-nav::-webkit-scrollbar { display: none; }
+
+.nav-section-label {
+    padding: .8rem 1.1rem .3rem;
+    font-size: .62rem;
+    font-weight: 600;
+    color: rgba(255,255,255,.35);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    user-select: none;
+}
+
+/* ─── Nav Links ─────────────────────────────────────────── */
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .55rem 1.1rem;
+    color: rgba(255,255,255,.72);
+    font-size: .845rem;
+    font-weight: 500;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all var(--transition);
+    white-space: nowrap;
+    cursor: pointer;
+    background: none;
+    border-right: none;
+    border-top: none;
+    border-bottom: none;
+    width: 100%;
+    text-align: left;
+}
+
+.nav-link:hover {
+    color: #fff;
+    background: rgba(255,255,255,.1);
+    border-left-color: rgba(255,255,255,.3);
+}
+
+.nav-link.active {
+    color: #fff;
+    background: rgba(255,255,255,.15);
+    border-left-color: var(--accent);
+    font-weight: 600;
+}
+
+.nav-link .nav-icon {
+    font-size: .95rem;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+    opacity: .85;
+}
+
+.nav-link.active .nav-icon { opacity: 1; }
+
+.nav-link .nav-chevron {
+    margin-left: auto;
+    font-size: .65rem;
+    transition: transform var(--transition);
+    opacity: .6;
+}
+
+.nav-link .nav-chevron.rotated { transform: rotate(180deg); }
+
+.nav-link .nav-badge {
+    margin-left: auto;
+    background: var(--accent);
+    color: #fff;
+    font-size: .62rem;
+    padding: .12rem .42rem;
+    border-radius: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* ─── Sous-menu ─────────────────────────────────────────── */
+.nav-submenu {
+    background: rgba(0,0,0,.18);
+    overflow: hidden;
+}
+
+.nav-submenu .nav-link {
+    padding-left: 2.7rem;
+    font-size: .815rem;
+    font-weight: 400;
+    color: rgba(255,255,255,.62);
+    border-left: 3px solid transparent;
+}
+
+.nav-submenu .nav-link:hover { color: rgba(255,255,255,.9); }
+.nav-submenu .nav-link.active {
+    color: #fff;
+    border-left-color: var(--accent);
+    background: rgba(255,255,255,.1);
+}
+
+/* ─── Sidebar Footer ────────────────────────────────────── */
+.sidebar-footer {
+    padding: .85rem 1.1rem;
+    border-top: 1px solid rgba(255,255,255,.1);
+    flex-shrink: 0;
+}
+
+.sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+}
+
+.sidebar-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    color: #fff;
+    font-size: .8rem;
+    flex-shrink: 0;
+}
+
+.sidebar-user-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.sidebar-user-name {
+    color: #fff;
+    font-size: .8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.sidebar-user-role {
+    color: rgba(255,255,255,.45);
+    font-size: .68rem;
+    margin-top: .1rem;
+}
+
+.sidebar-logout {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,.45);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: .25rem;
+    border-radius: 5px;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-logout:hover { color: #fff; background: rgba(255,255,255,.1); }
+
+/* ─── Overlay mobile ────────────────────────────────────── */
+#sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity var(--transition);
+}
+
+/* ─── Responsive ────────────────────────────────────────── */
+@media (max-width: 768px) {
+    #sidebar-overlay { display: block; pointer-events: none; }
+    #sidebar-overlay.active { opacity: 1; pointer-events: auto; }
+
+    #sidebar {
+        transform: translateX(calc(-1 * var(--sidebar-width)));
+    }
+
+    #sidebar.mobile-open {
+        transform: translateX(0);
+    }
+}

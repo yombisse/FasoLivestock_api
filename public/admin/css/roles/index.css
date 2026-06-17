@@ -1,0 +1,206 @@
+/* ═══════════════════════════════════════════════════════════
+   FasoLivestock Admin — Roles Index CSS
+═══════════════════════════════════════════════════════ */
+
+/* ─── Page header ───────────────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-header-left h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.page-header-left p {
+    font-size: .8rem;
+    color: var(--text-muted);
+    margin: .2rem 0 0;
+}
+
+/* ─── Roles grid ────────────────────────────────────────── */
+.roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ─── Role card ─────────────────────────────────────────── */
+.role-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    transition: all var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.role-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--primary);
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.role-card.system::before { background: var(--accent); }
+
+.role-card:hover {
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+}
+
+/* ─── Role card header ──────────────────────────────────── */
+.role-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.role-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--primary-xlight);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.role-icon.system {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+.role-name {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 .2rem;
+}
+
+.role-meta {
+    font-size: .75rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+/* ─── System badge ──────────────────────────────────────── */
+.system-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    padding: .2rem .55rem;
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: 20px;
+    font-size: .68rem;
+    font-weight: 600;
+}
+
+/* ─── Permissions preview ───────────────────────────────── */
+.permissions-preview {
+    margin-bottom: 1rem;
+}
+
+.permissions-preview-title {
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: .5rem;
+}
+
+.permissions-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3rem;
+}
+
+.permission-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: .15rem .5rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: .68rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
+.permission-tag.more {
+    background: var(--primary-xlight);
+    border-color: var(--primary-light);
+    color: var(--primary);
+    font-family: inherit;
+    font-weight: 600;
+}
+
+/* ─── Role card footer ──────────────────────────────────── */
+.role-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: .85rem;
+    border-top: 1px solid var(--border);
+}
+
+.role-users-count {
+    font-size: .78rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+}
+
+.role-actions {
+    display: flex;
+    gap: .35rem;
+}
+
+/* ─── Empty state ───────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    opacity: .3;
+    margin-bottom: .75rem;
+}
+
+/* ─── Modal ─────────────────────────────────────────────── */
+.modal-content {
+    border: none;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.25rem;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border);
+    padding: .75rem 1.25rem;
+}

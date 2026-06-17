@@ -1,0 +1,312 @@
+/* ═══════════════════════════════════════
+   FasoLivestock - Login Modern UI
+═══════════════════════════════════════ */
+
+/* PAGE */
+.login-page{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+    position:relative;
+    overflow:hidden;
+}
+
+/* BACKGROUND */
+.login-bg{
+    position:fixed;
+    inset:0;
+    background:url('/admin/images/login_bg.jpg') center center/cover no-repeat;
+    animation:zoomBg 20s ease-in-out infinite alternate;
+}
+
+.login-bg::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(27,94,32,.75),
+            rgba(0,0,0,.65)
+        );
+}
+
+@keyframes zoomBg{
+    from{
+        transform:scale(1);
+    }
+    to{
+        transform:scale(1.08);
+    }
+}
+
+/* CARD */
+.login-card{
+    position:relative;
+    z-index:2;
+    width:100%;
+    max-width:450px;
+
+    background:rgba(255,255,255,.95);
+    backdrop-filter:blur(12px);
+
+    border-radius:24px;
+    padding:2.5rem;
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,.25);
+
+    animation:cardAppear .6s ease;
+}
+
+@keyframes cardAppear{
+    from{
+        opacity:0;
+        transform:translateY(40px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+/* LOGO */
+.login-logo{
+    text-align:center;
+    margin-bottom:1.5rem;
+}
+
+.login-logo-icon{
+    width:100px;
+    height:100px;
+    margin:0 auto 15px;
+
+    background:#fff;
+    border-radius:22px;
+    padding:10px;
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.15);
+
+    animation:floatLogo 3s ease-in-out infinite;
+}
+
+.login-logo-icon img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+
+@keyframes floatLogo{
+    0%,100%{
+        transform:translateY(0);
+    }
+    50%{
+        transform:translateY(-6px);
+    }
+}
+
+.login-brand-name{
+    font-size:1.6rem;
+    font-weight:700;
+    color:var(--primary-dark);
+}
+
+/* DIVIDER */
+.login-divider{
+    border:none;
+    border-top:1px solid #e5e7eb;
+    margin:1.5rem 0;
+}
+
+/* TITRES */
+.login-title{
+    text-align:center;
+    font-size:1.4rem;
+    font-weight:700;
+    margin-bottom:.5rem;
+    color:#1f2937;
+}
+
+.login-subtitle{
+    text-align:center;
+    color:#6b7280;
+    font-size:.9rem;
+    margin-bottom:2rem;
+}
+
+/* FORM */
+.form-group{
+    margin-bottom:1rem;
+}
+
+.form-label{
+    display:block;
+    margin-bottom:.45rem;
+    font-weight:600;
+    color:#374151;
+}
+
+.input-icon-wrapper{
+    position:relative;
+}
+
+.input-icon{
+    position:absolute;
+    left:14px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#9ca3af;
+}
+
+.form-control{
+    width:100%;
+    padding:12px 15px 12px 42px;
+
+    border:1px solid #d1d5db;
+    border-radius:12px;
+
+    outline:none;
+    transition:.3s;
+}
+
+.form-control:focus{
+    border-color:var(--primary);
+    box-shadow:0 0 0 4px rgba(46,125,50,.12);
+}
+
+.input-password-wrapper .form-control{
+    padding-right:45px;
+}
+
+.btn-toggle-password{
+    position:absolute;
+    top:50%;
+    right:12px;
+    transform:translateY(-50%);
+    background:none;
+    border:none;
+    cursor:pointer;
+    color:#9ca3af;
+}
+
+.btn-toggle-password:hover{
+    color:var(--primary);
+}
+
+/* REMEMBER */
+.login-remember{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:1.4rem;
+}
+
+.login-remember input{
+    accent-color:var(--primary);
+}
+
+.login-remember label{
+    color:#6b7280;
+    font-size:.9rem;
+}
+
+/* BUTTON */
+.btn-login{
+    width:100%;
+    border:none;
+
+    padding:14px;
+    border-radius:12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary),
+            var(--primary-dark)
+        );
+
+    color:#fff;
+    font-size:.95rem;
+    font-weight:600;
+
+    cursor:pointer;
+    transition:.3s;
+
+    box-shadow:
+        0 10px 20px rgba(46,125,50,.25);
+}
+
+.btn-login:hover{
+    transform:translateY(-2px);
+    box-shadow:
+        0 15px 25px rgba(46,125,50,.35);
+}
+
+.btn-login:active{
+    transform:translateY(0);
+}
+
+/* SPINNER */
+.login-spinner{
+    width:16px;
+    height:16px;
+    border:2px solid rgba(255,255,255,.4);
+    border-top-color:#fff;
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+}
+
+@keyframes spin{
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+/* ALERT */
+.login-alert{
+    padding:12px;
+    border-radius:10px;
+    margin-bottom:1rem;
+    font-size:.9rem;
+}
+
+/* FOOTER */
+.login-footer-links{
+    margin-top:1.3rem;
+    text-align:center;
+}
+
+.login-footer-links a{
+    color:var(--primary);
+    text-decoration:none;
+    font-size:.9rem;
+    font-weight:500;
+}
+
+.login-footer-links a:hover{
+    text-decoration:underline;
+}
+
+/* MOBILE */
+@media (max-width:576px){
+
+    .login-card{
+        padding:1.7rem;
+    }
+
+    .login-logo-icon{
+        width:80px;
+        height:80px;
+    }
+
+    .login-title{
+        font-size:1.2rem;
+    }
+
+    .login-brand-name{
+        font-size:1.3rem;
+    }
+}
