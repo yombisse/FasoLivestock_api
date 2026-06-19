@@ -1,6 +1,6 @@
 @extends('admin.layouts.guest')
 
-@section('title', 'Connexion')
+@section('title', 'Créer un compte')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('admin/css/auth/login.css') }}">
@@ -27,8 +27,8 @@
 
         <hr class="login-divider">
 
-        <h2 class="login-title">Connexion à l'Admin</h2>
-        <p class="login-subtitle">Entrez vos identifiants pour accéder au tableau de bord.</p>
+        <h2 class="login-title">Créer un compte</h2>
+        <p class="login-subtitle">Remplissez le formulaire pour créer votre compte administrateur.</p>
 
         {{-- Erreur session --}}
         @if(session('error'))
@@ -48,21 +48,37 @@
 
         {{-- Formulaire --}}
         <form method="POST"
-              action="{{ route('admin.login.post') }}"
+              action="{{ route('admin.register.submit') }}"
               class="login-form"
               @submit.prevent="submit($event)">
             @csrf
 
-            {{-- Email --}}
+            {{-- Nom --}}
             <div class="form-group">
-                <label class="form-label" for="login">Adresse Email</label>
+                <label class="form-label" for="name">Nom complet</label>
                 <div class="input-icon-wrapper">
                     <input type="text"
-                           id="login"
-                           name="login"
-                           class="form-control @error('login') is-invalid @enderror"
+                           id="name"
+                           name="name"
+                           class="form-control @error('name') is-invalid @enderror"
+                           placeholder="Jean Dupont"
+                           value="{{ old('name') }}"
+                           autocomplete="name"
+                           required>
+                    <i class="bi bi-person input-icon"></i>
+                </div>
+            </div>
+
+            {{-- Email --}}
+            <div class="form-group">
+                <label class="form-label" for="email">Adresse Email</label>
+                <div class="input-icon-wrapper">
+                    <input type="email"
+                           id="email"
+                           name="email"
+                           class="form-control @error('email') is-invalid @enderror"
                            placeholder="example@domaine.com"
-                           value="{{ old('login') }}"
+                           value="{{ old('email') }}"
                            autocomplete="email"
                            required>
                     <i class="bi bi-envelope input-icon"></i>
@@ -78,7 +94,7 @@
                            name="password"
                            class="form-control @error('password') is-invalid @enderror"
                            placeholder="••••••••••••"
-                           autocomplete="current-password"
+                           autocomplete="new-password"
                            required>
                     <i class="bi bi-lock input-icon"></i>
                     <button type="button"
@@ -91,21 +107,37 @@
                 </div>
             </div>
 
-            {{-- Se souvenir de moi --}}
-            <div class="login-remember">
-                <input type="checkbox" id="remember" name="remember">
-                <label for="remember">Se souvenir de moi</label>
+            {{-- Confirmation mot de passe --}}
+            <div class="form-group">
+                <label class="form-label" for="password_confirmation">Confirmer le Mot de Passe</label>
+                <div class="input-icon-wrapper input-password-wrapper">
+                    <input type="password"
+                           id="password_confirmation"
+                           name="password_confirmation"
+                           class="form-control @error('password_confirmation') is-invalid @enderror"
+                           placeholder="••••••••••••"
+                           autocomplete="new-password"
+                           required>
+                    <i class="bi bi-lock input-icon"></i>
+                    <button type="button"
+                            class="btn-toggle-password"
+                            @click="togglePassword()"
+                            tabindex="-1">
+                        <i class="bi"
+                           :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                    </button>
+                </div>
             </div>
 
             {{-- Bouton --}}
             <button type="submit" class="btn-login" :disabled="loading">
                 <span x-show="!loading">
-                    <i class="bi bi-box-arrow-in-right me-1"></i>
-                    Se Connecter
+                    <i class="bi bi-person-plus me-1"></i>
+                    S'inscrire
                 </span>
                 <span x-show="loading" class="d-flex align-items-center justify-content-center gap-2">
                     <span class="login-spinner"></span>
-                    Connexion...
+                    Inscription...
                 </span>
             </button>
 
@@ -113,8 +145,7 @@
 
         {{-- Liens --}}
         <div class="login-footer-links">
-            <a href="#">Mot de passe oublié ?</a>
-            <a href="{{ route('admin.register') }}">Créer un compte</a>
+            <a href="{{ route('admin.login') }}">Déjà un compte ? Se connecter</a>
         </div>
 
     </div>

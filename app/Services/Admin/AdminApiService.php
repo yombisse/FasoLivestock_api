@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin;
 
+use App\DTOs\ApiResult;
 use Illuminate\Http\Request as LaravelRequest;
 use Illuminate\Contracts\Http\Kernel;
 
@@ -15,34 +16,34 @@ abstract class AdminApiService
 
     public function __construct()
     {
-        $this->token = session('admin_token');
+        $this->token = $this->getBearerToken();
     }
 
     // =========================================================
     // MÉTHODES PROTÉGÉES — utilisées par les sous-services
     // =========================================================
 
-    protected function get(string $endpoint, array $params = []): array
+    protected function get(string $endpoint, array $params = []): ApiResult
     {
         return $this->internalRequest('GET', $endpoint, $params);
     }
 
-    protected function post(string $endpoint, array $data = [], bool $authenticated = true): array
+    protected function post(string $endpoint, array $data = [], bool $authenticated = true): ApiResult
     {
         return $this->internalRequest('POST', $endpoint, $data, $authenticated);
     }
 
-    protected function put(string $endpoint, array $data = []): array
+    protected function put(string $endpoint, array $data = []): ApiResult
     {
         return $this->internalRequest('PUT', $endpoint, $data);
     }
 
-    protected function patch(string $endpoint, array $data = []): array
+    protected function patch(string $endpoint, array $data = []): ApiResult
     {
         return $this->internalRequest('PATCH', $endpoint, $data);
     }
 
-    protected function delete(string $endpoint): array
+    protected function delete(string $endpoint): ApiResult
     {
         return $this->internalRequest('DELETE', $endpoint);
     }
@@ -51,12 +52,21 @@ abstract class AdminApiService
     // MOTEUR — appel direct au kernel Laravel (sans HTTP)
     // =========================================================
 
+    /**
+     * Ce token doit être un token Sanctum valide émis par /api/auth/login.
+     * Il est stocké en session lors du login admin.
+     */
+    private function getBearerToken(): string
+    {
+        return session('admin_token', '');
+    }
+
     private function internalRequest(
         string $method,
         string $endpoint,
         array  $data = [],
         bool   $authenticated = true
-    ): array {
+    ): ApiResult {
         try {
             $headers = [
                 'CONTENT_TYPE' => 'application/json',
@@ -82,21 +92,22 @@ abstract class AdminApiService
 
             $body = json_decode($response->getContent(), true) ?? [];
 
-            return [
-                'success' => $response->getStatusCode() >= 200
-                          && $response->getStatusCode() < 300,
-                'status'  => $response->getStatusCode(),
-                'data'    => $body,
-            ];
+            // L'API retourne une structure { success, message, data }
+            // On extrait uniquement le 'data' pour le ApiResult
+            $data = $body['data'] ?? $body;
+
+            return ApiResult::success(
+                $data,
+                $body['message'] ?? 'OK',
+                $response->getStatusCode()
+            );
 
         } catch (\Throwable $e) {
-            return [
-                'success' => false,
-                'status'  => 500,
-                'data'    => [
-                    'message' => 'Erreur interne : ' . $e->getMessage()
-                ],
-            ];
+            return ApiResult::error(
+                'Erreur interne : ' . $e->getMessage(),
+                500,
+                ['message' => 'Erreur interne : ' . $e->getMessage()]
+            );
         }
     }
 }

@@ -21,4 +21,23 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::delete('roles/{id}', [RoleController::class, 'destroy'])
         ->middleware('permission:roles.delete');
+
+    // =========================================================
+    // Assignation Role ↔ Users (Spatie Permission)
+    // =========================================================
+
+    Route::get('roles/{id}/users', [RoleController::class, 'users'])
+        ->middleware('permission:roles.view');
+
+    Route::post('roles/{id}/users', [RoleController::class, 'attachUser'])
+        ->middleware('permission:roles.update');
+
+    Route::delete('roles/{id}/users/{userId}', [RoleController::class, 'detachUser'])
+        ->middleware('permission:roles.update');
+
+    Route::get('roles/trashed', [RoleController::class, 'trashed'])
+        ->middleware('permission:roles.view');
+
+    Route::post('roles/{id}/restore', [RoleController::class, 'restore'])
+        ->middleware('permission:roles.update');
 });

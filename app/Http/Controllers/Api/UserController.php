@@ -96,13 +96,7 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user)
     {
-        if ($user->hasRole('superadmin') && !auth()->user()->hasRole('superadmin')) {
-            return ApiResponse::error(
-                'Vous ne pouvez pas modifier le superadmin.',
-                null,
-                403
-            );
-        }
+        $this->authorize('update', $user);
 
         $data = $request->only(['name', 'email', 'telephone', 'is_active']);
 
@@ -127,13 +121,7 @@ class UserController extends Controller
      */
     public function toggleActive(User $user)
     {
-        if ($user->hasRole('superadmin')) {
-            return ApiResponse::error(
-                'Le compte superadmin ne peut pas être désactivé.',
-                null,
-                403
-            );
-        }
+        $this->authorize('toggleActive', $user);
 
         $user->update(['is_active' => !$user->is_active]);
         $status = $user->is_active ? 'activé' : 'désactivé';
@@ -149,21 +137,7 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        if ($user->hasRole('superadmin')) {
-            return ApiResponse::error(
-                'Le compte superadmin ne peut pas être supprimé.',
-                null,
-                403
-            );
-        }
-
-        if ($user->id === auth()->id()) {
-            return ApiResponse::error(
-                'Vous ne pouvez pas supprimer votre propre compte.',
-                null,
-                422
-            );
-        }
+        $this->authorize('delete', $user);
 
         $user->update(['is_active' => false]);
         $user->delete();

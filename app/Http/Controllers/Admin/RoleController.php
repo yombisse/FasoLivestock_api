@@ -18,13 +18,13 @@ class RoleController extends Controller
     public function index()
     {
         $response = $this->roleApi->getAll();
-        if (!$response['success']) {
+        if (!$response->success) {
             return $this->handleApiError($response);
         }
 
         return view('admin.roles.index', [
-            'roles'       => $response['data']['data']['roles'] ?? [],
-            'permissions' => $response['data']['data']['permissions'] ?? [],
+            'roles'       => $response->data['roles'] ?? [],
+            'permissions' => $response->data['permissions'] ?? [],
         ]);
     }
 
@@ -36,7 +36,7 @@ class RoleController extends Controller
         $response = $this->roleApi->getPermissions();
 
         return view('admin.roles.create', [
-            'permissions' => $response['data']['data'] ?? [],
+            'permissions' => $response->data ?? [],
         ]);
     }
 
@@ -47,10 +47,10 @@ class RoleController extends Controller
     {
         $response = $this->roleApi->create($request->all());
 
-        if (!$response['success']) {
+        if (!$response->success) {
             return back()
-                ->withErrors($response['data']['errors'] ?? [])
-                ->with('error', $response['data']['message'] ?? 'Erreur.')
+                ->withErrors($response->data['errors'] ?? [])
+                ->with('error', $response->message ?? 'Erreur.')
                 ->withInput();
         }
 
@@ -66,14 +66,14 @@ class RoleController extends Controller
     {
         $response = $this->roleApi->find($id);
 
-        if (!$response['success']) {
+        if (!$response->success) {
             return redirect()
                 ->route('admin.roles.index')
                 ->with('error', 'Rôle introuvable.');
         }
 
         return view('admin.roles.show', [
-            'role' => $response['data']['data'] ?? [],
+            'role' => $response->data ?? [],
         ]);
     }
 
@@ -85,13 +85,13 @@ class RoleController extends Controller
         $roleResponse        = $this->roleApi->find($id);
         $permissionsResponse = $this->roleApi->getPermissions();
 
-        if (!$roleResponse['success']) {
+        if (!$roleResponse->success) {
             return redirect()
                 ->route('admin.roles.index')
                 ->with('error', 'Rôle introuvable.');
         }
 
-        $role = $roleResponse['data']['data'] ?? [];
+        $role = $roleResponse->data ?? [];
 
         // Bloquer l'édition du superadmin
         if (($role['name'] ?? '') === 'superadmin') {
@@ -102,7 +102,7 @@ class RoleController extends Controller
 
         return view('admin.roles.edit', [
             'role'        => $role,
-            'permissions' => $permissionsResponse['data']['data'] ?? [],
+            'permissions' => $permissionsResponse->data ?? [],
         ]);
     }
 
@@ -113,10 +113,10 @@ class RoleController extends Controller
     {
         $response = $this->roleApi->update($id, $request->all());
 
-        if (!$response['success']) {
+        if (!$response->success) {
             return back()
-                ->withErrors($response['data']['errors'] ?? [])
-                ->with('error', $response['data']['message'] ?? 'Erreur.')
+                ->withErrors($response->data['errors'] ?? [])
+                ->with('error', $response->message ?? 'Erreur.')
                 ->withInput();
         }
 
@@ -135,10 +135,10 @@ class RoleController extends Controller
         return redirect()
             ->route('admin.roles.index')
             ->with(
-                $response['success'] ? 'success' : 'error',
-                $response['success']
+                $response->success ? 'success' : 'error',
+                $response->success
                     ? 'Rôle archivé avec succès.'
-                    : ($response['data']['message'] ?? 'Erreur.')
+                    : ($response->message ?? 'Erreur.')
             );
     }
 
@@ -150,7 +150,7 @@ class RoleController extends Controller
         $response = $this->roleApi->trashed();
 
         return view('admin.roles.trashed', [
-            'roles' => $response['data']['data'] ?? [],
+            'roles' => $response->data ?? [],
         ]);
     }
 
@@ -164,10 +164,10 @@ class RoleController extends Controller
         return redirect()
             ->route('admin.roles.index')
             ->with(
-                $response['success'] ? 'success' : 'error',
-                $response['success']
+                $response->success ? 'success' : 'error',
+                $response->success
                     ? 'Rôle restauré avec succès.'
-                    : ($response['data']['message'] ?? 'Erreur.')
+                    : ($response->message ?? 'Erreur.')
             );
     }
 
@@ -175,14 +175,14 @@ class RoleController extends Controller
     // PRIVÉ
     // =========================================================
 
-    private function handleApiError(array $response)
+    private function handleApiError($response)
     {
-        if ($response['status'] === 401) {
+        if ($response->status === 401) {
             session()->forget(['admin_token', 'admin_user', 'admin_token_expires_at']);
             return redirect()->route('admin.login')->with('error', 'Session expirée.');
         }
 
         return redirect()->back()
-            ->with('error', $response['data']['message'] ?? 'Erreur serveur.');
+            ->with('error', $response->message ?? 'Erreur serveur.');
     }
 }

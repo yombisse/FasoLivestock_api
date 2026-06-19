@@ -21,4 +21,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::delete('users/{user}', [UserController::class, 'destroy'])
         ->middleware('permission:users.delete');
+
+    Route::get('users/trashed', [UserController::class, 'trashed'])
+        ->middleware('permission:users.view');
+
+    Route::post('users/{id}/restore', [UserController::class, 'restore'])
+        ->middleware('permission:users.update');
 });

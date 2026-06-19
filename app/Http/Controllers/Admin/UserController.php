@@ -33,16 +33,16 @@ class UserController extends Controller
 
         $roles = $this->roleApi->getAll();
     
-        if (!$response['success']) {
+        if (!$response->success) {
             return $this->handleApiError($response);
         }
 
         return view('admin.users.index', [
             // ApiResponse::success() retourne: { success, message, data }
             // Ici: $response['data'] = { success, message, data: { users, meta } }
-            'users' => $response['data']['data']['users'] ?? [],
-            'meta'  => $response['data']['data']['meta'] ?? [],
-            'roles' => $roles['data']['data']['roles'] ?? ($roles['data']['roles'] ?? []),
+            'users' => $response->data['users'] ?? [],
+            'meta'  => $response->data['meta'] ?? [],
+            'roles' => $roles->data['roles'] ?? [],
         ]);
     }
 
@@ -54,7 +54,7 @@ class UserController extends Controller
         $roles = $this->roleApi->getAll();
 
         return view('admin.users.create', [
-            'roles' => $roles['data']['data']['roles'] ?? [],
+            'roles' => $roles->data['roles'] ?? [],
         ]);
     }
 
@@ -66,10 +66,10 @@ class UserController extends Controller
         $response = $this->userApi->create($request->all());
      
 
-        if (!$response['success']) {
+        if (!$response->success) {
             return back()
-                ->withErrors($response['data']['errors'] ?? [])
-                ->with('error', $response['data']['message'] ?? 'Erreur.')
+                ->withErrors($response->data['errors'] ?? [])
+                ->with('error', $response->message ?? 'Erreur.')
                 ->withInput();
         }
 
@@ -85,16 +85,14 @@ class UserController extends Controller
     {
         $response = $this->userApi->find($id);
 
-        if (!$response['success']) {
+        if (!$response->success) {
             return redirect()
                 ->route('admin.users.index')
                 ->with('error', 'Utilisateur introuvable.');
         }
 
         return view('admin.users.show', [
-            // ApiResponse::success() retourne: { success, message, data }
-            // Ici: $response['data']['data'] = { ...user fields... }
-            'user' => $response['data']['data'] ?? [],
+            'user' => $response->data ?? [],
         ]);
     }
 
@@ -107,17 +105,15 @@ class UserController extends Controller
         $rolesResponse = $this->roleApi->getAll();
         
 
-        if (!$userResponse['success']) {
+        if (!$userResponse->success) {
             return redirect()
                 ->route('admin.users.index')
                 ->with('error', 'Utilisateur introuvable.');
         }
 
         return view('admin.users.edit', [
-            // ApiResponse::success() retourne: { success, message, data }
-            // Ici: $userResponse['data']['data'] = { ...user fields..., roles: [...] }
-            'user'  => $userResponse['data']['data'] ?? [],
-            'roles' => $rolesResponse['data']['data']['roles'] ?? [],
+            'user'  => $userResponse->data ?? [],
+            'roles' => $rolesResponse->data['roles'] ?? [],
         ]);
     }
 
@@ -128,10 +124,10 @@ class UserController extends Controller
     {
         $response = $this->userApi->update($id, $request->all());
         
-        if (!$response['success']) {
+        if (!$response->success) {
             return back()
-                ->withErrors($response['data']['errors'] ?? [])
-                ->with('error', $response['data']['message'] ?? 'Erreur.')
+                ->withErrors($response->data['errors'] ?? [])
+                ->with('error', $response->message ?? 'Erreur.')
                 ->withInput();
         }
 
@@ -146,15 +142,14 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         $response = $this->userApi->delete($id);
-        dd($response);
 
         return redirect()
             ->route('admin.users.index')
             ->with(
-                $response['success'] ? 'success' : 'error',
-                $response['success']
+                $response->success ? 'success' : 'error',
+                $response->success
                     ? 'Utilisateur archivé avec succès.'
-                    : ($response['data']['message'] ?? 'Erreur.')
+                    : ($response->message ?? 'Erreur.')
             );
     }
 
@@ -166,8 +161,8 @@ class UserController extends Controller
         $response = $this->userApi->toggleActive($id);
 
         return redirect()->back()->with(
-            $response['success'] ? 'success' : 'error',
-            $response['data']['message'] ?? 'Erreur.'
+            $response->success ? 'success' : 'error',
+            $response->message ?? 'Erreur.'
         );
     }
 
@@ -184,10 +179,8 @@ class UserController extends Controller
         $response = $this->userApi->trashed($params);
 
         return view('admin.users.trashed', [
-            // ApiResponse::success() retourne: { success, message, data }
-            // Ici: $response['data'] = { success, message, data: { users, meta } }
-            'users' => $response['data']['data']['users'] ?? [],
-            'meta'  => $response['data']['data']['meta'] ?? [],
+            'users' => $response->data['users'] ?? [],
+            'meta'  => $response->data['meta'] ?? [],
         ]);
     }
 
@@ -201,10 +194,10 @@ class UserController extends Controller
         return redirect()
             ->route('admin.users.index')
             ->with(
-                $response['success'] ? 'success' : 'error',
-                $response['success']
+                $response->success ? 'success' : 'error',
+                $response->success
                     ? 'Utilisateur restauré avec succès.'
-                    : ($response['data']['message'] ?? 'Erreur.')
+                    : ($response->message ?? 'Erreur.')
             );
     }
 
@@ -212,14 +205,14 @@ class UserController extends Controller
     // PRIVÉ
     // =========================================================
 
-    private function handleApiError(array $response)
+    private function handleApiError($response)
     {
-        if ($response['status'] === 401) {
+        if ($response->status === 401) {
             session()->forget(['admin_token', 'admin_user', 'admin_token_expires_at']);
             return redirect()->route('admin.login')->with('error', 'Session expirée.');
         }
 
         return redirect()->back()
-            ->with('error', $response['data']['message'] ?? 'Erreur serveur.');
+            ->with('error', $response->message ?? 'Erreur serveur.');
     }
 }

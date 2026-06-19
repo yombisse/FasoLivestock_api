@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\FarmController;
+use App\Http\Controllers\Admin\RoleUserController;
 
 Route::prefix('admin')->name('admin.')->group(function () {
 
@@ -14,6 +15,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('login');
         Route::post('/login', [AuthController::class, 'login'])
             ->name('login.post');
+        Route::get('/register', [AuthController::class, 'showRegisterForm'])
+            ->name('register');
+        Route::post('/register', [AuthController::class, 'register'])
+            ->name('register.submit');
         Route::get('/verify-2fa', [AuthController::class, 'show2fa'])
             ->name('show2fa');
         Route::post('/verify-2fa', [AuthController::class, 'verify2fa'])
@@ -41,8 +46,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('/users/{id}/toggle-active', [UserController::class, 'toggleActive'])
             ->name('users.toggle-active');
         Route::resource('users', UserController::class);
-        Route::get('/users/{id}', [UserController::class, 'show'])
-             ->name('users.show');
 
         // ─── Rôles ────────────────────────────────────────────
         Route::get('/roles/trashed', [RoleController::class, 'trashed'])
@@ -50,6 +53,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('/roles/{id}/restore', [RoleController::class, 'restore'])
             ->name('roles.restore');
         Route::resource('roles', RoleController::class);
+
+        // ─── Role ↔ Users (AJAX) ──────────────────────────────
+        Route::get('/role-users/{roleId}/users', [RoleUserController::class, 'users'])
+            ->name('role-users.users');
+        Route::post('/role-users/{roleId}/attach', [RoleUserController::class, 'attach'])
+            ->name('role-users.attach');
+        Route::post('/role-users/{roleId}/detach/{userId}', [RoleUserController::class, 'detach'])
+            ->name('role-users.detach');
 
         // ─── Fermes ───────────────────────────────────────────
         Route::get('/farms/trashed', [FarmController::class, 'trashed'])

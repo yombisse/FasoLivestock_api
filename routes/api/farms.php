@@ -31,4 +31,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::delete('farms/{farm}/users/{user}', [FarmController::class, 'removeUser'])
         ->middleware('permission:farms.update');
+
+    Route::get('farms/trashed', [FarmController::class, 'trashed'])
+        ->middleware('permission:farms.view');
+
+    Route::post('farms/{id}/restore', [FarmController::class, 'restore'])
+        ->middleware('permission:farms.update');
 });

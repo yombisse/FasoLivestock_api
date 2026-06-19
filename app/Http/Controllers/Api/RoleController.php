@@ -8,10 +8,117 @@ use App\Http\Requests\Role\UpdateRoleRequest;
 use App\Helpers\ApiResponse;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
+    /**
+     * Lister les utilisateurs assignés à un rôle.
+     */
+    public function users(string $id)
+    {
+        $role = $this->baseQuery()->find($id);
+
+        if (!$role) {
+            return ApiResponse::error('Rôle introuvable', null, 404);
+        }
+
+        // Spatie: relation Role->users
+        $users = $role->users()->get()->map(function (User $user) {
+            return [
+                'id'       => $user->id,
+                'name'     => $user->name,
+                'email'    => $user->email,
+                'telephone'=> $user->telephone,
+                'roles'    => $user->getRoleNames()->values(),
+            ];
+        });
+
+        return ApiResponse::success(
+            [
+                'users' => $users,
+                'count' => $users->count(),
+            ],
+            'Utilisateurs récupérés avec succès.'
+        );
+    }
+
+    /**
+     * Assigner un utilisateur à un rôle (Spatie uniquement).
+     * body: { "user_id": "..." }
+     */
+    public function attachUser(Request $request, string $id)
+    {
+        $role = $this->baseQuery()->find($id);
+
+        if (!$role) {
+            return ApiResponse::error('Rôle introuvable', null, 404);
+        }
+
+        if ($this->isSuperAdmin($role)) {
+            return ApiResponse::error(
+                'Le rôle superadmin ne peut pas être modifié.',
+                null,
+                403
+            );
+        }
+
+        $userId = $request->input('user_id');
+
+        if (!$userId) {
+            return ApiResponse::error('user_id est requis', null, 422);
+        }
+
+        $user = User::find($userId);
+
+        if (!$user) {
+            return ApiResponse::error('Utilisateur introuvable', null, 404);
+        }
+
+        // Spatie: assignRole respecte le guard_name du role via role->guard_name
+        $user->assignRole($role);
+
+        return ApiResponse::success(
+            null,
+            'Utilisateur assigné au rôle avec succès.',
+            201
+        );
+    }
+
+    /**
+     * Retirer un utilisateur d’un rôle (Spatie uniquement).
+     */
+    public function detachUser(string $id, string $userId)
+    {
+        $role = $this->baseQuery()->find($id);
+
+        if (!$role) {
+            return ApiResponse::error('Rôle introuvable', null, 404);
+        }
+
+        if ($this->isSuperAdmin($role)) {
+            return ApiResponse::error(
+                'Le rôle superadmin ne peut pas être modifié.',
+                null,
+                403
+            );
+        }
+
+        $user = User::find($userId);
+
+        if (!$user) {
+            return ApiResponse::error('Utilisateur introuvable', null, 404);
+        }
+
+        $user->removeRole($role);
+
+        return ApiResponse::success(
+            null,
+            'Utilisateur retiré du rôle avec succès.'
+        );
+    }
+
     /**
      * Lister tous les rôles avec leurs permissions et le nombre d'utilisateurs.
      */

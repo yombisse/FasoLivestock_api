@@ -8,10 +8,19 @@ use App\Http\Requests\Farm\UpdateFarmRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Farm;
 use App\Models\User;
+use App\Services\FarmMembershipService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class FarmController extends Controller
 {
+    private FarmMembershipService $farmMembershipService;
+
+    public function __construct(FarmMembershipService $farmMembershipService)
+    {
+        $this->farmMembershipService = $farmMembershipService;
+    }
+
     // =========================================================
     // MÉTHODES PUBLIQUES
     // =========================================================
@@ -89,7 +98,7 @@ class FarmController extends Controller
      */
     public function show(Farm $farm)
     {
-        $this->authorizeAccess($farm);
+        $this->authorize('view', $farm);
 
         $farm->load('owner', 'users')->loadCount('animals', 'users', 'lots');
 
@@ -104,7 +113,7 @@ class FarmController extends Controller
      */
     public function update(UpdateFarmRequest $request, Farm $farm)
     {
-        $this->authorizeAccess($farm, ownerOnly: true);
+        $this->authorize('update', $farm);
 
         $farm->update($request->only(['name', 'location', 'description']));
 
@@ -123,7 +132,7 @@ class FarmController extends Controller
      */
     public function destroy(Farm $farm)
     {
-        $this->authorizeAccess($farm, ownerOnly: true);
+        $this->authorize('delete', $farm);
 
         $farm->delete();
 
@@ -182,7 +191,7 @@ class FarmController extends Controller
      */
     public function manageUsers(Request $request, Farm $farm)
     {
-        $this->authorizeAccess($farm, ownerOnly: true);
+        $this->authorize('manageMembers', $farm);
 
         $request->validate([
             'users'        => 'required|array',
@@ -203,7 +212,7 @@ class FarmController extends Controller
      */
     public function removeUser(Farm $farm, User $user)
     {
-        $this->authorizeAccess($farm, ownerOnly: true);
+        $this->authorize('manageMembers', $farm);
 
         if ($user->id === $farm->owner_id) {
             return ApiResponse::error(
@@ -223,43 +232,12 @@ class FarmController extends Controller
     // =========================================================
 
     /**
-     * Vérifier si l'utilisateur connecté a accès à la ferme.
-     */
-    private function authorizeAccess(Farm $farm, bool $ownerOnly = false): void
-    {
-        $user = auth()->user();
-
-        if ($user->hasRole('superadmin')) return;
-
-        if ($ownerOnly && $farm->owner_id !== $user->id) {
-            abort(403, 'Seul le propriétaire peut effectuer cette action.');
-        }
-
-        if (!$ownerOnly) {
-            $hasAccess = $farm->owner_id === $user->id
-                || $farm->users()->where('user_id', $user->id)->exists();
-
-            if (!$hasAccess) {
-                abort(403, 'Accès refusé à cette ferme.');
-            }
-        }
-    }
-
-    /**
      * Synchroniser les utilisateurs d'une ferme.
      * Exclut toujours le owner pour éviter de l'écraser.
      */
     private function syncFarmUsers(Farm $farm, array $users, string $excludeId): void
     {
-        $syncData = collect($users)
-            ->reject(fn ($u) => $u['id'] === $excludeId)
-            ->mapWithKeys(fn ($u) => [
-                $u['id'] => ['role' => $u['role']]
-            ])
-            ->toArray();
-
-        // syncWithoutDetaching pour ne pas retirer le owner
-        $farm->users()->syncWithoutDetaching($syncData);
+        $this->farmMembershipService->syncMembers($farm, $users, $excludeId);
     }
 
     /**

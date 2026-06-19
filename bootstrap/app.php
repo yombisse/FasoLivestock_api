@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Http\Middleware\CheckPermission;
+use App\Http\Middleware\EnsureEmailIsVerified;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,10 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'permission'   => CheckPermission::class,
-            'farm.context' => \App\Http\Middleware\FarmContextMiddleware::class,
-            'admin.auth'   => \App\Http\Middleware\AdminAuth::class,
-            'guest.admin'  => \App\Http\Middleware\GuestAdmin::class,
+            'permission'       => CheckPermission::class,
+            'farm.context'     => \App\Http\Middleware\FarmContextMiddleware::class,
+            'admin.auth'       => \App\Http\Middleware\AdminAuth::class,
+            'guest.admin'      => \App\Http\Middleware\GuestAdmin::class,
+            'email.verified'   => EnsureEmailIsVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

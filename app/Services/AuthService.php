@@ -30,7 +30,7 @@ class AuthService
             'last_sync_at' => now(),
         ]);
 
-        $user->assignRole('superadmin'); // Par défaut, on assigne le rôle SuperAdmin (à changer en production)
+        $user->assignRole(config('auth.default_register_role', 'user'));
 
         // Eager load roles une seule fois
         $user->load('roles');
@@ -238,6 +238,8 @@ class AuthService
         ]);
 
         $user  = $verification->user;
+        $user->email_verified_at = now();
+        $user->save();
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return [

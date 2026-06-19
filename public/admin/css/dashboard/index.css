@@ -1,0 +1,293 @@
+/* ═══════════════════════════════════════════════════════════
+   FasoLivestock Admin — Dashboard CSS
+═══════════════════════════════════════════════════════ */
+
+/* ─── Welcome ───────────────────────────────────────────── */
+.dashboard-welcome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+    border: 1.5px solid #bbf7d0;
+    border-radius: 1rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.welcome-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.welcome-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--primary, #16a34a);
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.welcome-left h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text, #1e293b);
+    margin: 0;
+}
+
+.welcome-left p {
+    font-size: .78rem;
+    color: var(--text-muted, #64748b);
+    margin: .15rem 0 0;
+    text-transform: capitalize;
+}
+
+/* ─── Stats grid ────────────────────────────────────────── */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ─── Stat card ─────────────────────────────────────────── */
+.stat-card {
+    background: var(--surface, #fff);
+    border: 1.5px solid var(--border, #e2e8f0);
+    border-radius: 1rem;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: transform .2s, box-shadow .2s;
+    cursor: default;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.07);
+}
+
+.stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: .75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+/* Couleurs icônes */
+.stat-card[data-color="green"]  .stat-icon { background: #dcfce7; color: #16a34a; }
+.stat-card[data-color="blue"]   .stat-icon { background: #dbeafe; color: #2563eb; }
+.stat-card[data-color="orange"] .stat-icon { background: #ffedd5; color: #ea580c; }
+.stat-card[data-color="red"]    .stat-icon { background: #fee2e2; color: #dc2626; }
+.stat-card[data-color="purple"] .stat-icon { background: #ede9fe; color: #7c3aed; }
+.stat-card[data-color="teal"]   .stat-icon { background: #ccfbf1; color: #0d9488; }
+.stat-card[data-color="yellow"] .stat-icon { background: #fef9c3; color: #ca8a04; }
+
+/* Bordure gauche colorée */
+.stat-card[data-color="green"]  { border-left: 3px solid #16a34a; }
+.stat-card[data-color="blue"]   { border-left: 3px solid #2563eb; }
+.stat-card[data-color="orange"] { border-left: 3px solid #ea580c; }
+.stat-card[data-color="red"]    { border-left: 3px solid #dc2626; }
+.stat-card[data-color="purple"] { border-left: 3px solid #7c3aed; }
+.stat-card[data-color="teal"]   { border-left: 3px solid #0d9488; }
+.stat-card[data-color="yellow"] { border-left: 3px solid #ca8a04; }
+
+.stat-body { flex: 1; min-width: 0; }
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text, #1e293b);
+    line-height: 1;
+    letter-spacing: -.02em;
+}
+
+.stat-label {
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--text-muted, #94a3b8);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-top: .25rem;
+}
+
+.stat-trend {
+    font-size: .72rem;
+    font-weight: 600;
+    margin-top: .35rem;
+    display: flex;
+    align-items: center;
+    gap: .2rem;
+}
+
+.stat-trend.up      { color: #16a34a; }
+.stat-trend.down    { color: #dc2626; }
+.stat-trend.neutral { color: #94a3b8; }
+
+/* ─── Charts row ────────────────────────────────────────── */
+.charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 900px) {
+    .charts-row { grid-template-columns: 1fr; }
+}
+
+/* ─── Chart card ────────────────────────────────────────── */
+.chart-card {
+    background: var(--surface, #fff);
+    border: 1.5px solid var(--border, #e2e8f0);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.chart-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 1.1rem 1.25rem .75rem;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.chart-card-header h5 {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--text, #1e293b);
+    margin: 0;
+}
+
+.chart-card-header p {
+    font-size: .72rem;
+    color: var(--text-muted, #94a3b8);
+    margin: .15rem 0 0;
+}
+
+.chart-body {
+    padding: 1.25rem;
+    position: relative;
+    height: 240px;
+}
+
+.chart-body canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ─── Chart legend ──────────────────────────────────────── */
+.chart-legend {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: .2rem;
+}
+
+.legend-dot.green  { background: #16a34a; }
+.legend-dot.red    { background: #dc2626; }
+.legend-dot.blue   { background: #2563eb; }
+.legend-dot.orange { background: #ea580c; }
+
+/* ─── Activity card ─────────────────────────────────────── */
+.activity-card {
+    background: var(--surface, #fff);
+    border: 1.5px solid var(--border, #e2e8f0);
+    border-radius: 1rem;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.activity-list {
+    padding: .5rem 0;
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: .85rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background .15s;
+}
+
+.activity-item:last-child { border-bottom: none; }
+.activity-item:hover { background: #f8fafc; }
+
+.activity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary, #16a34a);
+    flex-shrink: 0;
+    margin-top: .4rem;
+}
+
+.activity-content { flex: 1; }
+
+.activity-content strong {
+    font-size: .845rem;
+    color: var(--text, #1e293b);
+    display: block;
+}
+
+.activity-content span {
+    font-size: .75rem;
+    color: var(--text-muted, #94a3b8);
+}
+
+.activity-time {
+    font-size: .7rem;
+    color: var(--text-muted, #94a3b8);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ─── Skeleton loader ───────────────────────────────────── */
+.skeleton { opacity: .6; pointer-events: none; }
+
+.skeleton-line {
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 4px;
+    height: 10px;
+    margin-bottom: .4rem;
+}
+
+.skeleton-line.short { width: 40%; }
+.skeleton-line.long  { width: 75%; }
+.skeleton-line.tiny  { width: 50px; height: 8px; margin: 0; }
+
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ─── Alpine x-cloak ────────────────────────────────────── */
+[x-cloak] { display: none !important; }

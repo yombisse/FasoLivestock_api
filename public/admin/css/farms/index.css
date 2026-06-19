@@ -1,0 +1,390 @@
+/* ═══════════════════════════════════════════════════════════
+   FasoLivestock Admin — Farms Index CSS
+═══════════════════════════════════════════════════════ */
+
+/* ─── Header page ───────────────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-header-left h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+}
+
+.page-header-left p {
+    font-size: .8rem;
+    color: var(--text-muted);
+    margin: .2rem 0 0;
+}
+
+/* ─── Filters bar ───────────────────────────────────────── */
+.filters-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .85rem 1.1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+
+.filters-bar .filter-search {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+}
+
+.filters-bar .filter-search input {
+    width: 100%;
+    padding-left: 2.25rem;
+    border-radius: 20px;
+    font-size: .845rem;
+    border: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.filters-bar .filter-search .search-icon {
+    position: absolute;
+    left: .8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: .85rem;
+    pointer-events: none;
+}
+
+.filters-bar .filter-count {
+    font-size: .78rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+/* ─── Grille fermes ─────────────────────────────────────── */
+.farms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ─── Farm card ─────────────────────────────────────────── */
+.farm-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 1rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+
+.farm-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0,0,0,.08);
+    border-color: var(--primary-light, #86efac);
+}
+
+/* ─── Card header ───────────────────────────────────────── */
+.farm-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: .85rem;
+    padding: 1.1rem 1.1rem .75rem;
+}
+
+.farm-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: .75rem;
+    background: var(--primary-xlight, #dcfce7);
+    color: var(--primary, #16a34a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.farm-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.farm-name {
+    font-weight: 700;
+    font-size: .925rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.farm-location {
+    font-size: .75rem;
+    color: var(--text-muted);
+    margin-top: .2rem;
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+}
+
+.farm-actions-top {
+    display: flex;
+    gap: .3rem;
+    flex-shrink: 0;
+}
+
+/* ─── Description ───────────────────────────────────────── */
+.farm-description {
+    font-size: .78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    padding: 0 1.1rem .85rem;
+}
+
+/* ─── Stats ─────────────────────────────────────────────── */
+.farm-stats {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-top: auto;
+}
+
+.farm-stat {
+    flex: 1;
+    text-align: center;
+    padding: .75rem .5rem;
+}
+
+.farm-stat + .farm-stat {
+    border-left: 1px solid var(--border);
+}
+
+.farm-stat-value {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--primary, #16a34a);
+    line-height: 1;
+}
+
+.farm-stat-label {
+    font-size: .68rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-top: .25rem;
+}
+
+/* ─── Card footer ───────────────────────────────────────── */
+.farm-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .85rem 1.1rem;
+    gap: .5rem;
+}
+
+.farm-owner {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    min-width: 0;
+}
+
+.farm-owner-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary, #16a34a);
+    color: #fff;
+    font-size: .68rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.farm-owner-info {
+    min-width: 0;
+    line-height: 1.2;
+}
+
+.farm-owner-label {
+    font-size: .65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-muted);
+}
+
+.farm-owner-name {
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.farm-date {
+    font-size: .72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ─── Actions buttons ───────────────────────────────────── */
+.btn-icon {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .45rem;
+    font-size: .8rem;
+}
+
+/* ─── Pagination ────────────────────────────────────────── */
+.pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .85rem 0;
+    font-size: .8rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.pagination { margin: 0; gap: .2rem; }
+
+.pagination .page-link {
+    border-radius: var(--radius-sm) !important;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: .8rem;
+    padding: .3rem .65rem;
+    transition: all var(--transition);
+}
+
+.pagination .page-link:hover {
+    background: var(--primary-xlight);
+    border-color: var(--primary-light);
+    color: var(--primary);
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+/* ─── Empty state ───────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: var(--text-muted);
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    opacity: .25;
+    margin-bottom: .75rem;
+}
+
+.empty-state p { font-size: .875rem; margin: 0; }
+
+/* ─── Alpine x-cloak ────────────────────────────────────── */
+[x-cloak] { display: none !important; }
+
+/* ─── Modal confirm ─────────────────────────────────────── */
+.confirm-modal-box {
+    background: var(--surface, #fff);
+    border-radius: 1rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.08);
+    padding: 2rem 1.75rem 1.5rem;
+    text-align: center;
+    border: 1px solid var(--border, #e8e8e8);
+}
+
+.confirm-modal-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.confirm-modal-icon.icon-danger  { background: #FEE2E2; color: #DC2626; }
+.confirm-modal-icon.icon-warning { background: #FEF3C7; color: #D97706; }
+.confirm-modal-icon.icon-success { background: #D1FAE5; color: #059669; }
+
+.confirm-modal-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text, #1e293b);
+    margin: 0 0 .5rem;
+}
+
+.confirm-modal-message {
+    font-size: .845rem;
+    color: var(--text-muted, #64748b);
+    margin: 0 0 1.5rem;
+    line-height: 1.6;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    gap: .75rem;
+    justify-content: center;
+}
+
+.btn-confirm-cancel,
+.btn-confirm-ok {
+    flex: 1;
+    max-width: 160px;
+    padding: .55rem 1rem;
+    border-radius: .5rem;
+    font-size: .845rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all .15s ease;
+}
+
+.btn-confirm-cancel {
+    background: var(--bg, #f1f5f9);
+    color: var(--text-muted, #64748b);
+    border: 1px solid var(--border, #e2e8f0);
+}
+
+.btn-confirm-cancel:hover { background: #e2e8f0; color: var(--text, #1e293b); }
+
+.btn-confirm-ok.ok-danger   { background: #DC2626; color: #fff; }
+.btn-confirm-ok.ok-warning  { background: #D97706; color: #fff; }
+.btn-confirm-ok.ok-success  { background: #059669; color: #fff; }
+
+.btn-confirm-ok.ok-danger:hover  { background: #B91C1C; }
+.btn-confirm-ok.ok-warning:hover { background: #B45309; }
+.btn-confirm-ok.ok-success:hover { background: #047857; }
+
+.btn-confirm-ok:active,
+.btn-confirm-cancel:active { transform: scale(.97); }

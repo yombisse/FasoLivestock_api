@@ -20,6 +20,49 @@ class AuthController extends Controller
         return view('admin.auth.login');
     }
 
+    public function showRegisterForm()
+    {
+        if (session('admin_token')) {
+            return redirect()->route('admin.dashboard');
+        }
+        return view('admin.auth.register');
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name'                  => 'required|string',
+            'email'                 => 'required|email',
+            'password'              => 'required|min:8|confirmed',
+        ]);
+
+        $response = $this->api->register(
+            $request->name,
+            $request->email,
+            $request->password,
+            $request->password_confirmation
+        );
+
+        if (!$response->success) {
+            $message = $response->message ?? 'Erreur lors de l\'inscription.';
+            return back()->with('error', $message)->withInput();
+        }
+
+        $data = $response->data;
+
+        if (isset($data['pending_2fa']) && $data['pending_2fa'] === true) {
+            session([
+                '2fa_verification_id' => $data['verification_id'],
+                '2fa_identifier'     => $data['channel'] === 'email' ? ($data['user']['email'] ?? 'votre email') : 'votre téléphone',
+            ]);
+            session()->save();
+            return redirect()->route('admin.show2fa');
+        }
+
+        return redirect()->route('admin.dashboard')
+            ->with('success', 'Compte créé avec succès !');
+    }
+
     public function login(Request $request)
         {
             $request->validate([
@@ -32,12 +75,12 @@ class AuthController extends Controller
                 $request->password
             );
 
-            if (!$response['success']) {
-                $message = $response['data']['message'] ?? 'Identifiants incorrects.';
+            if (!$response->success) {
+                $message = $response->message ?? 'Identifiants incorrects.';
                 return back()->with('error', $message)->withInput();
             }
 
-            $data = $response['data']['data'];
+            $data = $response->data;
 
             // ─── Plus de 2FA — token direct ───────────────────────
             session([
@@ -69,11 +112,11 @@ class AuthController extends Controller
             $request->code
         );
 
-        if (!$response['success']) {
-            return back()->with('error', $response['data']['message'] ?? 'Code invalide.');
+        if (!$response->success) {
+            return back()->with('error', $response->message ?? 'Code invalide.');
         }
 
-        $data = $response['data']['data'];
+        $data = $response->data;
 
         session([
             'admin_token'            => $data['token'],

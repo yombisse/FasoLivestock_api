@@ -121,4 +121,6 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    'default_register_role' => env('AUTH_DEFAULT_ROLE', 'user'),
+
 ];
