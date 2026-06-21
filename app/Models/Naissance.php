@@ -60,8 +60,7 @@ class Naissance extends Model
 
     public function petits()
     {
-        return $this->hasMany(Animal::class, 'mother_id', 'mother_id')
-                    ->whereDate('date_naissance', $this->date_naissance);
+        return $this->hasMany(Animal::class, 'naissance_id');
     }
 
     public function modificateur()

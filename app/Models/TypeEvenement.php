@@ -15,11 +15,28 @@ class TypeEvenement extends Model
     protected $fillable = [
         'nom_type',
         'description',
+        'farm_id',
+        'sync_status',
+        'last_modified_by',
     ];
 
+    protected $casts = [
+        'sync_status' => 'string',
+    ];
+
+    public function farm()
+    {
+        return $this->belongsTo(Farm::class);
+    }
 
     public function evenements()
     {
         return $this->hasMany(Evenement::class, 'type_evenement_id');
+    }
+
+    public function scopeVisiblePour($query, string $farmId)
+    {
+        return $query->whereNull('farm_id')
+                    ->orWhere('farm_id', $farmId);
     }
 }

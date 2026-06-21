@@ -27,6 +27,7 @@ class Aliment extends Model
         'description',
         'sync_status',
         'last_modified_by',
+        'version',
     ];
 
     protected $casts = [

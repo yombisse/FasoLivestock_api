@@ -72,10 +72,12 @@ class FarmController extends Controller
         $user = auth()->user();
 
         $farm = Farm::create([
-            'name'        => $request->name,
-            'location'    => $request->location,
-            'description' => $request->description,
-            'owner_id'    => $user->id,
+            'name'         => $request->name,
+            'location'     => $request->location,
+            'description'  => $request->description,
+            'type_elevage' => $request->type_elevage,
+            'photo'        => $request->photo,
+            'owner_id'     => $user->id,
         ]);
 
         // Attacher le owner dans farm_user aussi
@@ -115,7 +117,7 @@ class FarmController extends Controller
     {
         $this->authorize('update', $farm);
 
-        $farm->update($request->only(['name', 'location', 'description']));
+        $farm->update($request->only(['name', 'location', 'description', 'type_elevage', 'photo']));
 
         if ($request->has('users')) {
             $this->syncFarmUsers($farm, $request->users, excludeId: $farm->owner_id);
@@ -250,6 +252,8 @@ class FarmController extends Controller
             'name'         => $farm->name,
             'location'     => $farm->location,
             'description'  => $farm->description,
+            'type_elevage' => $farm->type_elevage,
+            'photo'        => $farm->photo,
             'owner'        => $farm->owner ? [
                 'id'   => $farm->owner->id,
                 'name' => $farm->owner->name,

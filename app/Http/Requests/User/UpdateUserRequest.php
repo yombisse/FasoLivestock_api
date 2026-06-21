@@ -33,6 +33,7 @@ class UpdateUserRequest extends FormRequest
                 'max:20',
                 Rule::unique('users', 'telephone')->ignore($userId),
             ],
+            'photo'     => 'sometimes|nullable|string|max:500',
             'password'  => 'sometimes|nullable|string|min:12|confirmed',
             'roles'     => 'sometimes|array|min:1',
             'roles.*'   => 'required|string|exists:roles,name',

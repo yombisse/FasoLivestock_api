@@ -24,6 +24,7 @@ class Ration extends Model
         'observation',
         'sync_status',
         'last_modified_by',
+        'version',
     ];
 
     protected $casts = [

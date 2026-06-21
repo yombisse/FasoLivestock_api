@@ -64,6 +64,7 @@ class UserController extends Controller
             'name'         => $request->name,
             'email'        => $request->email,
             'telephone'    => $request->telephone,
+            'photo'        => $request->photo,
             'password'     => Hash::make($request->password),
             'is_active'    => true,
             'last_sync_at' => now(),
@@ -98,7 +99,7 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
 
-        $data = $request->only(['name', 'email', 'telephone', 'is_active']);
+        $data = $request->only(['name', 'email', 'telephone', 'photo', 'is_active']);
 
         if ($request->has('password')) {
             $data['password'] = Hash::make($request->password);
@@ -223,6 +224,7 @@ class UserController extends Controller
             'name'         => $user->name,
             'email'        => $user->email,
             'telephone'    => $user->telephone,
+            'photo'        => $user->photo,
             'is_active'    => $user->is_active,
 
             'roles' => $roles->map(fn ($r) => [

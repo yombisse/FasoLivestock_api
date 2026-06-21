@@ -22,4 +22,9 @@ class Espece extends Model
     {
         return $this->hasMany(Animal::class);
     }
+
+    public function parametre()
+    {
+        return $this->hasOne(EspeceParametre::class);
+    }
 }

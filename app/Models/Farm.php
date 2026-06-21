@@ -16,6 +16,8 @@ class Farm extends Model
         'name',
         'location',
         'description',
+        'type_elevage',
+        'photo',
         'owner_id',
     ];
 

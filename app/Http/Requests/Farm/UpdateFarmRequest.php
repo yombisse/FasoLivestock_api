@@ -16,12 +16,14 @@ class UpdateFarmRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => 'sometimes|string|max:255',
-            'location'    => 'sometimes|nullable|string|max:255',
-            'description' => 'sometimes|nullable|string',
-            'users'       => 'sometimes|nullable|array',
-            'users.*.id'  => 'required|uuid|exists:users,id',
-            'users.*.role'=> 'required|string|in:owner,manager,vet,worker',
+            'name'         => 'sometimes|string|max:255',
+            'location'     => 'sometimes|nullable|string|max:255',
+            'description'  => 'sometimes|nullable|string',
+            'type_elevage' => 'sometimes|nullable|in:bovin,ovin,caprin,porcin,volaille,cunicole,autre',
+            'photo'        => 'sometimes|nullable|string|max:500',
+            'users'        => 'sometimes|nullable|array',
+            'users.*.id'   => 'required|uuid|exists:users,id',
+            'users.*.role' => 'required|string|in:owner,manager,vet,worker',
         ];
     }
 
