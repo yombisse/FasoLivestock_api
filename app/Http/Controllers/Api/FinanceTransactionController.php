@@ -7,16 +7,16 @@ use App\Http\Requests\Finance\StoreTransactionRequest;
 use App\Http\Requests\Finance\UpdateTransactionRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Transaction;
-use App\Services\Admin\FinanceTransactionApiService;
+use App\Services\FinanceTransactionService;
 use Illuminate\Http\Request;
 
 class FinanceTransactionController extends Controller
 {
-    private FinanceTransactionApiService $financeTransactionApiService;
+    private FinanceTransactionService $financeTransactionService;
 
-    public function __construct(FinanceTransactionApiService $financeTransactionApiService)
+    public function __construct(FinanceTransactionService $financeTransactionService)
     {
-        $this->financeTransactionApiService = $financeTransactionApiService;
+        $this->financeTransactionService = $financeTransactionService;
     }
 
     // =========================================================
@@ -38,10 +38,10 @@ class FinanceTransactionController extends Controller
             'charges' => $request->charges,
         ];
 
-        $transactions = $this->financeTransactionApiService->index($filters, $request->per_page ?? 15);
+        $transactions = $this->financeTransactionService->index($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'transactions' => $transactions->map(fn ($transaction) => $this->financeTransactionApiService->formatTransaction($transaction)),
+            'transactions' => $transactions->map(fn ($transaction) => $this->financeTransactionService->formatTransaction($transaction)),
             'meta'  => [
                 'total'        => $transactions->total(),
                 'per_page'     => $transactions->perPage(),
@@ -62,10 +62,10 @@ class FinanceTransactionController extends Controller
         $data = $request->validated();
 
         try {
-            $transaction = $this->financeTransactionApiService->store($data, $userId);
+            $transaction = $this->financeTransactionService->store($data, $userId);
 
             return ApiResponse::success(
-                $this->financeTransactionApiService->formatTransaction($transaction->load(['farm', 'user', 'animal', 'categorie', 'evenement'])),
+                $this->financeTransactionService->formatTransaction($transaction->load(['farm', 'user', 'animal', 'categorie', 'evenement'])),
                 'Transaction créée avec succès.',
                 201
             );
@@ -84,7 +84,7 @@ class FinanceTransactionController extends Controller
         $transaction->load(['farm', 'user', 'animal', 'categorie', 'evenement']);
 
         return ApiResponse::success(
-            $this->financeTransactionApiService->formatTransaction($transaction),
+            $this->financeTransactionService->formatTransaction($transaction),
             'Transaction récupérée avec succès.'
         );
     }
@@ -100,10 +100,10 @@ class FinanceTransactionController extends Controller
         $data = $request->validated();
 
         try {
-            $transaction = $this->financeTransactionApiService->update($transaction, $data, $userId);
+            $transaction = $this->financeTransactionService->update($transaction, $data, $userId);
 
             return ApiResponse::success(
-                $this->financeTransactionApiService->formatTransaction($transaction->load(['farm', 'user', 'animal', 'categorie', 'evenement'])),
+                $this->financeTransactionService->formatTransaction($transaction->load(['farm', 'user', 'animal', 'categorie', 'evenement'])),
                 'Transaction mise à jour avec succès.'
             );
         } catch (\Exception $e) {
@@ -118,7 +118,7 @@ class FinanceTransactionController extends Controller
     {
         $this->authorize('delete', $transaction);
 
-        $this->financeTransactionApiService->destroy($transaction);
+        $this->financeTransactionService->destroy($transaction);
 
         return ApiResponse::success(null, 'Transaction archivée avec succès.');
     }
@@ -134,10 +134,10 @@ class FinanceTransactionController extends Controller
             'categorie_id' => $request->categorie_id,
         ];
 
-        $transactions = $this->financeTransactionApiService->trashed($filters, $request->per_page ?? 15);
+        $transactions = $this->financeTransactionService->trashed($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'transactions' => $transactions->map(fn ($transaction) => $this->financeTransactionApiService->formatTransaction($transaction)),
+            'transactions' => $transactions->map(fn ($transaction) => $this->financeTransactionService->formatTransaction($transaction)),
             'meta'  => [
                 'total'        => $transactions->total(),
                 'per_page'     => $transactions->perPage(),
@@ -154,10 +154,10 @@ class FinanceTransactionController extends Controller
     {
         $this->authorize('restore', Transaction::class);
 
-        $transaction = $this->financeTransactionApiService->restore($id);
+        $transaction = $this->financeTransactionService->restore($id);
 
         return ApiResponse::success(
-            $this->financeTransactionApiService->formatTransaction($transaction->load(['farm', 'user', 'animal', 'categorie', 'evenement'])),
+            $this->financeTransactionService->formatTransaction($transaction->load(['farm', 'user', 'animal', 'categorie', 'evenement'])),
             'Transaction restaurée avec succès.'
         );
     }

@@ -6,16 +6,23 @@ use App\Models\User;
 use App\Models\PasswordResetToken;
 use App\Models\TwoFactorVerification;
 use App\Mail\TwoFactorEmailVerification;
+use App\Mail\PasswordResetEmail;
 use App\Exceptions\AuthenticationException;
 use App\Exceptions\InvalidTokenException;
 use App\Exceptions\UserNotFoundException;
 use App\Helpers\AuthLogger;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class AuthService
 {
+    /**
+     * Durée de validité du token de réinitialisation de mot de passe (en minutes)
+     */
+    private const PASSWORD_RESET_EXPIRY_MINUTES = 60;
+
     /**
      * Inscription utilisateur
      */
@@ -100,9 +107,12 @@ class AuthService
             ->orWhere('telephone', $data['login'])
             ->first();
 
+        // Message générique pour éviter de révéler quels emails sont enregistrés
+        $message = 'Si un compte existe avec cet email, un lien a été envoyé.';
+
         if (!$user) {
             AuthLogger::passwordResetRequestUserNotFound($data['login']);
-            throw new UserNotFoundException('Utilisateur introuvable.');
+            return ['message' => $message];
         }
 
         $token = Str::random(64);
@@ -112,7 +122,7 @@ class AuthService
             ['user_id' => $user->id],
             [
                 'token'      => Hash::make($token),
-                'expires_at' => now()->addMinutes(60),
+                'expires_at' => now()->addMinutes(self::PASSWORD_RESET_EXPIRY_MINUTES),
                 'used'       => false,
                 'used_at'    => null,
             ]
@@ -120,14 +130,21 @@ class AuthService
 
         AuthLogger::passwordResetTokenGenerated($user->id, $user->email);
 
-        /**
-         * TODO: envoyer le token par email / SMS
-         */
+        // Envoyer le token par email
+        try {
+            Mail::to($user->email)->send(
+                new PasswordResetEmail($token, $user->email, self::PASSWORD_RESET_EXPIRY_MINUTES)
+            );
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'envoi de l\'email de réinitialisation de mot de passe', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+            // Ne pas planter la requête, continuer avec le message générique
+        }
 
-        return [
-            'reset_token' => $token,
-            'message'     => 'Un email de réinitialisation a été envoyé.',
-        ];
+        return ['message' => $message];
     }
 
     /**

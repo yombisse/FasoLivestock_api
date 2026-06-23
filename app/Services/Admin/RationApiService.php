@@ -2,460 +2,77 @@
 
 namespace App\Services\Admin;
 
-use App\Models\Ration;
-use App\Models\Aliment;
-use App\Models\Animal;
-use App\Models\Lot;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
+use App\DTOs\ApiResult;
 
-class RationApiService
+class RationApiService extends AdminApiService
 {
-    /**
-     * Lister les rations avec pagination et filtres.
-     */
-    public function index(array $filters, int $perPage = 15): LengthAwarePaginator
+    public function getAll(array $params = []): ApiResult
     {
-        $query = Ration::query()
-            ->with(['farm', 'aliment', 'animal', 'lot'])
-            ->when(isset($filters['aliment_id']), fn ($q) =>
-                $q->where('aliment_id', $filters['aliment_id'])
-            )
-            ->when(isset($filters['animal_id']), fn ($q) =>
-                $q->where('animal_id', $filters['animal_id'])
-            )
-            ->when(isset($filters['lot_id']), fn ($q) =>
-                $q->where('lot_id', $filters['lot_id'])
-            )
-            ->when(isset($filters['date_debut']) && isset($filters['date_fin']), fn ($q) =>
-                $q->whereBetween('date_distribution', [$filters['date_debut'], $filters['date_fin']])
-            )
-            ->orderBy('date_distribution', 'desc')
-            ->orderBy('heure_distribution', 'desc');
-
-        return $query->paginate($perPage);
+        return $this->get('/alimentation/rations', $params);
     }
 
-    /**
-     * Créer une ration avec gestion offline-first et validation du stock.
-     */
-    public function store(array $data, string $userId): Ration
+    public function find(string $id): ApiResult
     {
-        return DB::transaction(function () use ($data, $userId) {
-            // Vérification de conflit offline-first
-            if (isset($data['version'])) {
-                unset($data['version']);
-            }
-
-            $data['sync_status'] = 'synced';
-            $data['last_modified_by'] = $userId;
-            $data['version'] = 1;
-
-            // Utiliser la ferme courante du contexte si non fournie
-            if (!isset($data['farm_id'])) {
-                $data['farm_id'] = session('current_farm_id');
-            }
-
-            // Vérifier le stock disponible
-            $aliment = Aliment::findOrFail($data['aliment_id']);
-            if ($aliment->stock_actuel < $data['quantite']) {
-                throw new \Exception('Stock insuffisant. Stock disponible: ' . $aliment->stock_actuel . ' ' . $aliment->unite);
-            }
-
-            $ration = Ration::create($data);
-
-            // La déduction du stock est automatique via l'observer dans le modèle Ration
-
-            return $ration->fresh();
-        });
+        return $this->get("/alimentation/rations/{$id}");
     }
 
-    /**
-     * Mettre à jour une ration avec gestion offline-first.
-     */
-    public function update(Ration $ration, array $data, string $userId): Ration
+    public function create(array $data): ApiResult
     {
-        return DB::transaction(function () use ($ration, $data, $userId) {
-            // Vérification de conflit offline-first
-            if (isset($data['version'])) {
-                if ($data['version'] !== $ration->version) {
-                    // Conflit détecté
-                    $ration->update([
-                        'sync_status' => 'conflict',
-                    ]);
-                    throw new \Exception('Conflit de version détecté. Veuillez synchroniser vos données.');
-                }
-            }
-
-            $data['sync_status'] = 'synced';
-            $data['last_modified_by'] = $userId;
-            $data['version'] = ($ration->version ?? 1) + 1;
-
-            // Si la quantité change, ajuster le stock
-            if (isset($data['quantite']) && $data['quantite'] !== $ration->quantite) {
-                $difference = $data['quantite'] - $ration->quantite;
-                $aliment = $ration->aliment;
-
-                if ($difference > 0) {
-                    // Ajout de quantité : vérifier le stock
-                    if ($aliment->stock_actuel < $difference) {
-                        throw new \Exception('Stock insuffisant. Stock disponible: ' . $aliment->stock_actuel . ' ' . $aliment->unite);
-                    }
-                    $aliment->deduireStock($difference);
-                } elseif ($difference < 0) {
-                    // Réduction de quantité : remettre en stock
-                    $aliment->approvisionner(abs($difference));
-                }
-            }
-
-            $ration->update($data);
-
-            return $ration->fresh();
-        });
+        return $this->post('/alimentation/rations', $data);
     }
 
-    /**
-     * Supprimer (soft delete) une ration.
-     */
-    public function destroy(Ration $ration): bool
+    public function update(string $id, array $data): ApiResult
     {
-        $ration->update([
-            'sync_status' => 'synced',
-            'version' => ($ration->version ?? 1) + 1,
-        ]);
-
-        return $ration->delete();
+        return $this->put("/alimentation/rations/{$id}", $data);
     }
 
-    /**
-     * Restaurer une ration archivée.
-     */
-    public function restore(string $id): Ration
+    public function delete(string $id): ApiResult
     {
-        $ration = Ration::onlyTrashed()->findOrFail($id);
-        $ration->restore();
-
-        return $ration->fresh();
+        return $this->delete("/alimentation/rations/{$id}");
     }
 
-    /**
-     * Lister les rations archivées.
-     */
-    public function trashed(array $filters, int $perPage = 15): LengthAwarePaginator
+    public function trashed(array $params = []): ApiResult
     {
-        $query = Ration::onlyTrashed()
-            ->with(['farm', 'aliment', 'animal', 'lot'])
-            ->when(isset($filters['aliment_id']), fn ($q) =>
-                $q->where('aliment_id', $filters['aliment_id'])
-            )
-            ->when(isset($filters['animal_id']), fn ($q) =>
-                $q->where('animal_id', $filters['animal_id'])
-            )
-            ->when(isset($filters['lot_id']), fn ($q) =>
-                $q->where('lot_id', $filters['lot_id'])
-            )
-            ->orderBy('deleted_at', 'desc');
-
-        return $query->paginate($perPage);
+        return $this->get('/alimentation/rations/trashed', $params);
     }
 
-    /**
-     * Distribuer une ration à un lot.
-     */
-    public function distribuerLot(array $data, string $userId): array
+    public function restore(string $id): ApiResult
     {
-        return DB::transaction(function () use ($data, $userId) {
-            $lot = Lot::findOrFail($data['lot_id']);
-            $aliment = Aliment::findOrFail($data['aliment_id']);
-
-            // Calculer la quantité totale requise
-            $quantiteParAnimal = $data['quantite_par_animal'];
-            $nombreAnimaux = $lot->nombre ?? $lot->animals()->count();
-            $quantiteTotale = $quantiteParAnimal * $nombreAnimaux;
-
-            // Vérifier le stock disponible
-            if ($aliment->stock_actuel < $quantiteTotale) {
-                throw new \Exception('Stock insuffisant. Stock disponible: ' . $aliment->stock_actuel . ' ' . $aliment->unite . ', requis: ' . $quantiteTotale);
-            }
-
-            // Créer une ration pour le lot
-            $ration = Ration::create([
-                'farm_id' => $lot->farm_id,
-                'aliment_id' => $data['aliment_id'],
-                'lot_id' => $data['lot_id'],
-                'quantite' => $quantiteTotale,
-                'date_distribution' => $data['date_distribution'] ?? now(),
-                'heure_distribution' => $data['heure_distribution'] ?? now(),
-                'observation' => $data['observation'] ?? null,
-                'sync_status' => 'synced',
-                'last_modified_by' => $userId,
-                'version' => 1,
-            ]);
-
-            return [
-                'ration' => $ration->fresh(),
-                'nombre_animaux' => $nombreAnimaux,
-                'quantite_par_animal' => $quantiteParAnimal,
-                'quantite_totale' => $quantiteTotale,
-            ];
-        });
+        return $this->post("/alimentation/rations/{$id}/restore");
     }
 
-    /**
-     * Distribuer une ration à plusieurs animaux.
-     */
-    public function distribuerAnimaux(array $data, string $userId): array
+    public function distribuerLot(array $data): ApiResult
     {
-        return DB::transaction(function () use ($data, $userId) {
-            $aliment = Aliment::findOrFail($data['aliment_id']);
-            $animalIds = $data['animal_ids'];
-            $quantiteParAnimal = $data['quantite_par_animal'];
-            $quantiteTotale = $quantiteParAnimal * count($animalIds);
-
-            // Vérifier le stock disponible
-            if ($aliment->stock_actuel < $quantiteTotale) {
-                throw new \Exception('Stock insuffisant. Stock disponible: ' . $aliment->stock_actuel . ' ' . $aliment->unite . ', requis: ' . $quantiteTotale);
-            }
-
-            // Créer une ration pour chaque animal
-            $rations = [];
-            foreach ($animalIds as $animalId) {
-                $animal = Animal::findOrFail($animalId);
-                $ration = Ration::create([
-                    'farm_id' => $animal->farm_id,
-                    'aliment_id' => $data['aliment_id'],
-                    'animal_id' => $animalId,
-                    'quantite' => $quantiteParAnimal,
-                    'date_distribution' => $data['date_distribution'] ?? now(),
-                    'heure_distribution' => $data['heure_distribution'] ?? now(),
-                    'observation' => $data['observation'] ?? null,
-                    'sync_status' => 'synced',
-                    'last_modified_by' => $userId,
-                    'version' => 1,
-                ]);
-                $rations[] = $ration->fresh();
-            }
-
-            return [
-                'rations' => $rations,
-                'nombre_animaux' => count($animalIds),
-                'quantite_par_animal' => $quantiteParAnimal,
-                'quantite_totale' => $quantiteTotale,
-            ];
-        });
+        return $this->post('/alimentation/rations/distribuer-lot', $data);
     }
 
-    /**
-     * Obtenir l'historique alimentaire d'un animal.
-     */
-    public function historiqueAnimal(string $animalId, ?string $dateDebut = null, ?string $dateFin = null): array
+    public function distribuerAnimaux(array $data): ApiResult
     {
-        $query = Ration::where('animal_id', $animalId)
-            ->with(['aliment', 'farm'])
-            ->orderBy('date_distribution', 'desc')
-            ->orderBy('heure_distribution', 'desc');
-
-        if ($dateDebut && $dateFin) {
-            $query->whereBetween('date_distribution', [$dateDebut, $dateFin]);
-        }
-
-        $rations = $query->get();
-
-        return [
-            'animal_id' => $animalId,
-            'rations' => $rations->map(fn ($ration) => [
-                'id' => $ration->id,
-                'aliment' => [
-                    'id' => $ration->aliment->id,
-                    'nom' => $ration->aliment->nom,
-                    'unite' => $ration->aliment->unite,
-                ],
-                'quantite' => $ration->quantite,
-                'date_distribution' => $ration->date_distribution,
-                'heure_distribution' => $ration->heure_distribution,
-                'cout_total' => $ration->cout_total,
-                'observation' => $ration->observation,
-            ]),
-            'total_quantite' => $rations->sum('quantite'),
-            'total_cout' => $rations->sum(fn ($r) => $r->cout_total),
-        ];
+        return $this->post('/alimentation/rations/distribuer-animaux', $data);
     }
 
-    /**
-     * Obtenir l'historique alimentaire d'un lot.
-     */
-    public function historiqueLot(string $lotId, ?string $dateDebut = null, ?string $dateFin = null): array
+    public function historiqueAnimal(string $animalId): ApiResult
     {
-        $query = Ration::where('lot_id', $lotId)
-            ->with(['aliment', 'farm'])
-            ->orderBy('date_distribution', 'desc')
-            ->orderBy('heure_distribution', 'desc');
-
-        if ($dateDebut && $dateFin) {
-            $query->whereBetween('date_distribution', [$dateDebut, $dateFin]);
-        }
-
-        $rations = $query->get();
-
-        return [
-            'lot_id' => $lotId,
-            'rations' => $rations->map(fn ($ration) => [
-                'id' => $ration->id,
-                'aliment' => [
-                    'id' => $ration->aliment->id,
-                    'nom' => $ration->aliment->nom,
-                    'unite' => $ration->aliment->unite,
-                ],
-                'quantite' => $ration->quantite,
-                'date_distribution' => $ration->date_distribution,
-                'heure_distribution' => $ration->heure_distribution,
-                'cout_total' => $ration->cout_total,
-                'observation' => $ration->observation,
-            ]),
-            'total_quantite' => $rations->sum('quantite'),
-            'total_cout' => $rations->sum(fn ($r) => $r->cout_total),
-        ];
+        return $this->get("/alimentation/animals/{$animalId}/historique-alimentaire");
     }
 
-    /**
-     * Obtenir la consommation totale d'un animal.
-     */
-    public function consommationAnimal(string $animalId, ?string $dateDebut = null, ?string $dateFin = null): array
+    public function historiqueLot(string $lotId): ApiResult
     {
-        $query = Ration::where('animal_id', $animalId);
-
-        if ($dateDebut && $dateFin) {
-            $query->whereBetween('date_distribution', [$dateDebut, $dateFin]);
-        }
-
-        $rations = $query->get();
-
-        $consommationParAliment = $rations->groupBy('aliment_id')
-            ->map(fn ($group) => [
-                'aliment_id' => $group->first()->aliment_id,
-                'aliment_nom' => $group->first()->aliment->nom,
-                'unite' => $group->first()->aliment->unite,
-                'total_quantite' => $group->sum('quantite'),
-                'total_cout' => $group->sum(fn ($r) => $r->cout_total),
-                'nombre_distributions' => $group->count(),
-            ])
-            ->values();
-
-        return [
-            'animal_id' => $animalId,
-            'consommation_par_aliment' => $consommationParAliment,
-            'total_quantite' => $rations->sum('quantite'),
-            'total_cout' => $rations->sum(fn ($r) => $r->cout_total),
-        ];
+        return $this->get("/alimentation/lots/{$lotId}/historique-alimentaire");
     }
 
-    /**
-     * Obtenir la consommation totale d'un lot.
-     */
-    public function consommationLot(string $lotId, ?string $dateDebut = null, ?string $dateFin = null): array
+    public function consommationAnimal(string $animalId): ApiResult
     {
-        $query = Ration::where('lot_id', $lotId);
-
-        if ($dateDebut && $dateFin) {
-            $query->whereBetween('date_distribution', [$dateDebut, $dateFin]);
-        }
-
-        $rations = $query->get();
-
-        $consommationParAliment = $rations->groupBy('aliment_id')
-            ->map(fn ($group) => [
-                'aliment_id' => $group->first()->aliment_id,
-                'aliment_nom' => $group->first()->aliment->nom,
-                'unite' => $group->first()->aliment->unite,
-                'total_quantite' => $group->sum('quantite'),
-                'total_cout' => $group->sum(fn ($r) => $r->cout_total),
-                'nombre_distributions' => $group->count(),
-            ])
-            ->values();
-
-        return [
-            'lot_id' => $lotId,
-            'consommation_par_aliment' => $consommationParAliment,
-            'total_quantite' => $rations->sum('quantite'),
-            'total_cout' => $rations->sum(fn ($r) => $r->cout_total),
-        ];
+        return $this->get("/alimentation/animals/{$animalId}/consommation");
     }
 
-    /**
-     * Obtenir les statistiques globales d'alimentation pour une ferme.
-     */
-    public function statistiquesGlobales(string $farmId, ?string $dateDebut = null, ?string $dateFin = null): array
+    public function consommationLot(string $lotId): ApiResult
     {
-        $query = Ration::where('farm_id', $farmId);
-
-        if ($dateDebut && $dateFin) {
-            $query->whereBetween('date_distribution', [$dateDebut, $dateFin]);
-        }
-
-        $rations = $query->get();
-
-        $statistiquesParAliment = $rations->groupBy('aliment_id')
-            ->map(fn ($group) => [
-                'aliment_id' => $group->first()->aliment_id,
-                'aliment_nom' => $group->first()->aliment->nom,
-                'unite' => $group->first()->aliment->unite,
-                'total_quantite' => $group->sum('quantite'),
-                'total_cout' => $group->sum(fn ($r) => $r->cout_total),
-                'nombre_distributions' => $group->count(),
-            ])
-            ->values();
-
-        return [
-            'farm_id' => $farmId,
-            'statistiques_par_aliment' => $statistiquesParAliment,
-            'total_quantite' => $rations->sum('quantite'),
-            'total_cout' => $rations->sum(fn ($r) => $r->cout_total),
-            'nombre_distributions' => $rations->count(),
-        ];
+        return $this->get("/alimentation/lots/{$lotId}/consommation");
     }
 
-    /**
-     * Formater une ration pour la réponse API.
-     */
-    public function formatRation(Ration $ration): array
+    public function statistiquesGlobales(array $params = []): ApiResult
     {
-        return [
-            'id' => $ration->id,
-            'farm_id' => $ration->farm_id,
-            'aliment_id' => $ration->aliment_id,
-            'animal_id' => $ration->animal_id,
-            'lot_id' => $ration->lot_id,
-            'quantite' => $ration->quantite,
-            'date_distribution' => $ration->date_distribution,
-            'heure_distribution' => $ration->heure_distribution,
-            'observation' => $ration->observation,
-            'sync_status' => $ration->sync_status,
-            'version' => $ration->version,
-            'deleted_at' => $ration->deleted_at,
-            'created_at' => $ration->created_at,
-            'updated_at' => $ration->updated_at,
-            // Relations
-            'farm' => $ration->farm ? [
-                'id' => $ration->farm->id,
-                'name' => $ration->farm->name,
-            ] : null,
-            'aliment' => $ration->aliment ? [
-                'id' => $ration->aliment->id,
-                'nom' => $ration->aliment->nom,
-                'unite' => $ration->aliment->unite,
-                'prix_unitaire' => $ration->aliment->prix_unitaire,
-            ] : null,
-            'animal' => $ration->animal ? [
-                'id' => $ration->animal->id,
-                'nom' => $ration->animal->nom,
-                'sexe' => $ration->animal->sexe,
-            ] : null,
-            'lot' => $ration->lot ? [
-                'id' => $ration->lot->id,
-                'nom_lot' => $ration->lot->nom_lot,
-            ] : null,
-            'est_pour_lot' => $ration->est_pour_lot,
-            'cout_total' => $ration->cout_total,
-        ];
+        return $this->get('/alimentation/statistiques-globales', $params);
     }
 }

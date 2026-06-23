@@ -7,16 +7,16 @@ use App\Http\Requests\Alimentation\StoreRationRequest;
 use App\Http\Requests\Alimentation\UpdateRationRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Ration;
-use App\Services\Admin\RationApiService;
+use App\Services\RationService;
 use Illuminate\Http\Request;
 
 class RationController extends Controller
 {
-    private RationApiService $rationApiService;
+    private RationService $rationService;
 
-    public function __construct(RationApiService $rationApiService)
+    public function __construct(RationService $rationService)
     {
-        $this->rationApiService = $rationApiService;
+        $this->rationService = $rationService;
     }
 
     // =========================================================
@@ -36,10 +36,10 @@ class RationController extends Controller
             'date_fin' => $request->date_fin,
         ];
 
-        $rations = $this->rationApiService->index($filters, $request->per_page ?? 15);
+        $rations = $this->rationService->index($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'rations' => $rations->map(fn ($ration) => $this->rationApiService->formatRation($ration)),
+            'rations' => $rations->map(fn ($ration) => $this->rationService->formatRation($ration)),
             'meta'  => [
                 'total'        => $rations->total(),
                 'per_page'     => $rations->perPage(),
@@ -60,10 +60,10 @@ class RationController extends Controller
         $data = $request->validated();
 
         try {
-            $ration = $this->rationApiService->store($data, $userId);
+            $ration = $this->rationService->store($data, $userId);
 
             return ApiResponse::success(
-                $this->rationApiService->formatRation($ration->load(['farm', 'aliment', 'animal', 'lot'])),
+                $this->rationService->formatRation($ration->load(['farm', 'aliment', 'animal', 'lot'])),
                 'Ration créée avec succès.',
                 201
             );
@@ -82,7 +82,7 @@ class RationController extends Controller
         $ration->load(['farm', 'aliment', 'animal', 'lot']);
 
         return ApiResponse::success(
-            $this->rationApiService->formatRation($ration),
+            $this->rationService->formatRation($ration),
             'Ration récupérée avec succès.'
         );
     }
@@ -98,10 +98,10 @@ class RationController extends Controller
         $data = $request->validated();
 
         try {
-            $ration = $this->rationApiService->update($ration, $data, $userId);
+            $ration = $this->rationService->update($ration, $data, $userId);
 
             return ApiResponse::success(
-                $this->rationApiService->formatRation($ration->load(['farm', 'aliment', 'animal', 'lot'])),
+                $this->rationService->formatRation($ration->load(['farm', 'aliment', 'animal', 'lot'])),
                 'Ration mise à jour avec succès.'
             );
         } catch (\Exception $e) {
@@ -116,7 +116,7 @@ class RationController extends Controller
     {
         $this->authorize('delete', $ration);
 
-        $this->rationApiService->destroy($ration);
+        $this->rationService->destroy($ration);
 
         return ApiResponse::success(null, 'Ration archivée avec succès.');
     }
@@ -132,10 +132,10 @@ class RationController extends Controller
             'lot_id' => $request->lot_id,
         ];
 
-        $rations = $this->rationApiService->trashed($filters, $request->per_page ?? 15);
+        $rations = $this->rationService->trashed($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'rations' => $rations->map(fn ($ration) => $this->rationApiService->formatRation($ration)),
+            'rations' => $rations->map(fn ($ration) => $this->rationService->formatRation($ration)),
             'meta'  => [
                 'total'        => $rations->total(),
                 'per_page'     => $rations->perPage(),
@@ -152,10 +152,10 @@ class RationController extends Controller
     {
         $this->authorize('restore', Ration::class);
 
-        $ration = $this->rationApiService->restore($id);
+        $ration = $this->rationService->restore($id);
 
         return ApiResponse::success(
-            $this->rationApiService->formatRation($ration->load(['farm', 'aliment', 'animal', 'lot'])),
+            $this->rationService->formatRation($ration->load(['farm', 'aliment', 'animal', 'lot'])),
             'Ration restaurée avec succès.'
         );
     }
@@ -180,10 +180,10 @@ class RationController extends Controller
         $data = $request->only(['lot_id', 'aliment_id', 'quantite_par_animal', 'date_distribution', 'heure_distribution', 'observation']);
 
         try {
-            $result = $this->rationApiService->distribuerLot($data, $userId);
+            $result = $this->rationService->distribuerLot($data, $userId);
 
             return ApiResponse::success([
-                'ration' => $this->rationApiService->formatRation($result['ration']->load(['farm', 'aliment', 'lot'])),
+                'ration' => $this->rationService->formatRation($result['ration']->load(['farm', 'aliment', 'lot'])),
                 'nombre_animaux' => $result['nombre_animaux'],
                 'quantite_par_animal' => $result['quantite_par_animal'],
                 'quantite_totale' => $result['quantite_totale'],
@@ -214,10 +214,10 @@ class RationController extends Controller
         $data = $request->only(['animal_ids', 'aliment_id', 'quantite_par_animal', 'date_distribution', 'heure_distribution', 'observation']);
 
         try {
-            $result = $this->rationApiService->distribuerAnimaux($data, $userId);
+            $result = $this->rationService->distribuerAnimaux($data, $userId);
 
             return ApiResponse::success([
-                'rations' => collect($result['rations'])->map(fn ($ration) => $this->rationApiService->formatRation($ration->load(['farm', 'aliment', 'animal']))),
+                'rations' => collect($result['rations'])->map(fn ($ration) => $this->rationService->formatRation($ration->load(['farm', 'aliment', 'animal']))),
                 'nombre_animaux' => $result['nombre_animaux'],
                 'quantite_par_animal' => $result['quantite_par_animal'],
                 'quantite_totale' => $result['quantite_totale'],
@@ -237,7 +237,7 @@ class RationController extends Controller
         $dateDebut = $request->date_debut;
         $dateFin = $request->date_fin;
 
-        $historique = $this->rationApiService->historiqueAnimal($animalId, $dateDebut, $dateFin);
+        $historique = $this->rationService->historiqueAnimal($animalId, $dateDebut, $dateFin);
 
         return ApiResponse::success($historique, 'Historique alimentaire de l\'animal récupéré avec succès.');
     }
@@ -252,7 +252,7 @@ class RationController extends Controller
         $dateDebut = $request->date_debut;
         $dateFin = $request->date_fin;
 
-        $historique = $this->rationApiService->historiqueLot($lotId, $dateDebut, $dateFin);
+        $historique = $this->rationService->historiqueLot($lotId, $dateDebut, $dateFin);
 
         return ApiResponse::success($historique, 'Historique alimentaire du lot récupéré avec succès.');
     }
@@ -267,7 +267,7 @@ class RationController extends Controller
         $dateDebut = $request->date_debut;
         $dateFin = $request->date_fin;
 
-        $consommation = $this->rationApiService->consommationAnimal($animalId, $dateDebut, $dateFin);
+        $consommation = $this->rationService->consommationAnimal($animalId, $dateDebut, $dateFin);
 
         return ApiResponse::success($consommation, 'Consommation de l\'animal récupérée avec succès.');
     }
@@ -282,7 +282,7 @@ class RationController extends Controller
         $dateDebut = $request->date_debut;
         $dateFin = $request->date_fin;
 
-        $consommation = $this->rationApiService->consommationLot($lotId, $dateDebut, $dateFin);
+        $consommation = $this->rationService->consommationLot($lotId, $dateDebut, $dateFin);
 
         return ApiResponse::success($consommation, 'Consommation du lot récupérée avec succès.');
     }
@@ -303,7 +303,7 @@ class RationController extends Controller
         $dateDebut = $request->date_debut;
         $dateFin = $request->date_fin;
 
-        $statistiques = $this->rationApiService->statistiquesGlobales($farmId, $dateDebut, $dateFin);
+        $statistiques = $this->rationService->statistiquesGlobales($farmId, $dateDebut, $dateFin);
 
         return ApiResponse::success($statistiques, 'Statistiques globales d\'alimentation récupérées avec succès.');
     }

@@ -8,16 +8,16 @@ use App\Http\Requests\Lot\UpdateLotRequest;
 use App\Http\Requests\Lot\AssignAnimalsToLotRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Lot;
-use App\Services\Admin\LotApiService;
+use App\Services\LotService;
 use Illuminate\Http\Request;
 
 class LotController extends Controller
 {
-    private LotApiService $lotApiService;
+    private LotService $lotService;
 
-    public function __construct(LotApiService $lotApiService)
+    public function __construct(LotService $lotService)
     {
-        $this->lotApiService = $lotApiService;
+        $this->lotService = $lotService;
     }
 
     // =========================================================
@@ -33,10 +33,10 @@ class LotController extends Controller
             'search' => $request->search,
         ];
 
-        $lots = $this->lotApiService->index($filters, $request->per_page ?? 15);
+        $lots = $this->lotService->index($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'lots' => $lots->map(fn ($lot) => $this->lotApiService->formatLot($lot)),
+            'lots' => $lots->map(fn ($lot) => $this->lotService->formatLot($lot)),
             'meta'  => [
                 'total'        => $lots->total(),
                 'per_page'     => $lots->perPage(),
@@ -61,10 +61,10 @@ class LotController extends Controller
             $data['farm_id'] = session('current_farm_id');
         }
 
-        $lot = $this->lotApiService->store($data, $userId);
+        $lot = $this->lotService->store($data, $userId);
 
         return ApiResponse::success(
-            $this->lotApiService->formatLot($lot->load('farm')),
+            $this->lotService->formatLot($lot->load('farm')),
             'Lot créé avec succès.',
             201
         );
@@ -81,7 +81,7 @@ class LotController extends Controller
         $lot->load('farm');
 
         return ApiResponse::success(
-            $this->lotApiService->formatLot($lot),
+            $this->lotService->formatLot($lot),
             'Lot récupéré avec succès.'
         );
     }
@@ -94,10 +94,10 @@ class LotController extends Controller
         $this->authorize('update', $lot);
 
         $userId = auth()->id();
-        $lot = $this->lotApiService->update($lot, $request->validated(), $userId);
+        $lot = $this->lotService->update($lot, $request->validated(), $userId);
 
         return ApiResponse::success(
-            $this->lotApiService->formatLot($lot->load('farm')),
+            $this->lotService->formatLot($lot->load('farm')),
             'Lot mis à jour avec succès.'
         );
     }
@@ -109,7 +109,7 @@ class LotController extends Controller
     {
         $this->authorize('delete', $lot);
 
-        $this->lotApiService->destroy($lot);
+        $this->lotService->destroy($lot);
 
         return ApiResponse::success(null, 'Lot archivé avec succès.');
     }
@@ -123,10 +123,10 @@ class LotController extends Controller
             'search' => $request->search,
         ];
 
-        $lots = $this->lotApiService->trashed($filters, $request->per_page ?? 15);
+        $lots = $this->lotService->trashed($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'lots' => $lots->map(fn ($lot) => $this->lotApiService->formatLot($lot)),
+            'lots' => $lots->map(fn ($lot) => $this->lotService->formatLot($lot)),
             'meta'  => [
                 'total'        => $lots->total(),
                 'per_page'     => $lots->perPage(),
@@ -143,10 +143,10 @@ class LotController extends Controller
     {
         $this->authorize('restore', Lot::class);
 
-        $lot = $this->lotApiService->restore($id);
+        $lot = $this->lotService->restore($id);
 
         return ApiResponse::success(
-            $this->lotApiService->formatLot($lot->load('farm')),
+            $this->lotService->formatLot($lot->load('farm')),
             'Lot restauré avec succès.'
         );
     }
@@ -158,7 +158,7 @@ class LotController extends Controller
     {
         $this->authorize('view', $lot);
 
-        $animals = $this->lotApiService->animals($lot, $request->per_page ?? 15);
+        $animals = $this->lotService->animals($lot, $request->per_page ?? 15);
 
         return ApiResponse::success([
             'animals' => $animals->map(fn ($animal) => [
@@ -204,7 +204,7 @@ class LotController extends Controller
         $animalIds = $request->animal_ids;
 
         try {
-            $assignedIds = $this->lotApiService->assignAnimals($lot, $animalIds, $userId);
+            $assignedIds = $this->lotService->assignAnimals($lot, $animalIds, $userId);
 
             return ApiResponse::success([
                 'assigned_animal_ids' => $assignedIds,
@@ -225,7 +225,7 @@ class LotController extends Controller
         $userId = auth()->id();
 
         try {
-            $this->lotApiService->removeAnimal($lot, $animalId, $userId);
+            $this->lotService->removeAnimal($lot, $animalId, $userId);
 
             return ApiResponse::success(null, 'Animal retiré du lot avec succès.');
         } catch (\Exception $e) {
@@ -240,7 +240,7 @@ class LotController extends Controller
     {
         $this->authorize('view', $lot);
 
-        $stats = $this->lotApiService->statistiques($lot);
+        $stats = $this->lotService->statistiques($lot);
 
         return ApiResponse::success($stats, 'Statistiques du lot récupérées avec succès.');
     }

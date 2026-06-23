@@ -7,16 +7,16 @@ use App\Http\Requests\Reproduction\StoreNaissanceRequest;
 use App\Http\Requests\Reproduction\UpdateNaissanceRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Naissance;
-use App\Services\Admin\NaissanceApiService;
+use App\Services\NaissanceService;
 use Illuminate\Http\Request;
 
 class NaissanceController extends Controller
 {
-    private NaissanceApiService $naissanceApiService;
+    private NaissanceService $naissanceService;
 
-    public function __construct(NaissanceApiService $naissanceApiService)
+    public function __construct(NaissanceService $naissanceService)
     {
-        $this->naissanceApiService = $naissanceApiService;
+        $this->naissanceService = $naissanceService;
     }
 
     // =========================================================
@@ -35,10 +35,10 @@ class NaissanceController extends Controller
             'mises_bas_venir' => $request->mises_bas_venir,
         ];
 
-        $naissances = $this->naissanceApiService->index($filters, $request->per_page ?? 15);
+        $naissances = $this->naissanceService->index($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'naissances' => $naissances->map(fn ($naissance) => $this->naissanceApiService->formatNaissance($naissance)),
+            'naissances' => $naissances->map(fn ($naissance) => $this->naissanceService->formatNaissance($naissance)),
             'meta'  => [
                 'total'        => $naissances->total(),
                 'per_page'     => $naissances->perPage(),
@@ -59,10 +59,10 @@ class NaissanceController extends Controller
         $data = $request->validated();
 
         try {
-            $naissance = $this->naissanceApiService->store($data, $userId);
+            $naissance = $this->naissanceService->store($data, $userId);
 
             return ApiResponse::success(
-                $this->naissanceApiService->formatNaissance($naissance->load(['mother', 'farm', 'evenement', 'petits'])),
+                $this->naissanceService->formatNaissance($naissance->load(['mother', 'farm', 'evenement', 'petits'])),
                 'Naissance créée avec succès.',
                 201
             );
@@ -81,7 +81,7 @@ class NaissanceController extends Controller
         $naissance->load(['mother', 'farm', 'evenement', 'petits']);
 
         return ApiResponse::success(
-            $this->naissanceApiService->formatNaissance($naissance),
+            $this->naissanceService->formatNaissance($naissance),
             'Naissance récupérée avec succès.'
         );
     }
@@ -97,10 +97,10 @@ class NaissanceController extends Controller
         $data = $request->validated();
 
         try {
-            $naissance = $this->naissanceApiService->update($naissance, $data, $userId);
+            $naissance = $this->naissanceService->update($naissance, $data, $userId);
 
             return ApiResponse::success(
-                $this->naissanceApiService->formatNaissance($naissance->load(['mother', 'farm', 'evenement', 'petits'])),
+                $this->naissanceService->formatNaissance($naissance->load(['mother', 'farm', 'evenement', 'petits'])),
                 'Naissance mise à jour avec succès.'
             );
         } catch (\Exception $e) {
@@ -115,7 +115,7 @@ class NaissanceController extends Controller
     {
         $this->authorize('delete', $naissance);
 
-        $this->naissanceApiService->destroy($naissance);
+        $this->naissanceService->destroy($naissance);
 
         return ApiResponse::success(null, 'Naissance archivée avec succès.');
     }
@@ -129,10 +129,10 @@ class NaissanceController extends Controller
             'mother_id' => $request->mother_id,
         ];
 
-        $naissances = $this->naissanceApiService->trashed($filters, $request->per_page ?? 15);
+        $naissances = $this->naissanceService->trashed($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'naissances' => $naissances->map(fn ($naissance) => $this->naissanceApiService->formatNaissance($naissance)),
+            'naissances' => $naissances->map(fn ($naissance) => $this->naissanceService->formatNaissance($naissance)),
             'meta'  => [
                 'total'        => $naissances->total(),
                 'per_page'     => $naissances->perPage(),
@@ -149,10 +149,10 @@ class NaissanceController extends Controller
     {
         $this->authorize('restore', Naissance::class);
 
-        $naissance = $this->naissanceApiService->restore($id);
+        $naissance = $this->naissanceService->restore($id);
 
         return ApiResponse::success(
-            $this->naissanceApiService->formatNaissance($naissance->load(['mother', 'farm', 'evenement', 'petits'])),
+            $this->naissanceService->formatNaissance($naissance->load(['mother', 'farm', 'evenement', 'petits'])),
             'Naissance restaurée avec succès.'
         );
     }
@@ -165,7 +165,7 @@ class NaissanceController extends Controller
         $this->authorize('view', Naissance::class);
 
         $jours = $request->jours ?? 30;
-        $previsions = $this->naissanceApiService->previsions($jours);
+        $previsions = $this->naissanceService->previsions($jours);
 
         return ApiResponse::success([
             'previsions' => $previsions,

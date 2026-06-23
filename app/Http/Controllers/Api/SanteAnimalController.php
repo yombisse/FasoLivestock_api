@@ -5,16 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
 use App\Models\Animal;
-use App\Services\Admin\SanteAnimalApiService;
+use App\Services\SanteAnimalService;
 use Illuminate\Http\Request;
 
 class SanteAnimalController extends Controller
 {
-    private SanteAnimalApiService $santeAnimalApiService;
+    private SanteAnimalService $santeAnimalService;
 
-    public function __construct(SanteAnimalApiService $santeAnimalApiService)
+    public function __construct(SanteAnimalService $santeAnimalService)
     {
-        $this->santeAnimalApiService = $santeAnimalApiService;
+        $this->santeAnimalService = $santeAnimalService;
     }
 
     // =========================================================
@@ -28,7 +28,7 @@ class SanteAnimalController extends Controller
     {
         $this->authorize('view', $animal);
 
-        $historique = $this->santeAnimalApiService->historiqueMedical($animal->id);
+        $historique = $this->santeAnimalService->historiqueMedical($animal->id);
 
         return ApiResponse::success($historique, 'Historique médical de l\'animal récupéré avec succès.');
     }
@@ -40,7 +40,7 @@ class SanteAnimalController extends Controller
     {
         $this->authorize('view', $animal);
 
-        $statistiques = $this->santeAnimalApiService->statistiquesSanitaires($animal->id);
+        $statistiques = $this->santeAnimalService->statistiquesSanitaires($animal->id);
 
         return ApiResponse::success($statistiques, 'Statistiques sanitaires de l\'animal récupérées avec succès.');
     }
@@ -56,7 +56,7 @@ class SanteAnimalController extends Controller
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
         }
 
-        $resume = $this->santeAnimalApiService->resumeFerme($farmId);
+        $resume = $this->santeAnimalService->resumeFerme($farmId);
 
         return ApiResponse::success($resume, 'Résumé sanitaire de la ferme récupéré avec succès.');
     }
@@ -72,7 +72,7 @@ class SanteAnimalController extends Controller
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
         }
 
-        $alertes = $this->santeAnimalApiService->alertesFerme($farmId);
+        $alertes = $this->santeAnimalService->alertesFerme($farmId);
 
         return ApiResponse::success($alertes, 'Alertes sanitaires de la ferme récupérées avec succès.');
     }

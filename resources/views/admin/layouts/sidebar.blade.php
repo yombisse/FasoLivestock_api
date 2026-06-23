@@ -26,7 +26,22 @@
             <i class="bi bi-speedometer2 nav-icon"></i>
             Dashboard
         </a>
+        {{-- ── Administration ──────────────────────────── --}}
+        <div class="nav-section-label">Administration</div>
 
+        {{-- Utilisateurs --}}
+        <a href="{{ route('admin.users.index') }}"
+           class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+            <i class="bi bi-people nav-icon"></i>
+            Utilisateurs
+        </a>
+
+        {{-- Rôles --}}
+        <a href="{{ route('admin.roles.index') }}"
+           class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
+            <i class="bi bi-shield-check nav-icon"></i>
+            Rôles & Permissions
+        </a>
         {{-- ── Gestion ─────────────────────────────────── --}}
         <div class="nav-section-label">Gestion</div>
 
@@ -110,23 +125,6 @@
            class="nav-link {{ request()->routeIs('admin.rapports.*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-bar-graph nav-icon"></i>
             Rapports
-        </a>
-
-        {{-- ── Administration ──────────────────────────── --}}
-        <div class="nav-section-label">Administration</div>
-
-        {{-- Utilisateurs --}}
-        <a href="{{ route('admin.users.index') }}"
-           class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-            <i class="bi bi-people nav-icon"></i>
-            Utilisateurs
-        </a>
-
-        {{-- Rôles --}}
-        <a href="{{ route('admin.roles.index') }}"
-           class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
-            <i class="bi bi-shield-check nav-icon"></i>
-            Rôles & Permissions
         </a>
 
     </nav>

@@ -7,16 +7,16 @@ use App\Http\Requests\Alimentation\StoreAlimentRequest;
 use App\Http\Requests\Alimentation\UpdateAlimentRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Aliment;
-use App\Services\Admin\AlimentApiService;
+use App\Services\AlimentService;
 use Illuminate\Http\Request;
 
 class AlimentController extends Controller
 {
-    private AlimentApiService $alimentApiService;
+    private AlimentService $alimentService;
 
-    public function __construct(AlimentApiService $alimentApiService)
+    public function __construct(AlimentService $alimentService)
     {
-        $this->alimentApiService = $alimentApiService;
+        $this->alimentService = $alimentService;
     }
 
     // =========================================================
@@ -33,10 +33,10 @@ class AlimentController extends Controller
             'unite' => $request->unite,
         ];
 
-        $aliments = $this->alimentApiService->index($filters, $request->per_page ?? 15);
+        $aliments = $this->alimentService->index($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'aliments' => $aliments->map(fn ($aliment) => $this->alimentApiService->formatAliment($aliment)),
+            'aliments' => $aliments->map(fn ($aliment) => $this->alimentService->formatAliment($aliment)),
             'meta'  => [
                 'total'        => $aliments->total(),
                 'per_page'     => $aliments->perPage(),
@@ -57,10 +57,10 @@ class AlimentController extends Controller
         $data = $request->validated();
 
         try {
-            $aliment = $this->alimentApiService->store($data, $userId);
+            $aliment = $this->alimentService->store($data, $userId);
 
             return ApiResponse::success(
-                $this->alimentApiService->formatAliment($aliment->load(['farm', 'rations'])),
+                $this->alimentService->formatAliment($aliment->load(['farm', 'rations'])),
                 'Aliment créé avec succès.',
                 201
             );
@@ -79,7 +79,7 @@ class AlimentController extends Controller
         $aliment->load(['farm', 'rations']);
 
         return ApiResponse::success(
-            $this->alimentApiService->formatAliment($aliment),
+            $this->alimentService->formatAliment($aliment),
             'Aliment récupéré avec succès.'
         );
     }
@@ -95,10 +95,10 @@ class AlimentController extends Controller
         $data = $request->validated();
 
         try {
-            $aliment = $this->alimentApiService->update($aliment, $data, $userId);
+            $aliment = $this->alimentService->update($aliment, $data, $userId);
 
             return ApiResponse::success(
-                $this->alimentApiService->formatAliment($aliment->load(['farm', 'rations'])),
+                $this->alimentService->formatAliment($aliment->load(['farm', 'rations'])),
                 'Aliment mis à jour avec succès.'
             );
         } catch (\Exception $e) {
@@ -113,7 +113,7 @@ class AlimentController extends Controller
     {
         $this->authorize('delete', $aliment);
 
-        $this->alimentApiService->destroy($aliment);
+        $this->alimentService->destroy($aliment);
 
         return ApiResponse::success(null, 'Aliment archivé avec succès.');
     }
@@ -127,10 +127,10 @@ class AlimentController extends Controller
             'unite' => $request->unite,
         ];
 
-        $aliments = $this->alimentApiService->trashed($filters, $request->per_page ?? 15);
+        $aliments = $this->alimentService->trashed($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'aliments' => $aliments->map(fn ($aliment) => $this->alimentApiService->formatAliment($aliment)),
+            'aliments' => $aliments->map(fn ($aliment) => $this->alimentService->formatAliment($aliment)),
             'meta'  => [
                 'total'        => $aliments->total(),
                 'per_page'     => $aliments->perPage(),
@@ -147,10 +147,10 @@ class AlimentController extends Controller
     {
         $this->authorize('restore', Aliment::class);
 
-        $aliment = $this->alimentApiService->restore($id);
+        $aliment = $this->alimentService->restore($id);
 
         return ApiResponse::success(
-            $this->alimentApiService->formatAliment($aliment->load(['farm', 'rations'])),
+            $this->alimentService->formatAliment($aliment->load(['farm', 'rations'])),
             'Aliment restauré avec succès.'
         );
     }
@@ -172,10 +172,10 @@ class AlimentController extends Controller
         $note = $request->note;
 
         try {
-            $aliment = $this->alimentApiService->approvisionner($aliment, $quantite, $userId, $note);
+            $aliment = $this->alimentService->approvisionner($aliment, $quantite, $userId, $note);
 
             return ApiResponse::success(
-                $this->alimentApiService->formatAliment($aliment->load(['farm', 'rations'])),
+                $this->alimentService->formatAliment($aliment->load(['farm', 'rations'])),
                 'Stock approvisionné avec succès.'
             );
         } catch (\Exception $e) {
@@ -200,10 +200,10 @@ class AlimentController extends Controller
         $note = $request->note;
 
         try {
-            $aliment = $this->alimentApiService->ajusterStock($aliment, $nouveauStock, $userId, $note);
+            $aliment = $this->alimentService->ajusterStock($aliment, $nouveauStock, $userId, $note);
 
             return ApiResponse::success(
-                $this->alimentApiService->formatAliment($aliment->load(['farm', 'rations'])),
+                $this->alimentService->formatAliment($aliment->load(['farm', 'rations'])),
                 'Stock ajusté avec succès.'
             );
         } catch (\Exception $e) {
@@ -218,7 +218,7 @@ class AlimentController extends Controller
     {
         $this->authorize('view', Aliment::class);
 
-        $aliments = $this->alimentApiService->enRupture();
+        $aliments = $this->alimentService->enRupture();
 
         return ApiResponse::success([
             'aliments' => $aliments,
@@ -235,7 +235,7 @@ class AlimentController extends Controller
         $dateDebut = $request->date_debut;
         $dateFin = $request->date_fin;
 
-        $historique = $this->alimentApiService->historiqueStock($aliment->id, $dateDebut, $dateFin);
+        $historique = $this->alimentService->historiqueStock($aliment->id, $dateDebut, $dateFin);
 
         return ApiResponse::success([
             'historique' => $historique,
@@ -252,7 +252,7 @@ class AlimentController extends Controller
         $dateDebut = $request->date_debut;
         $dateFin = $request->date_fin;
 
-        $statistiques = $this->alimentApiService->statistiques($aliment->id, $dateDebut, $dateFin);
+        $statistiques = $this->alimentService->statistiques($aliment->id, $dateDebut, $dateFin);
 
         return ApiResponse::success($statistiques, 'Statistiques de l\'aliment récupérées avec succès.');
     }

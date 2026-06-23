@@ -4,16 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
-use App\Services\Admin\FinanceTransactionApiService;
+use App\Services\FinanceTransactionService;
 use Illuminate\Http\Request;
 
 class FinanceChargeController extends Controller
 {
-    private FinanceTransactionApiService $financeTransactionApiService;
+    private FinanceTransactionService $financeTransactionService;
 
-    public function __construct(FinanceTransactionApiService $financeTransactionApiService)
+    public function __construct(FinanceTransactionService $financeTransactionService)
     {
-        $this->financeTransactionApiService = $financeTransactionApiService;
+        $this->financeTransactionService = $financeTransactionService;
     }
 
     // =========================================================
@@ -33,7 +33,7 @@ class FinanceChargeController extends Controller
             'categorie_id' => $request->categorie_id,
         ];
 
-        $charges = $this->financeTransactionApiService->charges($filters);
+        $charges = $this->financeTransactionService->charges($filters);
 
         return ApiResponse::success($charges, 'Charges récupérées avec succès.');
     }
@@ -50,7 +50,7 @@ class FinanceChargeController extends Controller
             'date_fin' => 'required|date',
         ]);
 
-        $charges = $this->financeTransactionApiService->chargesParPeriode(
+        $charges = $this->financeTransactionService->chargesParPeriode(
             $request->date_debut,
             $request->date_fin
         );
@@ -65,7 +65,7 @@ class FinanceChargeController extends Controller
     {
         $this->authorize('view', \App\Models\Transaction::class);
 
-        $charges = $this->financeTransactionApiService->chargesParCategorie(
+        $charges = $this->financeTransactionService->chargesParCategorie(
             $request->date_debut,
             $request->date_fin
         );

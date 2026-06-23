@@ -2,269 +2,47 @@
 
 namespace App\Services\Admin;
 
-use App\Models\Naissance;
-use App\Models\Animal;
-use App\Models\Evenement;
-use App\Models\TypeEvenement;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
+use App\DTOs\ApiResult;
 
-class NaissanceApiService
+class NaissanceApiService extends AdminApiService
 {
-    /**
-     * Lister les naissances avec pagination et filtres.
-     */
-    public function index(array $filters, int $perPage = 15): LengthAwarePaginator
+    public function getAll(array $params = []): ApiResult
     {
-        $query = Naissance::query()
-            ->with(['mother', 'farm', 'evenement', 'petits'])
-            ->when(isset($filters['mother_id']), fn ($q) =>
-                $q->where('mother_id', $filters['mother_id'])
-            )
-            ->when(isset($filters['date_debut']) && isset($filters['date_fin']), fn ($q) =>
-                $q->whereBetween('date_naissance', [$filters['date_debut'], $filters['date_fin']])
-            )
-            ->when(isset($filters['mises_bas_venir']), fn ($q) =>
-                $q->misesBasAVenir($filters['mises_bas_venir'] ?? 7)
-            )
-            ->orderBy('date_naissance', 'desc');
-
-        return $query->paginate($perPage);
+        return $this->get('/reproduction/naissances', $params);
     }
 
-    /**
-     * Créer une naissance avec gestion offline-first et logique métier.
-     */
-    public function store(array $data, string $userId): Naissance
+    public function find(string $id): ApiResult
     {
-        return DB::transaction(function () use ($data, $userId) {
-            // Vérification de conflit offline-first
-            if (isset($data['version'])) {
-                unset($data['version']);
-            }
-
-            $data['sync_status'] = 'synced';
-            $data['last_modified_by'] = $userId;
-            $data['version'] = 1;
-
-            // Utiliser la ferme courante du contexte si non fournie
-            if (!isset($data['farm_id'])) {
-                $data['farm_id'] = session('current_farm_id');
-            }
-
-            // Calcul automatique de date_mise_bas_prevue si non fournie
-            if (!isset($data['date_mise_bas_prevue']) && isset($data['date_saillie'])) {
-                $mother = Animal::find($data['mother_id']);
-                if ($mother && $mother->espece && $mother->espece->parametre) {
-                    $dureeGestation = $mother->espece->parametre->duree_gestation_jours;
-                    if ($dureeGestation) {
-                        $data['date_mise_bas_prevue'] = \Carbon\Carbon::parse($data['date_saillie'])
-                            ->addDays($dureeGestation);
-                    }
-                }
-            }
-
-            $creerPetits = $data['creer_petits'] ?? false;
-            unset($data['creer_petits']);
-
-            $naissance = Naissance::create($data);
-
-            // Créer automatiquement l'événement MISE_BAS si non fourni
-            if (!isset($data['evenement_id'])) {
-                $typeMiseBas = TypeEvenement::where('nom_type', 'MISE_BAS')->first();
-                if ($typeMiseBas) {
-                    $evenement = Evenement::create([
-                        'farm_id' => $naissance->farm_id,
-                        'type_evenement_id' => $typeMiseBas->id,
-                        'animal_id' => $naissance->mother_id,
-                        'date_evenement' => $naissance->date_naissance,
-                        'description' => 'Mise bas enregistrée',
-                        'sync_status' => 'synced',
-                        'last_modified_by' => $userId,
-                        'version' => 1,
-                    ]);
-                    $naissance->update(['evenement_id' => $evenement->id]);
-                }
-            }
-
-            // Créer automatiquement les petits si demandé
-            if ($creerPetits && $naissance->nombre_petits > 0) {
-                $mother = Animal::find($naissance->mother_id);
-                if ($mother) {
-                    for ($i = 0; $i < $naissance->nombre_petits; $i++) {
-                        Animal::create([
-                            'farm_id' => $naissance->farm_id,
-                            'espece_id' => $mother->espece_id,
-                            'mother_id' => $naissance->mother_id,
-                            'naissance_id' => $naissance->id,
-                            'date_naissance' => $naissance->date_naissance,
-                            'statut' => 'ACTIF',
-                            'sync_status' => 'synced',
-                            'last_modified_by' => $userId,
-                            'version' => 1,
-                        ]);
-                    }
-                }
-            }
-
-            return $naissance->fresh();
-        });
+        return $this->get("/reproduction/naissances/{$id}");
     }
 
-    /**
-     * Mettre à jour une naissance avec gestion offline-first.
-     */
-    public function update(Naissance $naissance, array $data, string $userId): Naissance
+    public function create(array $data): ApiResult
     {
-        return DB::transaction(function () use ($naissance, $data, $userId) {
-            // Vérification de conflit offline-first
-            if (isset($data['version'])) {
-                if ($data['version'] !== $naissance->version) {
-                    // Conflit détecté
-                    $naissance->update([
-                        'sync_status' => 'conflict',
-                    ]);
-                    throw new \Exception('Conflit de version détecté. Veuillez synchroniser vos données.');
-                }
-            }
-
-            $data['sync_status'] = 'synced';
-            $data['last_modified_by'] = $userId;
-            $data['version'] = ($naissance->version ?? 1) + 1;
-
-            // Recalculer date_mise_bas_prevue si date_saillie change
-            if (isset($data['date_saillie']) && !isset($data['date_mise_bas_prevue'])) {
-                $mother = Animal::find($naissance->mother_id);
-                if ($mother && $mother->espece && $mother->espece->parametre) {
-                    $dureeGestation = $mother->espece->parametre->duree_gestation_jours;
-                    if ($dureeGestation) {
-                        $data['date_mise_bas_prevue'] = \Carbon\Carbon::parse($data['date_saillie'])
-                            ->addDays($dureeGestation);
-                    }
-                }
-            }
-
-            $naissance->update($data);
-
-            return $naissance->fresh();
-        });
+        return $this->post('/reproduction/naissances', $data);
     }
 
-    /**
-     * Supprimer (soft delete) une naissance.
-     */
-    public function destroy(Naissance $naissance): bool
+    public function update(string $id, array $data): ApiResult
     {
-        $naissance->update([
-            'sync_status' => 'synced',
-            'version' => ($naissance->version ?? 1) + 1,
-        ]);
-
-        return $naissance->delete();
+        return $this->put("/reproduction/naissances/{$id}", $data);
     }
 
-    /**
-     * Restaurer une naissance archivée.
-     */
-    public function restore(string $id): Naissance
+    public function delete(string $id): ApiResult
     {
-        $naissance = Naissance::onlyTrashed()->findOrFail($id);
-        $naissance->restore();
-
-        return $naissance->fresh();
+        return $this->delete("/reproduction/naissances/{$id}");
     }
 
-    /**
-     * Lister les naissances archivées.
-     */
-    public function trashed(array $filters, int $perPage = 15): LengthAwarePaginator
+    public function trashed(array $params = []): ApiResult
     {
-        $query = Naissance::onlyTrashed()
-            ->with(['mother', 'farm'])
-            ->when(isset($filters['mother_id']), fn ($q) =>
-                $q->where('mother_id', $filters['mother_id'])
-            )
-            ->orderBy('deleted_at', 'desc');
-
-        return $query->paginate($perPage);
+        return $this->get('/reproduction/naissances/trashed', $params);
     }
 
-    /**
-     * Obtenir les prévisions de mises bas à venir.
-     */
-    public function previsions(int $jours = 30): array
+    public function restore(string $id): ApiResult
     {
-        $naissances = Naissance::query()
-            ->with(['mother', 'farm'])
-            ->whereNotNull('date_mise_bas_prevue')
-            ->whereBetween('date_mise_bas_prevue', [
-                now(),
-                now()->addDays($jours)
-            ])
-            ->orderBy('date_mise_bas_prevue')
-            ->get();
-
-        return $naissances->map(fn ($naissance) => [
-            'id' => $naissance->id,
-            'date_mise_bas_prevue' => $naissance->date_mise_bas_prevue,
-            'jours_restants' => now()->diffInDays($naissance->date_mise_bas_prevue, false),
-            'mother' => [
-                'id' => $naissance->mother->id,
-                'nom' => $naissance->mother->nom,
-                'espece' => $naissance->mother->espece->nom ?? null,
-            ],
-            'farm' => [
-                'id' => $naissance->farm->id,
-                'name' => $naissance->farm->name,
-            ],
-        ])->toArray();
+        return $this->post("/reproduction/naissances/{$id}/restore");
     }
 
-    /**
-     * Formater une naissance pour la réponse API.
-     */
-    public function formatNaissance(Naissance $naissance): array
+    public function previsions(array $params = []): ApiResult
     {
-        return [
-            'id' => $naissance->id,
-            'farm_id' => $naissance->farm_id,
-            'mother_id' => $naissance->mother_id,
-            'date_naissance' => $naissance->date_naissance,
-            'nombre_petits' => $naissance->nombre_petits,
-            'poids_naissance' => $naissance->poids_naissance,
-            'observation' => $naissance->observation,
-            'date_saillie' => $naissance->date_saillie,
-            'date_mise_bas_prevue' => $naissance->date_mise_bas_prevue,
-            'evenement_id' => $naissance->evenement_id,
-            'sync_status' => $naissance->sync_status,
-            'version' => $naissance->version,
-            'deleted_at' => $naissance->deleted_at,
-            'created_at' => $naissance->created_at,
-            'updated_at' => $naissance->updated_at,
-            // Relations
-            'mother' => $naissance->mother ? [
-                'id' => $naissance->mother->id,
-                'nom' => $naissance->mother->nom,
-                'sexe' => $naissance->mother->sexe,
-                'statut' => $naissance->mother->statut,
-            ] : null,
-            'farm' => $naissance->farm ? [
-                'id' => $naissance->farm->id,
-                'name' => $naissance->farm->name,
-            ] : null,
-            'evenement' => $naissance->evenement ? [
-                'id' => $naissance->evenement->id,
-                'date_evenement' => $naissance->evenement->date_evenement,
-                'description' => $naissance->evenement->description,
-            ] : null,
-            'petits' => $naissance->petits->map(fn ($petit) => [
-                'id' => $petit->id,
-                'nom' => $petit->nom,
-                'sexe' => $petit->sexe,
-                'statut' => $petit->statut,
-            ]),
-            'nombre_enregistres' => $naissance->nombre_enregistres,
-            'nombre_non_enregistres' => $naissance->nombre_non_enregistres,
-        ];
+        return $this->get('/reproduction/naissances/previsions', $params);
     }
 }

@@ -8,16 +8,16 @@ use App\Http\Requests\Mouvement\UpdateMouvementRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Evenement;
 use App\Models\Animal;
-use App\Services\Admin\MouvementApiService;
+use App\Services\MouvementService;
 use Illuminate\Http\Request;
 
 class MouvementController extends Controller
 {
-    private MouvementApiService $mouvementApiService;
+    private MouvementService $mouvementService;
 
-    public function __construct(MouvementApiService $mouvementApiService)
+    public function __construct(MouvementService $mouvementService)
     {
-        $this->mouvementApiService = $mouvementApiService;
+        $this->mouvementService = $mouvementService;
     }
 
     // =========================================================
@@ -37,10 +37,10 @@ class MouvementController extends Controller
             'statut' => $request->statut,
         ];
 
-        $mouvements = $this->mouvementApiService->index($filters, $request->per_page ?? 15);
+        $mouvements = $this->mouvementService->index($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'mouvements' => $mouvements->map(fn ($mouvement) => $this->mouvementApiService->formatMouvement($mouvement)),
+            'mouvements' => $mouvements->map(fn ($mouvement) => $this->mouvementService->formatMouvement($mouvement)),
             'meta'  => [
                 'total'        => $mouvements->total(),
                 'per_page'     => $mouvements->perPage(),
@@ -65,10 +65,10 @@ class MouvementController extends Controller
             $data['farm_id'] = session('current_farm_id');
         }
 
-        $mouvement = $this->mouvementApiService->store($data, $userId);
+        $mouvement = $this->mouvementService->store($data, $userId);
 
         return ApiResponse::success(
-            $this->mouvementApiService->formatMouvement($mouvement->load('farm', 'animal', 'type', 'farmDestination', 'transaction')),
+            $this->mouvementService->formatMouvement($mouvement->load('farm', 'animal', 'type', 'farmDestination', 'transaction')),
             'Mouvement créé avec succès.',
             201
         );
@@ -89,7 +89,7 @@ class MouvementController extends Controller
         $evenement->load('farm', 'animal', 'type', 'farmDestination', 'transaction');
 
         return ApiResponse::success(
-            $this->mouvementApiService->formatMouvement($evenement),
+            $this->mouvementService->formatMouvement($evenement),
             'Mouvement récupéré avec succès.'
         );
     }
@@ -107,10 +107,10 @@ class MouvementController extends Controller
         }
 
         $userId = auth()->id();
-        $mouvement = $this->mouvementApiService->update($evenement, $request->validated(), $userId);
+        $mouvement = $this->mouvementService->update($evenement, $request->validated(), $userId);
 
         return ApiResponse::success(
-            $this->mouvementApiService->formatMouvement($mouvement->load('farm', 'animal', 'type', 'farmDestination', 'transaction')),
+            $this->mouvementService->formatMouvement($mouvement->load('farm', 'animal', 'type', 'farmDestination', 'transaction')),
             'Mouvement mis à jour avec succès.'
         );
     }
@@ -127,7 +127,7 @@ class MouvementController extends Controller
             return ApiResponse::error(null, 'Cet événement n\'est pas un mouvement.', 400);
         }
 
-        $this->mouvementApiService->destroy($evenement);
+        $this->mouvementService->destroy($evenement);
 
         return ApiResponse::success(null, 'Mouvement archivé avec succès.');
     }
@@ -139,10 +139,10 @@ class MouvementController extends Controller
     {
         $this->authorize('view', $animal);
 
-        $mouvements = $this->mouvementApiService->animalHistory($animal, $request->per_page ?? 15);
+        $mouvements = $this->mouvementService->animalHistory($animal, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'mouvements' => $mouvements->map(fn ($mouvement) => $this->mouvementApiService->formatMouvement($mouvement)),
+            'mouvements' => $mouvements->map(fn ($mouvement) => $this->mouvementService->formatMouvement($mouvement)),
             'meta'  => [
                 'total'        => $mouvements->total(),
                 'per_page'     => $mouvements->perPage(),
@@ -159,7 +159,7 @@ class MouvementController extends Controller
     {
         $this->authorize('view', $animal);
 
-        $trace = $this->mouvementApiService->trace($animal);
+        $trace = $this->mouvementService->trace($animal);
 
         return ApiResponse::success($trace, 'Traçabilité récupérée avec succès.');
     }
@@ -175,7 +175,7 @@ class MouvementController extends Controller
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
         }
 
-        $stats = $this->mouvementApiService->statistiques($farmId);
+        $stats = $this->mouvementService->statistiques($farmId);
 
         return ApiResponse::success($stats, 'Statistiques récupérées avec succès.');
     }

@@ -8,16 +8,16 @@ use App\Http\Requests\Espece\UpdateEspeceRequest;
 use App\Http\Requests\Espece\UpdateEspeceParametreRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Espece;
-use App\Services\Admin\EspeceApiService;
+use App\Services\EspeceService;
 use Illuminate\Http\Request;
 
 class EspeceController extends Controller
 {
-    private EspeceApiService $especeApiService;
+    private EspeceService $especeService;
 
-    public function __construct(EspeceApiService $especeApiService)
+    public function __construct(EspeceService $especeService)
     {
-        $this->especeApiService = $especeApiService;
+        $this->especeService = $especeService;
     }
 
     // =========================================================
@@ -33,10 +33,10 @@ class EspeceController extends Controller
             'search' => $request->search,
         ];
 
-        $especes = $this->especeApiService->index($filters, $request->per_page ?? 15);
+        $especes = $this->especeService->index($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'especes' => $especes->map(fn ($espece) => $this->especeApiService->formatEspece($espece)),
+            'especes' => $especes->map(fn ($espece) => $this->especeService->formatEspece($espece)),
             'meta'  => [
                 'total'        => $especes->total(),
                 'per_page'     => $especes->perPage(),
@@ -53,10 +53,10 @@ class EspeceController extends Controller
     {
         $this->authorize('create', Espece::class);
 
-        $espece = $this->especeApiService->store($request->validated());
+        $espece = $this->especeService->store($request->validated());
 
         return ApiResponse::success(
-            $this->especeApiService->formatEspece($espece->load('parametre')),
+            $this->especeService->formatEspece($espece->load('parametre')),
             'Espèce créée avec succès.',
             201
         );
@@ -72,7 +72,7 @@ class EspeceController extends Controller
         $espece->load('parametre');
 
         return ApiResponse::success(
-            $this->especeApiService->formatEspece($espece),
+            $this->especeService->formatEspece($espece),
             'Espèce récupérée avec succès.'
         );
     }
@@ -84,10 +84,10 @@ class EspeceController extends Controller
     {
         $this->authorize('update', $espece);
 
-        $espece = $this->especeApiService->update($espece, $request->validated());
+        $espece = $this->especeService->update($espece, $request->validated());
 
         return ApiResponse::success(
-            $this->especeApiService->formatEspece($espece->load('parametre')),
+            $this->especeService->formatEspece($espece->load('parametre')),
             'Espèce mise à jour avec succès.'
         );
     }
@@ -99,7 +99,7 @@ class EspeceController extends Controller
     {
         $this->authorize('delete', $espece);
 
-        $this->especeApiService->destroy($espece);
+        $this->especeService->destroy($espece);
 
         return ApiResponse::success(null, 'Espèce archivée avec succès.');
     }
@@ -113,10 +113,10 @@ class EspeceController extends Controller
             'search' => $request->search,
         ];
 
-        $especes = $this->especeApiService->trashed($filters, $request->per_page ?? 15);
+        $especes = $this->especeService->trashed($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'especes' => $especes->map(fn ($espece) => $this->especeApiService->formatEspece($espece)),
+            'especes' => $especes->map(fn ($espece) => $this->especeService->formatEspece($espece)),
             'meta'  => [
                 'total'        => $especes->total(),
                 'per_page'     => $especes->perPage(),
@@ -133,10 +133,10 @@ class EspeceController extends Controller
     {
         $this->authorize('restore', Espece::class);
 
-        $espece = $this->especeApiService->restore($id);
+        $espece = $this->especeService->restore($id);
 
         return ApiResponse::success(
-            $this->especeApiService->formatEspece($espece->load('parametre')),
+            $this->especeService->formatEspece($espece->load('parametre')),
             'Espèce restaurée avec succès.'
         );
     }
@@ -148,14 +148,14 @@ class EspeceController extends Controller
     {
         $this->authorize('view', $espece);
 
-        $parametres = $this->especeApiService->showParametres($espece);
+        $parametres = $this->especeService->showParametres($espece);
 
         if (!$parametres) {
             return ApiResponse::success(null, 'Aucun paramètre défini pour cette espèce.');
         }
 
         return ApiResponse::success(
-            $this->especeApiService->formatParametres($parametres),
+            $this->especeService->formatParametres($parametres),
             'Paramètres récupérés avec succès.'
         );
     }
@@ -167,10 +167,10 @@ class EspeceController extends Controller
     {
         $this->authorize('update', $espece);
 
-        $parametres = $this->especeApiService->updateParametres($espece, $request->validated());
+        $parametres = $this->especeService->updateParametres($espece, $request->validated());
 
         return ApiResponse::success(
-            $this->especeApiService->formatParametres($parametres),
+            $this->especeService->formatParametres($parametres),
             'Paramètres mis à jour avec succès.'
         );
     }

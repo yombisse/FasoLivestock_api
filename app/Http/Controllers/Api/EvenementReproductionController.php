@@ -7,16 +7,16 @@ use App\Http\Requests\Reproduction\StoreEvenementReproductionRequest;
 use App\Http\Requests\Reproduction\UpdateEvenementReproductionRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Evenement;
-use App\Services\Admin\EvenementReproductionApiService;
+use App\Services\EvenementReproductionService;
 use Illuminate\Http\Request;
 
 class EvenementReproductionController extends Controller
 {
-    private EvenementReproductionApiService $evenementReproductionApiService;
+    private EvenementReproductionService $evenementReproductionService;
 
-    public function __construct(EvenementReproductionApiService $evenementReproductionApiService)
+    public function __construct(EvenementReproductionService $evenementReproductionService)
     {
-        $this->evenementReproductionApiService = $evenementReproductionApiService;
+        $this->evenementReproductionService = $evenementReproductionService;
     }
 
     // =========================================================
@@ -35,10 +35,10 @@ class EvenementReproductionController extends Controller
             'date_fin' => $request->date_fin,
         ];
 
-        $evenements = $this->evenementReproductionApiService->index($filters, $request->per_page ?? 15);
+        $evenements = $this->evenementReproductionService->index($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'evenements' => $evenements->map(fn ($evenement) => $this->evenementReproductionApiService->formatEvenement($evenement)),
+            'evenements' => $evenements->map(fn ($evenement) => $this->evenementReproductionService->formatEvenement($evenement)),
             'meta'  => [
                 'total'        => $evenements->total(),
                 'per_page'     => $evenements->perPage(),
@@ -59,10 +59,10 @@ class EvenementReproductionController extends Controller
         $data = $request->validated();
 
         try {
-            $evenement = $this->evenementReproductionApiService->store($data, $userId);
+            $evenement = $this->evenementReproductionService->store($data, $userId);
 
             return ApiResponse::success(
-                $this->evenementReproductionApiService->formatEvenement($evenement->load(['animal', 'type', 'farm'])),
+                $this->evenementReproductionService->formatEvenement($evenement->load(['animal', 'type', 'farm'])),
                 'Événement de reproduction créé avec succès.',
                 201
             );
@@ -81,7 +81,7 @@ class EvenementReproductionController extends Controller
         $evenement->load(['animal', 'type', 'farm', 'farmDestination', 'transaction']);
 
         return ApiResponse::success(
-            $this->evenementReproductionApiService->formatEvenement($evenement),
+            $this->evenementReproductionService->formatEvenement($evenement),
             'Événement de reproduction récupéré avec succès.'
         );
     }
@@ -97,10 +97,10 @@ class EvenementReproductionController extends Controller
         $data = $request->validated();
 
         try {
-            $evenement = $this->evenementReproductionApiService->update($evenement, $data, $userId);
+            $evenement = $this->evenementReproductionService->update($evenement, $data, $userId);
 
             return ApiResponse::success(
-                $this->evenementReproductionApiService->formatEvenement($evenement->load(['animal', 'type', 'farm'])),
+                $this->evenementReproductionService->formatEvenement($evenement->load(['animal', 'type', 'farm'])),
                 'Événement de reproduction mis à jour avec succès.'
             );
         } catch (\Exception $e) {
@@ -115,7 +115,7 @@ class EvenementReproductionController extends Controller
     {
         $this->authorize('delete', $evenement);
 
-        $this->evenementReproductionApiService->destroy($evenement);
+        $this->evenementReproductionService->destroy($evenement);
 
         return ApiResponse::success(null, 'Événement de reproduction archivé avec succès.');
     }
@@ -130,10 +130,10 @@ class EvenementReproductionController extends Controller
             'type_evenement' => $request->type_evenement,
         ];
 
-        $evenements = $this->evenementReproductionApiService->trashed($filters, $request->per_page ?? 15);
+        $evenements = $this->evenementReproductionService->trashed($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'evenements' => $evenements->map(fn ($evenement) => $this->evenementReproductionApiService->formatEvenement($evenement)),
+            'evenements' => $evenements->map(fn ($evenement) => $this->evenementReproductionService->formatEvenement($evenement)),
             'meta'  => [
                 'total'        => $evenements->total(),
                 'per_page'     => $evenements->perPage(),
@@ -150,10 +150,10 @@ class EvenementReproductionController extends Controller
     {
         $this->authorize('restore', Evenement::class);
 
-        $evenement = $this->evenementReproductionApiService->restore($id);
+        $evenement = $this->evenementReproductionService->restore($id);
 
         return ApiResponse::success(
-            $this->evenementReproductionApiService->formatEvenement($evenement->load(['animal', 'type', 'farm'])),
+            $this->evenementReproductionService->formatEvenement($evenement->load(['animal', 'type', 'farm'])),
             'Événement de reproduction restauré avec succès.'
         );
     }

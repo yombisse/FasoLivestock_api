@@ -7,16 +7,16 @@ use App\Http\Requests\Animal\StoreAnimalRequest;
 use App\Http\Requests\Animal\UpdateAnimalRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Animal;
-use App\Services\Admin\AnimalApiService;
+use App\Services\AnimalService;
 use Illuminate\Http\Request;
 
 class AnimalController extends Controller
 {
-    private AnimalApiService $animalApiService;
+    private AnimalService $animalService;
 
-    public function __construct(AnimalApiService $animalApiService)
+    public function __construct(AnimalService $animalService)
     {
-        $this->animalApiService = $animalApiService;
+        $this->animalService = $animalService;
     }
 
     // =========================================================
@@ -40,10 +40,10 @@ class AnimalController extends Controller
             'date_naissance_to' => $request->date_naissance_to,
         ];
 
-        $animals = $this->animalApiService->index($filters, $request->per_page ?? 15);
+        $animals = $this->animalService->index($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'animals' => $animals->map(fn ($animal) => $this->animalApiService->formatAnimal($animal)),
+            'animals' => $animals->map(fn ($animal) => $this->animalService->formatAnimal($animal)),
             'meta'  => [
                 'total'        => $animals->total(),
                 'per_page'     => $animals->perPage(),
@@ -60,10 +60,10 @@ class AnimalController extends Controller
     {
         $this->authorize('create', Animal::class);
 
-        $animal = $this->animalApiService->store($request->validated());
+        $animal = $this->animalService->store($request->validated());
 
         return ApiResponse::success(
-            $this->animalApiService->formatAnimal($animal->load('farm', 'espece', 'lot', 'mother')),
+            $this->animalService->formatAnimal($animal->load('farm', 'espece', 'lot', 'mother')),
             'Animal créé avec succès.',
             201
         );
@@ -79,7 +79,7 @@ class AnimalController extends Controller
         $animal->load('farm', 'espece', 'lot', 'mother');
 
         return ApiResponse::success(
-            $this->animalApiService->formatAnimal($animal),
+            $this->animalService->formatAnimal($animal),
             'Animal récupéré avec succès.'
         );
     }
@@ -91,10 +91,10 @@ class AnimalController extends Controller
     {
         $this->authorize('update', $animal);
 
-        $animal = $this->animalApiService->update($animal, $request->validated());
+        $animal = $this->animalService->update($animal, $request->validated());
 
         return ApiResponse::success(
-            $this->animalApiService->formatAnimal($animal->load('farm', 'espece', 'lot', 'mother')),
+            $this->animalService->formatAnimal($animal->load('farm', 'espece', 'lot', 'mother')),
             'Animal mis à jour avec succès.'
         );
     }
@@ -106,7 +106,7 @@ class AnimalController extends Controller
     {
         $this->authorize('delete', $animal);
 
-        $this->animalApiService->destroy($animal);
+        $this->animalService->destroy($animal);
 
         return ApiResponse::success(null, 'Animal archivé avec succès.');
     }
@@ -121,10 +121,10 @@ class AnimalController extends Controller
             'search' => $request->search,
         ];
 
-        $animals = $this->animalApiService->trashed($filters, $request->per_page ?? 15);
+        $animals = $this->animalService->trashed($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'animals' => $animals->map(fn ($animal) => $this->animalApiService->formatAnimal($animal)),
+            'animals' => $animals->map(fn ($animal) => $this->animalService->formatAnimal($animal)),
             'meta'  => [
                 'total'        => $animals->total(),
                 'per_page'     => $animals->perPage(),
@@ -141,10 +141,10 @@ class AnimalController extends Controller
     {
         $this->authorize('restore', Animal::class);
 
-        $animal = $this->animalApiService->restore($id);
+        $animal = $this->animalService->restore($id);
 
         return ApiResponse::success(
-            $this->animalApiService->formatAnimal($animal->load('farm', 'espece', 'lot', 'mother')),
+            $this->animalService->formatAnimal($animal->load('farm', 'espece', 'lot', 'mother')),
             'Animal restauré avec succès.'
         );
     }

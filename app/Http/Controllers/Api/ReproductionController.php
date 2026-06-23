@@ -5,16 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
 use App\Models\Animal;
-use App\Services\Admin\ReproductionApiService;
+use App\Services\ReproductionService;
 use Illuminate\Http\Request;
 
 class ReproductionController extends Controller
 {
-    private ReproductionApiService $reproductionApiService;
+    private ReproductionService $reproductionService;
 
-    public function __construct(ReproductionApiService $reproductionApiService)
+    public function __construct(ReproductionService $reproductionService)
     {
-        $this->reproductionApiService = $reproductionApiService;
+        $this->reproductionService = $reproductionService;
     }
 
     // =========================================================
@@ -32,7 +32,7 @@ class ReproductionController extends Controller
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
         }
 
-        $dashboard = $this->reproductionApiService->dashboard($farmId);
+        $dashboard = $this->reproductionService->dashboard($farmId);
 
         return ApiResponse::success($dashboard, 'Dashboard de reproduction récupéré avec succès.');
     }
@@ -49,7 +49,7 @@ class ReproductionController extends Controller
         }
 
         $jours = $request->jours ?? 30;
-        $forecast = $this->reproductionApiService->forecast($farmId, $jours);
+        $forecast = $this->reproductionService->forecast($farmId, $jours);
 
         return ApiResponse::success([
             'forecast' => $forecast,
@@ -64,7 +64,7 @@ class ReproductionController extends Controller
     {
         $this->authorize('view', $animal);
 
-        $historique = $this->reproductionApiService->historiqueAnimal($animal->id);
+        $historique = $this->reproductionService->historiqueAnimal($animal->id);
 
         return ApiResponse::success($historique, 'Historique reproductif de l\'animal récupéré avec succès.');
     }
@@ -76,7 +76,7 @@ class ReproductionController extends Controller
     {
         $this->authorize('view', $animal);
 
-        $statistiques = $this->reproductionApiService->statistiquesAnimal($animal->id);
+        $statistiques = $this->reproductionService->statistiquesAnimal($animal->id);
 
         return ApiResponse::success($statistiques, 'Statistiques reproductives de l\'animal récupérées avec succès.');
     }

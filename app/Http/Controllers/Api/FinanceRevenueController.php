@@ -4,16 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
-use App\Services\Admin\FinanceTransactionApiService;
+use App\Services\FinanceTransactionService;
 use Illuminate\Http\Request;
 
 class FinanceRevenueController extends Controller
 {
-    private FinanceTransactionApiService $financeTransactionApiService;
+    private FinanceTransactionService $financeTransactionService;
 
-    public function __construct(FinanceTransactionApiService $financeTransactionApiService)
+    public function __construct(FinanceTransactionService $financeTransactionService)
     {
-        $this->financeTransactionApiService = $financeTransactionApiService;
+        $this->financeTransactionService = $financeTransactionService;
     }
 
     // =========================================================
@@ -34,7 +34,7 @@ class FinanceRevenueController extends Controller
             'animal_id' => $request->animal_id,
         ];
 
-        $revenus = $this->financeTransactionApiService->revenus($filters);
+        $revenus = $this->financeTransactionService->revenus($filters);
 
         return ApiResponse::success($revenus, 'Revenus récupérés avec succès.');
     }
@@ -51,7 +51,7 @@ class FinanceRevenueController extends Controller
             'date_fin' => 'required|date',
         ]);
 
-        $revenus = $this->financeTransactionApiService->revenusParPeriode(
+        $revenus = $this->financeTransactionService->revenusParPeriode(
             $request->date_debut,
             $request->date_fin
         );
@@ -66,7 +66,7 @@ class FinanceRevenueController extends Controller
     {
         $this->authorize('view', \App\Models\Transaction::class);
 
-        $revenus = $this->financeTransactionApiService->revenusParCategorie(
+        $revenus = $this->financeTransactionService->revenusParCategorie(
             $request->date_debut,
             $request->date_fin
         );
@@ -81,7 +81,7 @@ class FinanceRevenueController extends Controller
     {
         $this->authorize('view', \App\Models\Transaction::class);
 
-        $revenus = $this->financeTransactionApiService->revenusParAnimal(
+        $revenus = $this->financeTransactionService->revenusParAnimal(
             $request->date_debut,
             $request->date_fin
         );

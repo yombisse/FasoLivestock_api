@@ -2,243 +2,47 @@
 
 namespace App\Services\Admin;
 
-use App\Models\Evenement;
-use App\Models\Animal;
-use App\Models\TypeEvenement;
-use Illuminate\Pagination\LengthAwarePaginator;
+use App\DTOs\ApiResult;
 
-class MouvementApiService
+class MouvementApiService extends AdminApiService
 {
-    /**
-     * Déterminer le statut après mouvement selon le type.
-     */
-    private function getStatutApres(string $typeNom): string
+    public function getAll(array $params = []): ApiResult
     {
-        return match (strtoupper($typeNom)) {
-            'ACHAT' => 'ACTIF',
-            'VENTE' => 'VENDU',
-            'DECES' => 'DECEDE',
-            'PERTE' => 'PERDU',
-            'ABATTAGE' => 'ABATTU',
-            'TRANSFERT' => 'TRANSFERE',
-            default => 'ACTIF',
-        };
+        return $this->get('/mouvements', $params);
     }
 
-    /**
-     * Lister les mouvements avec pagination et filtres.
-     */
-    public function index(array $filters, int $perPage = 15): LengthAwarePaginator
+    public function find(string $id): ApiResult
     {
-        $query = Evenement::query()
-            ->mouvements()
-            ->with(['farm', 'animal', 'type', 'farmDestination', 'transaction'])
-            ->when(isset($filters['date_debut']), fn ($q) =>
-                $q->whereDate('date_evenement', '>=', $filters['date_debut'])
-            )
-            ->when(isset($filters['date_fin']), fn ($q) =>
-                $q->whereDate('date_evenement', '<=', $filters['date_fin'])
-            )
-            ->when(isset($filters['animal_id']), fn ($q) =>
-                $q->where('animal_id', $filters['animal_id'])
-            )
-            ->when(isset($filters['type']), fn ($q) =>
-                $q->whereHas('type', fn ($q) =>
-                    $q->where('nom_type', $filters['type'])
-                )
-            )
-            ->when(isset($filters['statut']), fn ($q) =>
-                $q->where('statut_apres', $filters['statut'])
-            )
-            ->orderBy('date_evenement', 'desc');
-
-        return $query->paginate($perPage);
+        return $this->get("/mouvements/{$id}");
     }
 
-    /**
-     * Créer un mouvement avec règles métier.
-     */
-    public function store(array $data, string $userId): Evenement
+    public function create(array $data): ApiResult
     {
-        $typeEvenement = TypeEvenement::findOrFail($data['type_evenement_id']);
-        $typeNom = strtoupper($typeEvenement->nom_type);
-
-        // Récupérer le statut avant de l'animal
-        $animal = Animal::findOrFail($data['animal_id']);
-        $data['statut_avant'] = $animal->statut ?? 'ACTIF';
-
-        // Déterminer le statut après selon le type
-        $data['statut_apres'] = $this->getStatutApres($typeNom);
-
-        // Utiliser la ferme courante du contexte
-        $data['farm_id'] = $data['farm_id'] ?? null;
-        $data['sync_status'] = 'synced';
-        $data['last_modified_by'] = $userId;
-        $data['version'] = 1;
-
-        return Evenement::create($data);
+        return $this->post('/mouvements', $data);
     }
 
-    /**
-     * Mettre à jour un mouvement.
-     */
-    public function update(Evenement $evenement, array $data, string $userId): Evenement
+    public function update(string $id, array $data): ApiResult
     {
-        $data['sync_status'] = 'synced';
-        $data['last_modified_by'] = $userId;
-        $data['version'] = ($evenement->version ?? 1) + 1;
-
-        $evenement->update($data);
-
-        return $evenement->fresh();
+        return $this->put("/mouvements/{$id}", $data);
     }
 
-    /**
-     * Supprimer (soft delete) un mouvement.
-     */
-    public function destroy(Evenement $evenement): bool
+    public function delete(string $id): ApiResult
     {
-        $evenement->update([
-            'sync_status' => 'synced',
-            'version' => ($evenement->version ?? 1) + 1,
-        ]);
-
-        return $evenement->delete();
+        return $this->delete("/mouvements/{$id}");
     }
 
-    /**
-     * Historique des mouvements d'un animal.
-     */
-    public function animalHistory(Animal $animal, int $perPage = 15): LengthAwarePaginator
+    public function animalHistory(string $animalId): ApiResult
     {
-        return Evenement::query()
-            ->mouvements()
-            ->where('animal_id', $animal->id)
-            ->with(['farm', 'type', 'farmDestination'])
-            ->orderBy('date_evenement', 'desc')
-            ->paginate($perPage);
+        return $this->get("/animals/{$animalId}/mouvements");
     }
 
-    /**
-     * Traçabilité complète d'un animal.
-     */
-    public function trace(Animal $animal): array
+    public function trace(string $animalId): ApiResult
     {
-        $mouvements = Evenement::query()
-            ->mouvements()
-            ->where('animal_id', $animal->id)
-            ->with(['farm', 'type', 'farmDestination'])
-            ->orderBy('date_evenement', 'asc')
-            ->get();
-
-        $dernierMouvement = $mouvements->last();
-        $provenance = $mouvements->first()?->farm;
-        $destination = $dernierMouvement?->farmDestination ?? $animal->farm;
-
-        return [
-            'animal' => [
-                'id' => $animal->id,
-                'nom' => $animal->nom,
-                'numero_identification' => $animal->numero_identification,
-                'statut' => $animal->statut,
-                'ferme_actuelle' => $animal->farm ? [
-                    'id' => $animal->farm->id,
-                    'name' => $animal->farm->name,
-                ] : null,
-            ],
-            'ferme_actuelle' => $animal->farm ? [
-                'id' => $animal->farm->id,
-                'name' => $animal->farm->name,
-            ] : null,
-            'historique' => $mouvements->map(fn ($m) => $this->formatMouvement($m)),
-            'dernier_mouvement' => $dernierMouvement ? $this->formatMouvement($dernierMouvement) : null,
-            'provenance' => $provenance ? [
-                'id' => $provenance->id,
-                'name' => $provenance->name,
-            ] : null,
-            'destination' => $destination ? [
-                'id' => $destination->id,
-                'name' => $destination->name,
-            ] : null,
-        ];
+        return $this->get("/mouvements/trace/{$animalId}");
     }
 
-    /**
-     * Statistiques des mouvements pour une ferme.
-     */
-    public function statistiques(string $farmId): array
+    public function statistiques(array $params = []): ApiResult
     {
-        $query = Evenement::query()
-            ->mouvements()
-            ->where('farm_id', $farmId);
-
-        return [
-            'achats' => (clone $query)->whereHas('type', fn ($q) =>
-                $q->where('nom_type', 'ACHAT')
-            )->count(),
-            'ventes' => (clone $query)->whereHas('type', fn ($q) =>
-                $q->where('nom_type', 'VENTE')
-            )->count(),
-            'deces' => (clone $query)->whereHas('type', fn ($q) =>
-                $q->where('nom_type', 'DECES')
-            )->count(),
-            'pertes' => (clone $query)->whereHas('type', fn ($q) =>
-                $q->where('nom_type', 'PERTE')
-            )->count(),
-            'abattages' => (clone $query)->whereHas('type', fn ($q) =>
-                $q->where('nom_type', 'ABATTAGE')
-            )->count(),
-            'transferts' => (clone $query)->whereHas('type', fn ($q) =>
-                $q->where('nom_type', 'TRANSFERT')
-            )->count(),
-        ];
-    }
-
-    /**
-     * Formater un mouvement pour la réponse API.
-     */
-    public function formatMouvement(Evenement $evenement): array
-    {
-        return [
-            'id' => $evenement->id,
-            'farm_id' => $evenement->farm_id,
-            'type_evenement_id' => $evenement->type_evenement_id,
-            'animal_id' => $evenement->animal_id,
-            'date_evenement' => $evenement->date_evenement,
-            'description' => $evenement->description,
-            'cout' => $evenement->cout,
-            'farm_destination_id' => $evenement->farm_destination_id,
-            'statut_avant' => $evenement->statut_avant,
-            'statut_apres' => $evenement->statut_apres,
-            'transaction_id' => $evenement->transaction_id,
-            'sync_status' => $evenement->sync_status,
-            'version' => $evenement->version,
-            'deleted_at' => $evenement->deleted_at,
-            'created_at' => $evenement->created_at,
-            'updated_at' => $evenement->updated_at,
-            // Relations
-            'farm' => $evenement->farm ? [
-                'id' => $evenement->farm->id,
-                'name' => $evenement->farm->name,
-            ] : null,
-            'animal' => $evenement->animal ? [
-                'id' => $evenement->animal->id,
-                'nom' => $evenement->animal->nom,
-                'numero_identification' => $evenement->animal->numero_identification,
-            ] : null,
-            'type' => $evenement->type ? [
-                'id' => $evenement->type->id,
-                'nom_type' => $evenement->type->nom_type,
-            ] : null,
-            'farm_destination' => $evenement->farmDestination ? [
-                'id' => $evenement->farmDestination->id,
-                'name' => $evenement->farmDestination->name,
-            ] : null,
-            'transaction' => $evenement->transaction ? [
-                'id' => $evenement->transaction->id,
-                'type' => $evenement->transaction->type,
-                'montant' => $evenement->transaction->montant,
-            ] : null,
-        ];
+        return $this->get('/mouvements/statistiques', $params);
     }
 }

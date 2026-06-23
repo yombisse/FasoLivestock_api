@@ -4,16 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
-use App\Services\Admin\FinanceTransactionApiService;
+use App\Services\FinanceTransactionService;
 use Illuminate\Http\Request;
 
 class FinanceReportController extends Controller
 {
-    private FinanceTransactionApiService $financeTransactionApiService;
+    private FinanceTransactionService $financeTransactionService;
 
-    public function __construct(FinanceTransactionApiService $financeTransactionApiService)
+    public function __construct(FinanceTransactionService $financeTransactionService)
     {
-        $this->financeTransactionApiService = $financeTransactionApiService;
+        $this->financeTransactionService = $financeTransactionService;
     }
 
     // =========================================================
@@ -27,7 +27,7 @@ class FinanceReportController extends Controller
     {
         $this->authorize('view', \App\Models\Transaction::class);
 
-        $bilan = $this->financeTransactionApiService->bilan(
+        $bilan = $this->financeTransactionService->bilan(
             $request->date_debut,
             $request->date_fin
         );
@@ -47,7 +47,7 @@ class FinanceReportController extends Controller
             'date_fin' => 'required|date',
         ]);
 
-        $bilan = $this->financeTransactionApiService->bilan(
+        $bilan = $this->financeTransactionService->bilan(
             $request->date_debut,
             $request->date_fin
         );
@@ -62,7 +62,7 @@ class FinanceReportController extends Controller
     {
         $this->authorize('view', \App\Models\Transaction::class);
 
-        $bilan = $this->financeTransactionApiService->bilanParFerme(
+        $bilan = $this->financeTransactionService->bilanParFerme(
             $farmId,
             $request->date_debut,
             $request->date_fin
@@ -78,7 +78,7 @@ class FinanceReportController extends Controller
     {
         $this->authorize('view', \App\Models\Transaction::class);
 
-        $statistiques = $this->financeTransactionApiService->statistiquesGlobales(
+        $statistiques = $this->financeTransactionService->statistiquesGlobales(
             $request->date_debut,
             $request->date_fin
         );

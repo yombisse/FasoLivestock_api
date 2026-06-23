@@ -7,16 +7,16 @@ use App\Http\Requests\Sante\StoreSanteRappelRequest;
 use App\Http\Requests\Sante\UpdateSanteRappelRequest;
 use App\Helpers\ApiResponse;
 use App\Models\SanteRappel;
-use App\Services\Admin\SanteRappelApiService;
+use App\Services\SanteRappelService;
 use Illuminate\Http\Request;
 
 class SanteRappelController extends Controller
 {
-    private SanteRappelApiService $santeRappelApiService;
+    private SanteRappelService $santeRappelService;
 
-    public function __construct(SanteRappelApiService $santeRappelApiService)
+    public function __construct(SanteRappelService $santeRappelService)
     {
-        $this->santeRappelApiService = $santeRappelApiService;
+        $this->santeRappelService = $santeRappelService;
     }
 
     // =========================================================
@@ -37,10 +37,10 @@ class SanteRappelController extends Controller
             'en_retard' => $request->en_retard,
         ];
 
-        $rappels = $this->santeRappelApiService->index($filters, $request->per_page ?? 15);
+        $rappels = $this->santeRappelService->index($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'rappels' => $rappels->map(fn ($rappel) => $this->santeRappelApiService->formatRappel($rappel)),
+            'rappels' => $rappels->map(fn ($rappel) => $this->santeRappelService->formatRappel($rappel)),
             'meta'  => [
                 'total'        => $rappels->total(),
                 'per_page'     => $rappels->perPage(),
@@ -61,10 +61,10 @@ class SanteRappelController extends Controller
         $data = $request->validated();
 
         try {
-            $rappel = $this->santeRappelApiService->store($data, $userId);
+            $rappel = $this->santeRappelService->store($data, $userId);
 
             return ApiResponse::success(
-                $this->santeRappelApiService->formatRappel($rappel->load(['animal', 'farm', 'evenement'])),
+                $this->santeRappelService->formatRappel($rappel->load(['animal', 'farm', 'evenement'])),
                 'Rappel sanitaire créé avec succès.',
                 201
             );
@@ -83,7 +83,7 @@ class SanteRappelController extends Controller
         $rappel->load(['animal', 'farm', 'evenement']);
 
         return ApiResponse::success(
-            $this->santeRappelApiService->formatRappel($rappel),
+            $this->santeRappelService->formatRappel($rappel),
             'Rappel sanitaire récupéré avec succès.'
         );
     }
@@ -99,10 +99,10 @@ class SanteRappelController extends Controller
         $data = $request->validated();
 
         try {
-            $rappel = $this->santeRappelApiService->update($rappel, $data, $userId);
+            $rappel = $this->santeRappelService->update($rappel, $data, $userId);
 
             return ApiResponse::success(
-                $this->santeRappelApiService->formatRappel($rappel->load(['animal', 'farm', 'evenement'])),
+                $this->santeRappelService->formatRappel($rappel->load(['animal', 'farm', 'evenement'])),
                 'Rappel sanitaire mis à jour avec succès.'
             );
         } catch (\Exception $e) {
@@ -117,7 +117,7 @@ class SanteRappelController extends Controller
     {
         $this->authorize('delete', $rappel);
 
-        $this->santeRappelApiService->destroy($rappel);
+        $this->santeRappelService->destroy($rappel);
 
         return ApiResponse::success(null, 'Rappel sanitaire archivé avec succès.');
     }
@@ -132,10 +132,10 @@ class SanteRappelController extends Controller
             'type_rappel' => $request->type_rappel,
         ];
 
-        $rappels = $this->santeRappelApiService->trashed($filters, $request->per_page ?? 15);
+        $rappels = $this->santeRappelService->trashed($filters, $request->per_page ?? 15);
 
         return ApiResponse::success([
-            'rappels' => $rappels->map(fn ($rappel) => $this->santeRappelApiService->formatRappel($rappel)),
+            'rappels' => $rappels->map(fn ($rappel) => $this->santeRappelService->formatRappel($rappel)),
             'meta'  => [
                 'total'        => $rappels->total(),
                 'per_page'     => $rappels->perPage(),
@@ -152,10 +152,10 @@ class SanteRappelController extends Controller
     {
         $this->authorize('restore', SanteRappel::class);
 
-        $rappel = $this->santeRappelApiService->restore($id);
+        $rappel = $this->santeRappelService->restore($id);
 
         return ApiResponse::success(
-            $this->santeRappelApiService->formatRappel($rappel->load(['animal', 'farm', 'evenement'])),
+            $this->santeRappelService->formatRappel($rappel->load(['animal', 'farm', 'evenement'])),
             'Rappel sanitaire restauré avec succès.'
         );
     }
@@ -168,7 +168,7 @@ class SanteRappelController extends Controller
         $this->authorize('view', SanteRappel::class);
 
         $jours = $request->jours ?? 7;
-        $rappels = $this->santeRappelApiService->aVenir($jours);
+        $rappels = $this->santeRappelService->aVenir($jours);
 
         return ApiResponse::success([
             'rappels' => $rappels,
@@ -183,7 +183,7 @@ class SanteRappelController extends Controller
     {
         $this->authorize('view', SanteRappel::class);
 
-        $rappels = $this->santeRappelApiService->enRetard();
+        $rappels = $this->santeRappelService->enRetard();
 
         return ApiResponse::success([
             'rappels' => $rappels,
@@ -208,10 +208,10 @@ class SanteRappelController extends Controller
         $evenementData = $request->only(['type_evenement_id', 'date_evenement', 'description', 'cout']);
 
         try {
-            $rappel = $this->santeRappelApiService->marquerRealise($rappel, $evenementData, $userId);
+            $rappel = $this->santeRappelService->marquerRealise($rappel, $evenementData, $userId);
 
             return ApiResponse::success(
-                $this->santeRappelApiService->formatRappel($rappel->load(['animal', 'farm', 'evenement'])),
+                $this->santeRappelService->formatRappel($rappel->load(['animal', 'farm', 'evenement'])),
                 'Rappel sanitaire marqué comme réalisé avec succès.'
             );
         } catch (\Exception $e) {
@@ -235,10 +235,10 @@ class SanteRappelController extends Controller
         $userId = auth()->id();
 
         try {
-            $rappelsGeneres = $this->santeRappelApiService->genererRappelsAutomatiques($farmId, $userId);
+            $rappelsGeneres = $this->santeRappelService->genererRappelsAutomatiques($farmId, $userId);
 
             return ApiResponse::success([
-                'rappels_generes' => collect($rappelsGeneres)->map(fn ($rappel) => $this->santeRappelApiService->formatRappel($rappel->load(['animal', 'farm']))),
+                'rappels_generes' => collect($rappelsGeneres)->map(fn ($rappel) => $this->santeRappelService->formatRappel($rappel->load(['animal', 'farm']))),
                 'nombre_rappels' => count($rappelsGeneres),
             ], 'Rappels générés automatiquement avec succès.');
         } catch (\Exception $e) {
@@ -261,10 +261,10 @@ class SanteRappelController extends Controller
         $nouvelleDate = $request->nouvelle_date;
 
         try {
-            $rappel = $this->santeRappelApiService->reprogrammer($rappel, $nouvelleDate, $userId);
+            $rappel = $this->santeRappelService->reprogrammer($rappel, $nouvelleDate, $userId);
 
             return ApiResponse::success(
-                $this->santeRappelApiService->formatRappel($rappel->load(['animal', 'farm', 'evenement'])),
+                $this->santeRappelService->formatRappel($rappel->load(['animal', 'farm', 'evenement'])),
                 'Rappel sanitaire reprogrammé avec succès.'
             );
         } catch (\Exception $e) {
@@ -288,7 +288,7 @@ class SanteRappelController extends Controller
         $dateDebut = $request->date_debut;
         $dateFin = $request->date_fin;
 
-        $statistiques = $this->santeRappelApiService->statistiquesGlobales($farmId, $dateDebut, $dateFin);
+        $statistiques = $this->santeRappelService->statistiquesGlobales($farmId, $dateDebut, $dateFin);
 
         return ApiResponse::success($statistiques, 'Statistiques globales sanitaires récupérées avec succès.');
     }
