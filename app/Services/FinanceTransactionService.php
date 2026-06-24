@@ -12,6 +12,12 @@ use Illuminate\Support\Facades\DB;
 
 class FinanceTransactionService
 {
+    private ActivityLogService $activityLog;
+
+    public function __construct(ActivityLogService $activityLog)
+    {
+        $this->activityLog = $activityLog;
+    }
     /**
      * Lister les transactions avec pagination et filtres.
      */
@@ -43,6 +49,39 @@ class FinanceTransactionService
     }
 
     /**
+     * Obtenir toutes les transactions sans pagination (pour exports).
+     */
+    public function getAll(array $filters = []): \Illuminate\Support\Collection
+    {
+        $query = Transaction::query()
+            ->with(['farm', 'user', 'animal', 'categorie', 'evenement'])
+            ->when(isset($filters['farm_id']), fn ($q) =>
+                $q->where('farm_id', $filters['farm_id'])
+            )
+            ->when(isset($filters['type_transaction']), fn ($q) =>
+                $q->where('type_transaction', $filters['type_transaction'])
+            )
+            ->when(isset($filters['animal_id']), fn ($q) =>
+                $q->where('animal_id', $filters['animal_id'])
+            )
+            ->when(isset($filters['categorie_id']), fn ($q) =>
+                $q->where('categorie_id', $filters['categorie_id'])
+            )
+            ->when(isset($filters['date_debut']) && isset($filters['date_fin']), fn ($q) =>
+                $q->whereBetween('date_transaction', [$filters['date_debut'], $filters['date_fin']])
+            )
+            ->when(isset($filters['revenus']), fn ($q) =>
+                $q->revenus()
+            )
+            ->when(isset($filters['charges']), fn ($q) =>
+                $q->charges()
+            )
+            ->orderBy('date_transaction', 'desc');
+
+        return $query->get();
+    }
+
+    /**
      * Créer une transaction avec gestion offline-first et cohérence cheptel.
      */
     public function store(array $data, string $userId): Transaction
@@ -70,6 +109,9 @@ class FinanceTransactionService
             }
 
             $transaction = Transaction::create($data);
+
+            // Log activity after successful creation
+            $this->activityLog->log('created', $transaction, null, $data);
 
             return $transaction->fresh();
         });
@@ -102,7 +144,12 @@ class FinanceTransactionService
                 $data = $this->appliquerReglesCheptel($data, $animal);
             }
 
+            $oldValues = $transaction->toArray();
+            
             $transaction->update($data);
+
+            // Log activity after successful update
+            $this->activityLog->log('updated', $transaction, $oldValues, $data);
 
             return $transaction->fresh();
         });
@@ -118,7 +165,16 @@ class FinanceTransactionService
             'version' => ($transaction->version ?? 1) + 1,
         ]);
 
-        return $transaction->delete();
+        $oldValues = $transaction->toArray();
+        
+        $result = $transaction->delete();
+
+        // Log activity after successful deletion
+        if ($result) {
+            $this->activityLog->log('deleted', $transaction, $oldValues, null);
+        }
+
+        return $result;
     }
 
     /**
@@ -128,6 +184,9 @@ class FinanceTransactionService
     {
         $transaction = Transaction::onlyTrashed()->findOrFail($id);
         $transaction->restore();
+
+        // Log activity after successful restoration
+        $this->activityLog->log('restored', $transaction, null, $transaction->toArray());
 
         return $transaction->fresh();
     }
@@ -213,9 +272,13 @@ class FinanceTransactionService
     /**
      * Obtenir les revenus par catégorie.
      */
-    public function revenusParCategorie(?string $dateDebut = null, ?string $dateFin = null): array
+    public function revenusParCategorie(?string $farmId = null, ?string $dateDebut = null, ?string $dateFin = null): array
     {
         $query = Transaction::query()->revenus();
+
+        if ($farmId) {
+            $query->where('farm_id', $farmId);
+        }
 
         if ($dateDebut && $dateFin) {
             $query->whereBetween('date_transaction', [$dateDebut, $dateFin]);
@@ -325,9 +388,13 @@ class FinanceTransactionService
     /**
      * Obtenir les charges par catégorie.
      */
-    public function chargesParCategorie(?string $dateDebut = null, ?string $dateFin = null): array
+    public function chargesParCategorie(?string $farmId = null, ?string $dateDebut = null, ?string $dateFin = null): array
     {
         $query = Transaction::query()->charges();
+
+        if ($farmId) {
+            $query->where('farm_id', $farmId);
+        }
 
         if ($dateDebut && $dateFin) {
             $query->whereBetween('date_transaction', [$dateDebut, $dateFin]);

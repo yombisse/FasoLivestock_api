@@ -18,6 +18,7 @@ class TypeEvenement extends Model
         'farm_id',
         'sync_status',
         'last_modified_by',
+        'version',
     ];
 
     protected $casts = [

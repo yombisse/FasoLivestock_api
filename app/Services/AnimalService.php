@@ -7,6 +7,12 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class AnimalService
 {
+    private ActivityLogService $activityLog;
+
+    public function __construct(ActivityLogService $activityLog)
+    {
+        $this->activityLog = $activityLog;
+    }
     /**
      * Lister les animaux avec pagination et filtres.
      */
@@ -51,6 +57,49 @@ class AnimalService
     }
 
     /**
+     * Obtenir tous les animaux sans pagination (pour exports).
+     */
+    public function getAll(array $filters = []): \Illuminate\Support\Collection
+    {
+        $query = Animal::query()
+            ->with(['farm', 'espece', 'lot', 'mother'])
+            ->when(isset($filters['farm_id']), fn ($q) =>
+                $q->where('farm_id', $filters['farm_id'])
+            )
+            ->when(isset($filters['search']), fn ($q) =>
+                $q->where(fn ($q) =>
+                    $q->where('nom', 'like', "%{$filters['search']}%")
+                      ->orWhere('race', 'like', "%{$filters['search']}%")
+                      ->orWhere('numero_identification', 'like', "%{$filters['search']}%")
+                )
+            )
+            ->when(isset($filters['race']), fn ($q) =>
+                $q->where('race', 'like', "%{$filters['race']}%")
+            )
+            ->when(isset($filters['sexe']), fn ($q) =>
+                $q->where('sexe', $filters['sexe'])
+            )
+            ->when(isset($filters['espece_id']), fn ($q) =>
+                $q->where('espece_id', $filters['espece_id'])
+            )
+            ->when(isset($filters['lot_id']), fn ($q) =>
+                $q->where('lot_id', $filters['lot_id'])
+            )
+            ->when(isset($filters['statut']), fn ($q) =>
+                $q->where('statut', $filters['statut'])
+            )
+            ->when(isset($filters['date_naissance_from']), fn ($q) =>
+                $q->whereDate('date_naissance', '>=', $filters['date_naissance_from'])
+            )
+            ->when(isset($filters['date_naissance_to']), fn ($q) =>
+                $q->whereDate('date_naissance', '<=', $filters['date_naissance_to'])
+            )
+            ->orderBy('created_at', 'desc');
+
+        return $query->get();
+    }
+
+    /**
      * Créer un animal.
      */
     public function store(array $data): Animal
@@ -58,7 +107,12 @@ class AnimalService
         $data['sync_status'] = 'synced';
         $data['version'] = 1;
 
-        return Animal::create($data);
+        $animal = Animal::create($data);
+
+        // Log activity after successful creation
+        $this->activityLog->log('created', $animal, null, $data);
+
+        return $animal;
     }
 
     /**
@@ -66,10 +120,15 @@ class AnimalService
      */
     public function update(Animal $animal, array $data): Animal
     {
+        $oldValues = $animal->toArray();
+        
         $data['sync_status'] = 'synced';
         $data['version'] = ($animal->version ?? 1) + 1;
 
         $animal->update($data);
+
+        // Log activity after successful update
+        $this->activityLog->log('updated', $animal, $oldValues, $data);
 
         return $animal->fresh();
     }
@@ -79,12 +138,21 @@ class AnimalService
      */
     public function destroy(Animal $animal): bool
     {
+        $oldValues = $animal->toArray();
+        
         $animal->update([
             'sync_status' => 'synced',
             'version' => ($animal->version ?? 1) + 1,
         ]);
 
-        return $animal->delete();
+        $result = $animal->delete();
+
+        // Log activity after successful deletion
+        if ($result) {
+            $this->activityLog->log('deleted', $animal, $oldValues, null);
+        }
+
+        return $result;
     }
 
     /**
@@ -94,6 +162,9 @@ class AnimalService
     {
         $animal = Animal::onlyTrashed()->findOrFail($id);
         $animal->restore();
+
+        // Log activity after successful restoration
+        $this->activityLog->log('restored', $animal, null, $animal->toArray());
 
         return $animal->fresh();
     }

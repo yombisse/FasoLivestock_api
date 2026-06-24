@@ -8,9 +8,18 @@ use App\Models\Evenement;
 use App\Models\TypeEvenement;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
 
 class NaissanceService
 {
+    private ActivityLogService $activityLog;
+    private NotificationService $notificationService;
+
+    public function __construct(ActivityLogService $activityLog, NotificationService $notificationService)
+    {
+        $this->activityLog = $activityLog;
+        $this->notificationService = $notificationService;
+    }
     /**
      * Lister les naissances avec pagination et filtres.
      */
@@ -30,6 +39,27 @@ class NaissanceService
             ->orderBy('date_naissance', 'desc');
 
         return $query->paginate($perPage);
+    }
+
+    /**
+     * Obtenir toutes les naissances sans pagination (pour exports).
+     */
+    public function getAll(array $filters = []): \Illuminate\Support\Collection
+    {
+        $query = Naissance::query()
+            ->with(['mother', 'farm', 'evenement', 'petits'])
+            ->when(isset($filters['farm_id']), fn ($q) =>
+                $q->where('farm_id', $filters['farm_id'])
+            )
+            ->when(isset($filters['mother_id']), fn ($q) =>
+                $q->where('mother_id', $filters['mother_id'])
+            )
+            ->when(isset($filters['date_debut']) && isset($filters['date_fin']), fn ($q) =>
+                $q->whereBetween('date_naissance', [$filters['date_debut'], $filters['date_fin']])
+            )
+            ->orderBy('date_naissance', 'desc');
+
+        return $query->get();
     }
 
     /**
@@ -68,6 +98,25 @@ class NaissanceService
             unset($data['creer_petits']);
 
             $naissance = Naissance::create($data);
+
+            // Log activity after successful creation
+            $this->activityLog->log('created', $naissance, null, $data);
+
+            // Create notification if date_mise_bas_prevue is set
+            if (isset($data['date_mise_bas_prevue']) && $data['date_mise_bas_prevue']) {
+                $naissance->load('mother');
+                $motherNom = $naissance->mother->nom ?? $naissance->mother->numero_identification;
+                $joursRestants = now()->diffInDays($naissance->date_mise_bas_prevue, false);
+                $this->notificationService->creerNotification(
+                    $naissance->farm_id,
+                    'mise_bas_prevue',
+                    'Mise bas prévue',
+                    "Mise bas prévue pour la mère {$motherNom} dans {$joursRestants} jours ({$naissance->date_mise_bas_prevue->format('d/m/Y')}).",
+                    $naissance->mother_id,
+                    null,
+                    null
+                );
+            }
 
             // Créer automatiquement l'événement MISE_BAS si non fourni
             if (!isset($data['evenement_id'])) {
@@ -144,7 +193,12 @@ class NaissanceService
                 }
             }
 
+            $oldValues = $naissance->toArray();
+            
             $naissance->update($data);
+
+            // Log activity after successful update
+            $this->activityLog->log('updated', $naissance, $oldValues, $data);
 
             return $naissance->fresh();
         });
@@ -160,7 +214,16 @@ class NaissanceService
             'version' => ($naissance->version ?? 1) + 1,
         ]);
 
-        return $naissance->delete();
+        $oldValues = $naissance->toArray();
+        
+        $result = $naissance->delete();
+
+        // Log activity after successful deletion
+        if ($result) {
+            $this->activityLog->log('deleted', $naissance, $oldValues, null);
+        }
+
+        return $result;
     }
 
     /**
@@ -170,6 +233,9 @@ class NaissanceService
     {
         $naissance = Naissance::onlyTrashed()->findOrFail($id);
         $naissance->restore();
+
+        // Log activity after successful restoration
+        $this->activityLog->log('restored', $naissance, null, $naissance->toArray());
 
         return $naissance->fresh();
     }

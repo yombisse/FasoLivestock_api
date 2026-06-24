@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             SuperAdminSeeder::class,
             TypeEvenementSeeder::class,
+            EspeceSeeder::class,
         ]);
 
 

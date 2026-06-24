@@ -9,6 +9,12 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class MouvementService
 {
+    private ActivityLogService $activityLog;
+
+    public function __construct(ActivityLogService $activityLog)
+    {
+        $this->activityLog = $activityLog;
+    }
     /**
      * Déterminer le statut après mouvement selon le type.
      */
@@ -76,7 +82,12 @@ class MouvementService
         $data['last_modified_by'] = $userId;
         $data['version'] = 1;
 
-        return Evenement::create($data);
+        $evenement = Evenement::create($data);
+
+        // Log activity after successful creation
+        $this->activityLog->log('created', $evenement, null, $data);
+
+        return $evenement;
     }
 
     /**
@@ -88,7 +99,12 @@ class MouvementService
         $data['last_modified_by'] = $userId;
         $data['version'] = ($evenement->version ?? 1) + 1;
 
+        $oldValues = $evenement->toArray();
+        
         $evenement->update($data);
+
+        // Log activity after successful update
+        $this->activityLog->log('updated', $evenement, $oldValues, $data);
 
         return $evenement->fresh();
     }
@@ -103,7 +119,16 @@ class MouvementService
             'version' => ($evenement->version ?? 1) + 1,
         ]);
 
-        return $evenement->delete();
+        $oldValues = $evenement->toArray();
+        
+        $result = $evenement->delete();
+
+        // Log activity after successful deletion
+        if ($result) {
+            $this->activityLog->log('deleted', $evenement, $oldValues, null);
+        }
+
+        return $result;
     }
 
     /**

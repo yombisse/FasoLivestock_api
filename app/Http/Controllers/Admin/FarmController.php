@@ -22,15 +22,13 @@ class FarmController extends Controller
             'search', 'page', 'per_page'
         ]));
 
-        if (!$response['success']) {
+        if (!$response->success) {
             return $this->handleApiError($response);
         }
 
-        $data = $response['data']['data'] ?? [];
-
         return view('admin.farms.index', [
-            'farms' => $data['farms'] ?? [],
-            'meta'  => $data['meta']  ?? [],
+            'farms' => $response->data['farms'] ?? [],
+            'meta'  => $response->data['meta']  ?? [],
         ]);
     }
 
@@ -92,10 +90,21 @@ class FarmController extends Controller
                 ->with('error', $response->message ?? 'Ferme introuvable.');
         }
 
-        $farm = $response->data ?? [];
+        $farm = $response->data;
+        
+        // Convert to array if it's an object
+        if (is_object($farm)) {
+            $farm = (array)$farm;
+        }
+        
+        // Ensure the ID is available
+        if (!isset($farm['id'])) {
+            $farm['id'] = $id;
+        }
 
         return view('admin.farms.edit', [
             'farm' => $farm,
+            'farmId' => $id,
         ]);
     }
 

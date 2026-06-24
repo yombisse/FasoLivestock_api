@@ -40,7 +40,7 @@
                    name="name"
                    class="role-name-input"
                    placeholder="ex : Gestionnaire, Vétérinaire, Auditeur…"
-                   value="{{ old('name', $role['name'] ?? '') }}"
+                   value="{{ old('name') }}"
                    autocomplete="off">
             <span class="role-name-hint">
                 <i class="bi bi-info-circle"></i>

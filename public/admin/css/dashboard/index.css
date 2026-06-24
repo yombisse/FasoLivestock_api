@@ -50,12 +50,202 @@
     text-transform: capitalize;
 }
 
+.welcome-right {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.welcome-stats {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.welcome-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.welcome-stat .stat-number {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--primary, #16a34a);
+    line-height: 1;
+}
+
+.welcome-stat .stat-label {
+    font-size: .7rem;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-top: .2rem;
+}
+
 /* ─── Stats grid ────────────────────────────────────────── */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
+}
+
+/* ─── Farms overview ─────────────────────────────────────── */
+.farms-overview {
+    background: var(--surface, #fff);
+    border: 1.5px solid var(--border, #e2e8f0);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.farms-overview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.farms-overview-header h5 {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--text, #1e293b);
+    margin: 0;
+}
+
+.btn-link {
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--primary, #16a34a);
+    text-decoration: none;
+    transition: color .2s;
+}
+
+.btn-link:hover {
+    color: #15803d;
+    text-decoration: underline;
+}
+
+.farms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+/* ─── Farm card ──────────────────────────────────────────── */
+.farm-card {
+    background: #f8fafc;
+    border: 1.5px solid var(--border, #e2e8f0);
+    border-radius: .75rem;
+    overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+}
+
+.farm-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.07);
+    border-color: #cbd5e1;
+}
+
+.farm-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .85rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+}
+
+.farm-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: .5rem;
+    background: #dcfce7;
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.farm-status {
+    font-size: .65rem;
+    font-weight: 700;
+    padding: .25rem .6rem;
+    border-radius: 1rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.farm-status.active {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.farm-status.inactive {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.farm-card-body {
+    padding: 1rem;
+}
+
+.farm-card-body h6 {
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--text, #1e293b);
+    margin: 0 0 .25rem;
+}
+
+.farm-location {
+    font-size: .72rem;
+    color: var(--text-muted, #64748b);
+    margin: 0 0 .5rem;
+}
+
+.farm-stats {
+    display: flex;
+    gap: .75rem;
+    font-size: .7rem;
+    color: var(--text-muted, #64748b);
+}
+
+.farm-stats span {
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+}
+
+.farm-card-footer {
+    padding: .75rem 1rem;
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+}
+
+/* ─── Empty state ───────────────────────────────────────── */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    text-align: center;
+    grid-column: 1 / -1;
+}
+
+.empty-state i {
+    font-size: 2.5rem;
+    color: #cbd5e1;
+    margin-bottom: .75rem;
+}
+
+.empty-state p {
+    font-size: .85rem;
+    color: var(--text-muted, #64748b);
+    margin: 0 0 1rem;
 }
 
 /* ─── Stat card ─────────────────────────────────────────── */

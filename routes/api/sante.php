@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\SanteRappelController;
 use App\Http\Controllers\Api\SanteAnimalController;
+use App\Http\Controllers\Api\SanteEvenementController;
 
 Route::middleware(['auth:sanctum', 'farm.context'])->group(function () {
 
@@ -67,5 +68,53 @@ Route::middleware(['auth:sanctum', 'farm.context'])->group(function () {
 
     // Alertes sanitaires de la ferme courante
     Route::get('sante/alertes-ferme', [SanteAnimalController::class, 'alertesFerme'])
+        ->middleware('permission:sante.view');
+
+    // =========================================================
+    // ÉVÉNEMENTS SANITAIRES (Vaccinations, Traitements, Maladies, Consultations)
+    // =========================================================
+
+    // Liste des événements sanitaires
+    Route::get('sante/evenements', [SanteEvenementController::class, 'index'])
+        ->middleware('permission:sante.view');
+
+    // Créer un événement sanitaire
+    Route::post('sante/evenements', [SanteEvenementController::class, 'store'])
+        ->middleware('permission:sante.create');
+
+    // Détail d'un événement sanitaire
+    Route::get('sante/evenements/{evenement}', [SanteEvenementController::class, 'show'])
+        ->middleware('permission:sante.view');
+
+    // Modifier un événement sanitaire
+    Route::put('sante/evenements/{evenement}', [SanteEvenementController::class, 'update'])
+        ->middleware('permission:sante.update');
+
+    // Supprimer un événement sanitaire
+    Route::delete('sante/evenements/{evenement}', [SanteEvenementController::class, 'destroy'])
+        ->middleware('permission:sante.delete');
+
+    // =========================================================
+    // ÉVÉNEMENTS PAR TYPE (PAR ANIMAL)
+    // =========================================================
+
+    // Vaccinations d'un animal
+    Route::get('sante/animals/{animal}/vaccinations', [SanteEvenementController::class, 'vaccinationsAnimal'])
+        ->middleware('permission:sante.view');
+
+    // Traitements d'un animal
+    Route::get('sante/animals/{animal}/traitements', [SanteEvenementController::class, 'traitementsAnimal'])
+        ->middleware('permission:sante.view');
+
+    // Maladies d'un animal
+    Route::get('sante/animals/{animal}/maladies', [SanteEvenementController::class, 'maladiesAnimal'])
+        ->middleware('permission:sante.view');
+
+    // Consultations d'un animal
+    Route::get('sante/animals/{animal}/consultations', [SanteEvenementController::class, 'consultationsAnimal'])
+        ->middleware('permission:sante.view');
+
+    // Statistiques sanitaires par type pour la ferme
+    Route::get('sante/statistiques-par-type', [SanteEvenementController::class, 'statistiquesParType'])
         ->middleware('permission:sante.view');
 });

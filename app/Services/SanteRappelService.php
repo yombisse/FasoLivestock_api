@@ -8,9 +8,18 @@ use App\Models\Evenement;
 use App\Models\TypeEvenement;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
 
 class SanteRappelService
 {
+    private ActivityLogService $activityLog;
+    private NotificationService $notificationService;
+
+    public function __construct(ActivityLogService $activityLog, NotificationService $notificationService)
+    {
+        $this->activityLog = $activityLog;
+        $this->notificationService = $notificationService;
+    }
     /**
      * Lister les rappels sanitaires avec pagination et filtres.
      */
@@ -36,6 +45,36 @@ class SanteRappelService
             ->orderBy('date_prevue', 'asc');
 
         return $query->paginate($perPage);
+    }
+
+    /**
+     * Obtenir tous les rappels sanitaires sans pagination (pour exports).
+     */
+    public function getAll(array $filters = []): \Illuminate\Support\Collection
+    {
+        $query = SanteRappel::query()
+            ->with(['animal', 'farm', 'evenement'])
+            ->when(isset($filters['farm_id']), fn ($q) =>
+                $q->where('farm_id', $filters['farm_id'])
+            )
+            ->when(isset($filters['animal_id']), fn ($q) =>
+                $q->where('animal_id', $filters['animal_id'])
+            )
+            ->when(isset($filters['type_rappel']), fn ($q) =>
+                $q->where('type_rappel', $filters['type_rappel'])
+            )
+            ->when(isset($filters['statut']), fn ($q) =>
+                $q->where('statut', $filters['statut'])
+            )
+            ->when(isset($filters['date_debut']) && isset($filters['date_fin']), fn ($q) =>
+                $q->whereBetween('date_prevue', [$filters['date_debut'], $filters['date_fin']])
+            )
+            ->when(isset($filters['en_retard']), fn ($q) =>
+                $q->where('statut', 'EN_RETARD')
+            )
+            ->orderBy('date_prevue', 'asc');
+
+        return $query->get();
     }
 
     /**
@@ -71,6 +110,9 @@ class SanteRappelService
             }
 
             $rappel = SanteRappel::create($data);
+
+            // Log activity after successful creation
+            $this->activityLog->log('created', $rappel, null, $data);
 
             return $rappel->fresh();
         });
@@ -109,7 +151,27 @@ class SanteRappelService
                 }
             }
 
+            $oldValues = $rappel->toArray();
+            
             $rappel->update($data);
+
+            // Log activity after successful update
+            $this->activityLog->log('updated', $rappel, $oldValues, $data);
+
+            // Create notification if status changed to EN_RETARD
+            if (isset($data['statut']) && $data['statut'] === 'EN_RETARD' && $oldValues['statut'] !== 'EN_RETARD') {
+                $rappel->load('animal');
+                $animalNom = $rappel->animal->nom ?? $rappel->animal->numero_identification;
+                $this->notificationService->creerNotification(
+                    $rappel->farm_id,
+                    'sante_retard',
+                    'Rappel sanitaire en retard',
+                    "Le rappel de {$rappel->type_rappel} pour l'animal {$animalNom} est passé en retard (date prévue: {$rappel->date_prevue->format('d/m/Y')}).",
+                    $rappel->animal_id,
+                    null,
+                    $rappel->id
+                );
+            }
 
             return $rappel->fresh();
         });
@@ -125,7 +187,16 @@ class SanteRappelService
             'version' => ($rappel->version ?? 1) + 1,
         ]);
 
-        return $rappel->delete();
+        $oldValues = $rappel->toArray();
+        
+        $result = $rappel->delete();
+
+        // Log activity after successful deletion
+        if ($result) {
+            $this->activityLog->log('deleted', $rappel, $oldValues, null);
+        }
+
+        return $result;
     }
 
     /**
@@ -135,6 +206,9 @@ class SanteRappelService
     {
         $rappel = SanteRappel::onlyTrashed()->findOrFail($id);
         $rappel->restore();
+
+        // Log activity after successful restoration
+        $this->activityLog->log('restored', $rappel, null, $rappel->toArray());
 
         return $rappel->fresh();
     }
