@@ -5,6 +5,8 @@ namespace App\Http\Requests\Animal;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
+use App\Models\Animal;
 
 class StoreAnimalRequest extends FormRequest
 {
@@ -17,33 +19,32 @@ class StoreAnimalRequest extends FormRequest
     {
         return [
             'farm_id'              => 'required|uuid|exists:farms,id',
-            'nom'                  => 'required|string|max:255',
+            'nom'                  => 'nullable|string|max:255',
             'race'                 => 'nullable|string|max:255',
             'sexe'                 => 'required|in:male,femelle',
-            'date_naissance'       => 'nullable|date',
             'poids'                => 'nullable|numeric|min:0',
             'espece_id'            => 'nullable|uuid|exists:especes,id',
             'lot_id'               => 'nullable|uuid|exists:lots,id',
-            'mother_id'            => 'nullable|uuid|exists:animals,id',
-            'statut'               => 'nullable|string|max:50',
-            'numero_identification' => 'nullable|string|max:255',
+            'numero_identification' => 'required|string|max:255|unique:animals,numero_identification',
             'photo'                => 'nullable|string|max:500',
-            'naissance_id'         => 'nullable|uuid|exists:naissances,id',
+            'statut'               => 'nullable|in:ACTIF,VENDU,MORT,PERDU',
+            'origine'              => ['sometimes', 'string', Rule::in(Animal::ORIGINES)],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'farm_id.required'     => 'La ferme est obligatoire.',
-            'farm_id.exists'       => 'La ferme sélectionnée est invalide.',
-            'nom.required'         => 'Le nom de l\'animal est obligatoire.',
-            'sexe.required'        => 'Le sexe est obligatoire.',
-            'sexe.in'              => 'Le sexe doit être : male ou femelle.',
-            'espece_id.exists'     => 'L\'espèce sélectionnée est invalide.',
-            'lot_id.exists'        => 'Le lot sélectionné est invalide.',
-            'mother_id.exists'     => 'La mère sélectionnée est invalide.',
-            'naissance_id.exists'  => 'La naissance sélectionnée est invalide.',
+            'farm_id.required'              => 'La ferme est obligatoire.',
+            'farm_id.exists'                => 'La ferme sélectionnée est invalide.',
+            'numero_identification.required' => 'Le numéro d\'identification est obligatoire.',
+            'numero_identification.unique'  => 'Ce numéro d\'identification existe déjà.',
+            'sexe.required'                 => 'Le sexe est obligatoire.',
+            'sexe.in'                       => 'Le sexe doit être : male ou femelle.',
+            'espece_id.exists'              => 'L\'espèce sélectionnée est invalide.',
+            'lot_id.exists'                 => 'Le lot sélectionné est invalide.',
+            'mother_id.exists'              => 'La mère sélectionnée est invalide.',
+            'naissance_id.exists'           => 'La naissance sélectionnée est invalide.',
         ];
     }
 
@@ -56,5 +57,12 @@ class StoreAnimalRequest extends FormRequest
                 'errors'  => $validator->errors(),
             ], 422)
         );
+    }
+
+    protected function prepareForValidation()
+    {
+        $this->merge([
+            'statut' => 'ACTIF',
+        ]);
     }
 }

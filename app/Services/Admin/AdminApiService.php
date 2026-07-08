@@ -91,15 +91,28 @@ abstract class AdminApiService
             $response = $kernel->handle($request);
 
             $body = json_decode($response->getContent(), true) ?? [];
+            $statusCode = $response->getStatusCode();
 
             // L'API retourne une structure { success, message, data }
-            // On extrait uniquement le 'data' pour le ApiResult
+            // On détecte les erreurs via le code HTTP ou le champ success
+            $apiSuccess = $body['success'] ?? true;
+            $isError = $statusCode >= 400 || !$apiSuccess;
+
+            if ($isError) {
+                return ApiResult::error(
+                    $body['message'] ?? 'Erreur serveur',
+                    $statusCode,
+                    $body['data'] ?? $body
+                );
+            }
+
+            // Succès : on extrait uniquement le 'data' pour le ApiResult
             $data = $body['data'] ?? $body;
 
             return ApiResult::success(
                 $data,
                 $body['message'] ?? 'OK',
-                $response->getStatusCode()
+                $statusCode
             );
 
         } catch (\Throwable $e) {

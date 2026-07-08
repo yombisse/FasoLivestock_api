@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Api\StatisticsController;
 
-Route::middleware(['auth:sanctum', 'farm.context'])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
 
     // Tableau de bord graphique (tous les graphiques)
     Route::get('statistics/dashboard-charts', [StatisticsController::class, 'dashboardCharts'])

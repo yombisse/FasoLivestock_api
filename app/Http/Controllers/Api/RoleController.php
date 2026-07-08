@@ -181,7 +181,6 @@ class RoleController extends Controller
     {
         $role = $this->baseQuery()->find($id);
 
-
         if (!$role) {
             return ApiResponse::error('Rôle introuvable', null, 404);
         }

@@ -294,7 +294,7 @@ class RationController extends Controller
     {
         $this->authorize('view', Ration::class);
 
-        $farmId = session('current_farm_id');
+        $farmId = $request->current_farm_id;
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);

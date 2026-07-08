@@ -18,13 +18,24 @@ class StatisticsController extends Controller
 
     /**
      * Obtenir toutes les données pour le tableau de bord graphique.
+     * Accepte farm_id en paramètre ou utilise la ferme courante du contexte.
      */
     public function dashboardCharts(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$farmId) {
-            return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
+            return ApiResponse::error(null, 'Aucune ferme spécifiée ou ferme courante définie.', 400);
+        }
+
+        // Vérifier que l'utilisateur a accès à cette ferme
+        $user = auth()->user();
+        $farm = \App\Models\Farm::findOrFail($farmId);
+        
+        if (!$user->hasRole('superadmin') && 
+            $farm->owner_id !== $user->id && 
+            !$farm->users()->where('user_id', $user->id)->exists()) {
+            return ApiResponse::error(null, 'Vous n\'avez pas accès à cette ferme.', 403);
         }
 
         $charts = $this->statisticsService->dashboardCharts(
@@ -38,13 +49,24 @@ class StatisticsController extends Controller
 
     /**
      * Obtenir les données pour le graphique d'évolution financière.
+     * Accepte farm_id en paramètre ou utilise la ferme courante du contexte.
      */
     public function financialEvolution(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$farmId) {
-            return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
+            return ApiResponse::error(null, 'Aucune ferme spécifiée ou ferme courante définie.', 400);
+        }
+
+        // Vérifier que l'utilisateur a accès à cette ferme
+        $user = auth()->user();
+        $farm = \App\Models\Farm::findOrFail($farmId);
+        
+        if (!$user->hasRole('superadmin') && 
+            $farm->owner_id !== $user->id && 
+            !$farm->users()->where('user_id', $user->id)->exists()) {
+            return ApiResponse::error(null, 'Vous n\'avez pas accès à cette ferme.', 403);
         }
 
         $request->validate([
@@ -63,13 +85,24 @@ class StatisticsController extends Controller
 
     /**
      * Obtenir les données pour le graphique des revenus par catégorie.
+     * Accepte farm_id en paramètre ou utilise la ferme courante du contexte.
      */
     public function revenueByCategory(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$farmId) {
-            return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
+            return ApiResponse::error(null, 'Aucune ferme spécifiée ou ferme courante définie.', 400);
+        }
+
+        // Vérifier que l'utilisateur a accès à cette ferme
+        $user = auth()->user();
+        $farm = \App\Models\Farm::findOrFail($farmId);
+        
+        if (!$user->hasRole('superadmin') && 
+            $farm->owner_id !== $user->id && 
+            !$farm->users()->where('user_id', $user->id)->exists()) {
+            return ApiResponse::error(null, 'Vous n\'avez pas accès à cette ferme.', 403);
         }
 
         $chart = $this->statisticsService->revenueByCategory(
@@ -83,13 +116,24 @@ class StatisticsController extends Controller
 
     /**
      * Obtenir les données pour le graphique des charges par catégorie.
+     * Accepte farm_id en paramètre ou utilise la ferme courante du contexte.
      */
     public function expenseByCategory(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$farmId) {
-            return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
+            return ApiResponse::error(null, 'Aucune ferme spécifiée ou ferme courante définie.', 400);
+        }
+
+        // Vérifier que l'utilisateur a accès à cette ferme
+        $user = auth()->user();
+        $farm = \App\Models\Farm::findOrFail($farmId);
+        
+        if (!$user->hasRole('superadmin') && 
+            $farm->owner_id !== $user->id && 
+            !$farm->users()->where('user_id', $user->id)->exists()) {
+            return ApiResponse::error(null, 'Vous n\'avez pas accès à cette ferme.', 403);
         }
 
         $chart = $this->statisticsService->expenseByCategory(
@@ -103,13 +147,24 @@ class StatisticsController extends Controller
 
     /**
      * Obtenir les données pour le graphique du cheptel par espèce.
+     * Accepte farm_id en paramètre ou utilise la ferme courante du contexte.
      */
     public function herdBySpecies(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$farmId) {
-            return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
+            return ApiResponse::error(null, 'Aucune ferme spécifiée ou ferme courante définie.', 400);
+        }
+
+        // Vérifier que l'utilisateur a accès à cette ferme
+        $user = auth()->user();
+        $farm = \App\Models\Farm::findOrFail($farmId);
+        
+        if (!$user->hasRole('superadmin') && 
+            $farm->owner_id !== $user->id && 
+            !$farm->users()->where('user_id', $user->id)->exists()) {
+            return ApiResponse::error(null, 'Vous n\'avez pas accès à cette ferme.', 403);
         }
 
         $chart = $this->statisticsService->herdBySpecies($farmId);
@@ -119,13 +174,24 @@ class StatisticsController extends Controller
 
     /**
      * Obtenir les données pour le graphique du cheptel par sexe.
+     * Accepte farm_id en paramètre ou utilise la ferme courante du contexte.
      */
     public function herdBySex(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$farmId) {
-            return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
+            return ApiResponse::error(null, 'Aucune ferme spécifiée ou ferme courante définie.', 400);
+        }
+
+        // Vérifier que l'utilisateur a accès à cette ferme
+        $user = auth()->user();
+        $farm = \App\Models\Farm::findOrFail($farmId);
+        
+        if (!$user->hasRole('superadmin') && 
+            $farm->owner_id !== $user->id && 
+            !$farm->users()->where('user_id', $user->id)->exists()) {
+            return ApiResponse::error(null, 'Vous n\'avez pas accès à cette ferme.', 403);
         }
 
         $chart = $this->statisticsService->herdBySex($farmId);
@@ -135,13 +201,24 @@ class StatisticsController extends Controller
 
     /**
      * Obtenir les données pour le graphique des mouvements.
+     * Accepte farm_id en paramètre ou utilise la ferme courante du contexte.
      */
     public function movementsStats(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$farmId) {
-            return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
+            return ApiResponse::error(null, 'Aucune ferme spécifiée ou ferme courante définie.', 400);
+        }
+
+        // Vérifier que l'utilisateur a accès à cette ferme
+        $user = auth()->user();
+        $farm = \App\Models\Farm::findOrFail($farmId);
+        
+        if (!$user->hasRole('superadmin') && 
+            $farm->owner_id !== $user->id && 
+            !$farm->users()->where('user_id', $user->id)->exists()) {
+            return ApiResponse::error(null, 'Vous n\'avez pas accès à cette ferme.', 403);
         }
 
         $request->validate([
@@ -160,13 +237,24 @@ class StatisticsController extends Controller
 
     /**
      * Obtenir les données pour le graphique des événements sanitaires.
+     * Accepte farm_id en paramètre ou utilise la ferme courante du contexte.
      */
     public function healthEventsEvolution(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$farmId) {
-            return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
+            return ApiResponse::error(null, 'Aucune ferme spécifiée ou ferme courante définie.', 400);
+        }
+
+        // Vérifier que l'utilisateur a accès à cette ferme
+        $user = auth()->user();
+        $farm = \App\Models\Farm::findOrFail($farmId);
+        
+        if (!$user->hasRole('superadmin') && 
+            $farm->owner_id !== $user->id && 
+            !$farm->users()->where('user_id', $user->id)->exists()) {
+            return ApiResponse::error(null, 'Vous n\'avez pas accès à cette ferme.', 403);
         }
 
         $request->validate([
@@ -185,13 +273,24 @@ class StatisticsController extends Controller
 
     /**
      * Obtenir les données pour le graphique de reproduction.
+     * Accepte farm_id en paramètre ou utilise la ferme courante du contexte.
      */
     public function reproductionStats(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$farmId) {
-            return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
+            return ApiResponse::error(null, 'Aucune ferme spécifiée ou ferme courante définie.', 400);
+        }
+
+        // Vérifier que l'utilisateur a accès à cette ferme
+        $user = auth()->user();
+        $farm = \App\Models\Farm::findOrFail($farmId);
+        
+        if (!$user->hasRole('superadmin') && 
+            $farm->owner_id !== $user->id && 
+            !$farm->users()->where('user_id', $user->id)->exists()) {
+            return ApiResponse::error(null, 'Vous n\'avez pas accès à cette ferme.', 403);
         }
 
         $chart = $this->statisticsService->reproductionStats(
@@ -205,13 +304,24 @@ class StatisticsController extends Controller
 
     /**
      * Obtenir les données pour le graphique des naissances par mois.
+     * Accepte farm_id en paramètre ou utilise la ferme courante du contexte.
      */
     public function birthsByMonth(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$farmId) {
-            return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
+            return ApiResponse::error(null, 'Aucune ferme spécifiée ou ferme courante définie.', 400);
+        }
+
+        // Vérifier que l'utilisateur a accès à cette ferme
+        $user = auth()->user();
+        $farm = \App\Models\Farm::findOrFail($farmId);
+        
+        if (!$user->hasRole('superadmin') && 
+            $farm->owner_id !== $user->id && 
+            !$farm->users()->where('user_id', $user->id)->exists()) {
+            return ApiResponse::error(null, 'Vous n\'avez pas accès à cette ferme.', 403);
         }
 
         $request->validate([]);

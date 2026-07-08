@@ -1,0 +1,147 @@
+/* ═══════════════════════════════════════════════════════════
+   FasoLivestock Admin — Mouvements Statistiques CSS
+═══════════════════════════════════════════════════════ */
+
+/* ─── Header page ───────────────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-header-left h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+}
+
+.page-header-left p {
+    font-size: .8rem;
+    color: var(--text-muted);
+    margin: .2rem 0 0;
+}
+
+/* ─── Stat cards ─────────────────────────────────────────── */
+.stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all var(--transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.stat-card-primary .stat-icon { background: var(--primary-xlight); color: var(--primary); }
+.stat-card-success .stat-icon { background: #D1FAE5; color: #059669; }
+.stat-card-danger  .stat-icon { background: #FEE2E2; color: #DC2626; }
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: .8rem;
+    color: var(--text-muted);
+    margin-top: .25rem;
+}
+
+/* ─── Card ───────────────────────────────────────────────── */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.card-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: .85rem 1.25rem;
+}
+
+.card-header h5 {
+    font-size: .9rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+/* ─── Cost summary ───────────────────────────────────────── */
+.cost-summary {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+}
+
+.cost-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .75rem;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+
+.cost-item-total {
+    background: var(--primary-xlight);
+    border: 1px solid var(--primary-light);
+    margin-top: .5rem;
+}
+
+.cost-label {
+    font-size: .875rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.cost-value {
+    font-size: .875rem;
+    color: var(--text);
+    font-weight: 700;
+}
+
+.cost-item-total .cost-value {
+    color: var(--primary);
+}
+
+/* ─── Empty state ───────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+
+.empty-state p { font-size: .875rem; margin: 0; }

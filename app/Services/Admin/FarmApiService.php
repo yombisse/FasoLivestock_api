@@ -26,7 +26,7 @@ class FarmApiService extends AdminApiService
         return $this->put("/farms/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteFarm(string $id): ApiResult
     {
         return $this->delete("/farms/{$id}");
     }
@@ -49,5 +49,10 @@ class FarmApiService extends AdminApiService
     public function removeUser(string $farmId, string $userId): ApiResult
     {
         return $this->delete("/farms/{$farmId}/users/{$userId}");
+    }
+
+    public function getPotentialOwners(array $params = []): ApiResult
+    {
+        return $this->get('/users/potential-owners', $params);
     }
 }

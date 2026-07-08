@@ -26,7 +26,7 @@ class ReproductionController extends Controller
      */
     public function dashboard(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('current_farm_id');
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
@@ -42,7 +42,7 @@ class ReproductionController extends Controller
      */
     public function forecast(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('current_farm_id');
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
@@ -60,8 +60,18 @@ class ReproductionController extends Controller
     /**
      * Obtenir l'historique reproductif d'un animal.
      */
-    public function historiqueAnimal(Animal $animal)
+    public function historiqueAnimal(string $animalId)
     {
+        $animal = Animal::find($animalId);
+        
+        if (!$animal) {
+            return ApiResponse::error(
+                'Animal non trouvé. Veuillez synchroniser vos données locales avec le serveur avant de charger l\'historique.',
+                null,
+                404
+            );
+        }
+
         $this->authorize('view', $animal);
 
         $historique = $this->reproductionService->historiqueAnimal($animal->id);
@@ -72,8 +82,18 @@ class ReproductionController extends Controller
     /**
      * Obtenir les statistiques reproductives d'un animal.
      */
-    public function statistiquesAnimal(Animal $animal)
+    public function statistiquesAnimal(string $animalId)
     {
+        $animal = Animal::find($animalId);
+        
+        if (!$animal) {
+            return ApiResponse::error(
+                'Animal non trouvé. Veuillez synchroniser vos données locales avec le serveur avant de charger les statistiques.',
+                null,
+                404
+            );
+        }
+
         $this->authorize('view', $animal);
 
         $statistiques = $this->reproductionService->statistiquesAnimal($animal->id);

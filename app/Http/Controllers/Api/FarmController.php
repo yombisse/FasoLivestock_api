@@ -65,11 +65,56 @@ class FarmController extends Controller
 
     /**
      * Créer une ferme.
-     * L'utilisateur connecté devient automatiquement owner.
+     *
+     * Règles :
+     * - Un utilisateur avec permission farm.create peut créer une ferme pour un autre owner (owner_id requis)
+     * - Un utilisateur avec permission farm.create NE PEUT PAS créer une ferme pour lui-même
+     * - Un superadmin peut créer une ferme pour n'importe quel owner (y compris lui-même)
+     * - Si owner_id n'est pas fourni, l'utilisateur connecté devient owner (comportement par défaut)
+     * - Si la requête vient de l'admin panel (flag from_admin_panel), les permissions sont contournées
      */
     public function store(StoreFarmRequest $request)
     {
         $user = auth()->user();
+
+        // Déterminer le propriétaire de la ferme
+        $ownerId = $request->owner_id ?? $user->id;
+
+        // Si owner_id est fourni et différent de l'utilisateur connecté
+        if ($ownerId !== $user->id) {
+            // Si la requête vient de l'admin panel, autoriser sans vérification de permission
+            if (!$request->from_admin_panel) {
+                // Vérifier que l'utilisateur a la permission farm.create OU est superadmin
+                if (!$user->can('create', Farm::class) && !$user->hasRole('superadmin')) {
+                    return ApiResponse::error(
+                        'Vous n\'avez pas la permission de créer une ferme pour un autre propriétaire.',
+                        null,
+                        403
+                    );
+                }
+            }
+        } else {
+            // Si owner_id n'est pas fourni ou est égal à l'utilisateur connecté
+            // Vérifier que l'utilisateur n'est pas en train d'essayer de créer une ferme pour lui-même
+            // alors qu'il a la permission farm.create (ce qui n'est pas autorisé)
+            if ($user->can('create', Farm::class) && !$user->hasRole('superadmin')) {
+                return ApiResponse::error(
+                    'Un utilisateur avec la permission farm.create doit spécifier un propriétaire (owner_id) différent de lui-même.',
+                    null,
+                    422
+                );
+            }
+        }
+
+        // Vérifier que l'owner_id existe
+        $owner = User::find($ownerId);
+        if (!$owner) {
+            return ApiResponse::error(
+                'Le propriétaire spécifié est introuvable.',
+                null,
+                404
+            );
+        }
 
         $farm = Farm::create([
             'name'         => $request->name,
@@ -77,15 +122,20 @@ class FarmController extends Controller
             'description'  => $request->description,
             'type_elevage' => $request->type_elevage,
             'photo'        => $request->photo,
-            'owner_id'     => $user->id,
+            'owner_id'     => $ownerId,
         ]);
 
-        // Attacher le owner dans farm_user aussi
-        $farm->users()->attach($user->id, ['role' => 'owner']);
+        // Attacher le owner dans farm_user avec le rôle owner
+        $farm->users()->attach($ownerId, ['role' => 'owner']);
+
+        // Si l'utilisateur connecté n'est pas le owner, l'attacher avec un rôle par défaut (manager)
+        if ($ownerId !== $user->id) {
+            $farm->users()->attach($user->id, ['role' => 'manager']);
+        }
 
         // Attacher les autres utilisateurs si fournis
         if ($request->has('users')) {
-            $this->syncFarmUsers($farm, $request->users, excludeId: $user->id);
+            $this->syncFarmUsers($farm, $request->users, excludeId: $ownerId);
         }
 
         return ApiResponse::success(
@@ -204,7 +254,7 @@ class FarmController extends Controller
         $this->syncFarmUsers($farm, $request->users, excludeId: $farm->owner_id);
 
         return ApiResponse::success(
-            $this->formatFarm($farm->load('owner', 'users')->loadCount('animals', 'users')),
+            $this->formatFarm($farm->load('owner', 'users')->loadCount('animals', 'users'), detailed: true),
             'Membres de la ferme mis à jour avec succès.'
         );
     }

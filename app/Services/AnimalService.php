@@ -3,19 +3,31 @@
 namespace App\Services;
 
 use App\Models\Animal;
+use App\Models\Evenement;
+use App\Models\Transaction;
+use App\Models\TypeEvenement;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class AnimalService
 {
     private ActivityLogService $activityLog;
+    private EvenementService $evenementService;
+    private NaissanceService $naissanceService;
+    private EvenementMouvementService $evenementMouvementService;
 
-    public function __construct(ActivityLogService $activityLog)
+    public function __construct(ActivityLogService $activityLog, EvenementService $evenementService, NaissanceService $naissanceService, EvenementMouvementService $evenementMouvementService)
     {
         $this->activityLog = $activityLog;
+        $this->evenementService = $evenementService;
+        $this->naissanceService = $naissanceService;
+        $this->evenementMouvementService = $evenementMouvementService;
     }
-    /**
-     * Lister les animaux avec pagination et filtres.
-     */
+
+    // =========================================================
+    // LISTING
+    // =========================================================
+
     public function index(array $filters, int $perPage = 15): LengthAwarePaginator
     {
         $query = Animal::query()
@@ -26,8 +38,8 @@ class AnimalService
             ->when(isset($filters['search']), fn ($q) =>
                 $q->where(fn ($q) =>
                     $q->where('nom', 'like', "%{$filters['search']}%")
-                      ->orWhere('race', 'like', "%{$filters['search']}%")
-                      ->orWhere('numero_identification', 'like', "%{$filters['search']}%")
+                        ->orWhere('race', 'like', "%{$filters['search']}%")
+                        ->orWhere('numero_identification', 'like', "%{$filters['search']}%")
                 )
             )
             ->when(isset($filters['race']), fn ($q) =>
@@ -56,9 +68,6 @@ class AnimalService
         return $query->paginate($perPage);
     }
 
-    /**
-     * Obtenir tous les animaux sans pagination (pour exports).
-     */
     public function getAll(array $filters = []): \Illuminate\Support\Collection
     {
         $query = Animal::query()
@@ -69,8 +78,8 @@ class AnimalService
             ->when(isset($filters['search']), fn ($q) =>
                 $q->where(fn ($q) =>
                     $q->where('nom', 'like', "%{$filters['search']}%")
-                      ->orWhere('race', 'like', "%{$filters['search']}%")
-                      ->orWhere('numero_identification', 'like', "%{$filters['search']}%")
+                        ->orWhere('race', 'like', "%{$filters['search']}%")
+                        ->orWhere('numero_identification', 'like', "%{$filters['search']}%")
                 )
             )
             ->when(isset($filters['race']), fn ($q) =>
@@ -87,6 +96,9 @@ class AnimalService
             )
             ->when(isset($filters['statut']), fn ($q) =>
                 $q->where('statut', $filters['statut'])
+            )
+            ->when(isset($filters['etat_sante']), fn ($q) =>
+                $q->where('etat_sante', $filters['etat_sante'])
             )
             ->when(isset($filters['date_naissance_from']), fn ($q) =>
                 $q->whereDate('date_naissance', '>=', $filters['date_naissance_from'])
@@ -99,79 +111,6 @@ class AnimalService
         return $query->get();
     }
 
-    /**
-     * Créer un animal.
-     */
-    public function store(array $data): Animal
-    {
-        $data['sync_status'] = 'synced';
-        $data['version'] = 1;
-
-        $animal = Animal::create($data);
-
-        // Log activity after successful creation
-        $this->activityLog->log('created', $animal, null, $data);
-
-        return $animal;
-    }
-
-    /**
-     * Mettre à jour un animal.
-     */
-    public function update(Animal $animal, array $data): Animal
-    {
-        $oldValues = $animal->toArray();
-        
-        $data['sync_status'] = 'synced';
-        $data['version'] = ($animal->version ?? 1) + 1;
-
-        $animal->update($data);
-
-        // Log activity after successful update
-        $this->activityLog->log('updated', $animal, $oldValues, $data);
-
-        return $animal->fresh();
-    }
-
-    /**
-     * Supprimer (soft delete) un animal.
-     */
-    public function destroy(Animal $animal): bool
-    {
-        $oldValues = $animal->toArray();
-        
-        $animal->update([
-            'sync_status' => 'synced',
-            'version' => ($animal->version ?? 1) + 1,
-        ]);
-
-        $result = $animal->delete();
-
-        // Log activity after successful deletion
-        if ($result) {
-            $this->activityLog->log('deleted', $animal, $oldValues, null);
-        }
-
-        return $result;
-    }
-
-    /**
-     * Restaurer un animal archivé.
-     */
-    public function restore(string $id): Animal
-    {
-        $animal = Animal::onlyTrashed()->findOrFail($id);
-        $animal->restore();
-
-        // Log activity after successful restoration
-        $this->activityLog->log('restored', $animal, null, $animal->toArray());
-
-        return $animal->fresh();
-    }
-
-    /**
-     * Lister les animaux archivés.
-     */
     public function trashed(array $filters, int $perPage = 15): LengthAwarePaginator
     {
         $query = Animal::onlyTrashed()
@@ -182,7 +121,7 @@ class AnimalService
             ->when(isset($filters['search']), fn ($q) =>
                 $q->where(fn ($q) =>
                     $q->where('nom', 'like', "%{$filters['search']}%")
-                      ->orWhere('race', 'like', "%{$filters['search']}%")
+                        ->orWhere('race', 'like', "%{$filters['search']}%")
                 )
             )
             ->orderBy('deleted_at', 'desc');
@@ -190,48 +129,231 @@ class AnimalService
         return $query->paginate($perPage);
     }
 
-    /**
-     * Formater un animal pour la réponse API.
-     */
+    // =========================================================
+    // CRUD ANIMAL
+    // =========================================================
+
+    public function store(array $data): Animal
+    {
+        $data['sync_status'] = 'synced';
+        $data['version'] = 1;
+        $data['origine'] = $data['origine'] ?? 'import';
+
+        unset($data['statut']);
+
+        $animal = Animal::create($data);
+
+        $this->activityLog->log('created', $animal, null, $data);
+
+        return $animal;
+    }
+
+    public function update(Animal $animal, array $data): Animal
+    {
+        $oldValues = $animal->toArray();
+
+        $data['sync_status'] = 'synced';
+        $data['version'] = ($animal->version ?? 1) + 1;
+
+        unset($data['statut']);
+
+        $animal->update($data);
+
+        $this->activityLog->log('updated', $animal, $oldValues, $data);
+
+        return $animal->fresh();
+    }
+
+    public function destroy(Animal $animal): bool
+    {
+        $oldValues = $animal->toArray();
+
+        $animal->update([
+            'sync_status' => 'synced',
+            'version'     => ($animal->version ?? 1) + 1,
+        ]);
+
+        $result = $animal->delete();
+
+        if ($result) {
+            $this->activityLog->log('deleted', $animal, $oldValues, null);
+        }
+
+        return $result;
+    }
+
+    public function restore(string $id): Animal
+    {
+        $animal = Animal::onlyTrashed()->findOrFail($id);
+        $animal->restore();
+
+        $this->activityLog->log('restored', $animal, null, $animal->toArray());
+
+        return $animal->fresh();
+    }
+
+    // =========================================================
+    // DÉLÉGATION MOUVEMENTS (pour compatibilité AnimalController)
+    // =========================================================
+
+    public function birth(array $data): Animal
+    {
+        // Préparer les données pour NaissanceService::declarer
+        $naissanceData = [
+            'mother_id' => $data['mother_id'] ?? null,
+            'date_naissance' => $data['date_naissance'] ?? now(),
+            'nombre_petits' => 1,
+            'petits' => [
+                [
+                    'nom' => $data['nom'],
+                    'race' => $data['race'] ?? null,
+                    'sexe' => $data['sexe'],
+                    'espece_id' => $data['espece_id'] ?? null,
+                    'lot_id' => $data['lot_id'] ?? null,
+                    'poids' => $data['poids'] ?? null,
+                    'numero_identification' => $data['numero_identification'] ?? null,
+                    'photo' => $data['photo'] ?? null,
+                ]
+            ],
+        ];
+
+        $farmId = $data['farm_id'];
+        $naissance = $this->naissanceService->declarer($naissanceData, $farmId);
+
+        // Retourner le premier petit créé
+        return $naissance->petits->first();
+    }
+
+    public function purchase(array $data): Animal
+    {
+        return $this->evenementMouvementService->achat($data, $data['farm_id']);
+    }
+
+    public function sell(Animal $animal, array $data): Animal
+    {
+        $this->evenementMouvementService->vente($animal, $data);
+        // Recharger l'animal depuis la base pour obtenir les modifications
+        return Animal::find($animal->id);
+    }
+
+    public function transfer(Animal $animal, array $data): Animal
+    {
+        $this->evenementMouvementService->transfert($animal, $data);
+        return $animal->fresh();
+    }
+
+    public function declareDeath(Animal $animal, array $data): Animal
+    {
+        $this->evenementMouvementService->deces($animal, $data);
+        return $animal->fresh();
+    }
+
+    public function declareLoss(Animal $animal, array $data): Animal
+    {
+        $this->evenementMouvementService->perte($animal, $data);
+        return $animal->fresh();
+    }
+
+    public function slaughter(Animal $animal, array $data): Animal
+    {
+        $this->evenementMouvementService->abattage($animal, $data);
+        return $animal->fresh();
+    }
+
+    public function sellLot(\App\Models\Lot $lot, array $data): array
+    {
+        return $this->evenementMouvementService->venteLot($lot, $data);
+    }
+
+    // =========================================================
+    // FORMAT API
+    // =========================================================
+
     public function formatAnimal(Animal $animal): array
     {
         return [
-            'id'                   => $animal->id,
-            'farm_id'              => $animal->farm_id,
-            'nom'                  => $animal->nom,
-            'race'                 => $animal->race,
-            'sexe'                 => $animal->sexe,
-            'date_naissance'       => $animal->date_naissance,
-            'poids'                => $animal->poids,
-            'espece_id'            => $animal->espece_id,
-            'lot_id'               => $animal->lot_id,
-            'mother_id'            => $animal->mother_id,
-            'statut'               => $animal->statut,
+            'id' => $animal->id,
+            'farm_id' => $animal->farm_id,
+            'nom' => $animal->nom,
+            'race' => $animal->race,
+            'sexe' => $animal->sexe,
+            'date_naissance' => $animal->date_naissance,
+            'poids' => $animal->poids,
+            'espece_id' => $animal->espece_id,
+            'lot_id' => $animal->lot_id,
+            'mother_id' => $animal->mother_id,
+            'statut' => $animal->statut,
+            'origine' => $animal->origine,
             'numero_identification' => $animal->numero_identification,
-            'photo'                => $animal->photo,
-            'naissance_id'         => $animal->naissance_id,
-            'sync_status'          => $animal->sync_status,
-            'version'              => $animal->version,
-            'deleted_at'           => $animal->deleted_at,
-            'created_at'           => $animal->created_at,
-            'updated_at'           => $animal->updated_at,
-            // Relations
-            'farm'                 => $animal->farm ? [
-                'id'   => $animal->farm->id,
-                'name' => $animal->farm->name,
-            ] : null,
-            'espece'               => $animal->espece ? [
-                'id'   => $animal->espece->id,
-                'nom'  => $animal->espece->nom,
-            ] : null,
-            'lot'                  => $animal->lot ? [
-                'id'   => $animal->lot->id,
-                'nom'  => $animal->lot->nom,
-            ] : null,
-            'mother'               => $animal->mother ? [
-                'id'   => $animal->mother->id,
-                'nom'  => $animal->mother->nom,
-            ] : null,
+            'photo' => $animal->photo,
+            'naissance_id' => $animal->naissance_id,
+            'sync_status' => $animal->sync_status,
+            'version' => $animal->version,
+            'deleted_at' => $animal->deleted_at,
+            'created_at' => $animal->created_at,
+            'updated_at' => $animal->updated_at,
+            'farm' => $animal->farm ? ['id' => $animal->farm->id, 'name' => $animal->farm->name] : null,
+            'espece' => $animal->espece ? ['id' => $animal->espece->id, 'nom' => $animal->espece->nom] : null,
+            'lot' => $animal->lot ? ['id' => $animal->lot->id, 'nom' => $animal->lot->nom] : null,
+            'mother' => $animal->mother ? ['id' => $animal->mother->id, 'nom' => $animal->mother->nom] : null,
         ];
+    }
+
+    // =========================================================
+    // IMPORT BATCH
+    // =========================================================
+
+    public function importBatch(array $animaux, string $farmId): array
+    {
+        return DB::transaction(function () use ($animaux, $farmId) {
+            $resultats = ['succes' => 0, 'erreurs' => []];
+            $typeImport = TypeEvenement::where('nom_type', 'STOCK_INITIAL')
+                ->whereNull('farm_id')
+                ->first();
+
+            foreach ($animaux as $index => $data) {
+                try {
+                    $animal = Animal::create(array_merge($data, [
+                        'farm_id' => $farmId,
+                        'origine' => Animal::ORIGINE_IMPORT,
+                        'statut'  => 'ACTIF',
+                        'sync_status' => 'synced',
+                        'version' => 1,
+                    ]));
+
+                    if ($animal) {
+                        // Créer un événement traçable d'entrée
+                        if ($typeImport) {
+                            $this->evenementService->creerMouvement([
+                                'farm_id' => $farmId,
+                                'type_evenement_id' => $typeImport->id,
+                                'animal_id' => $animal->id,
+                                'date_evenement' => now(),
+                                'description' => 'Import initial du cheptel',
+                                'statut_apres' => 'ACTIF',
+                                'sync_status' => 'synced',
+                                'version' => 1,
+                            ], $animal);
+                        }
+
+                        $resultats['succes']++;
+                    } else {
+                        $resultats['erreurs'][] = [
+                            'ligne'  => $index + 1,
+                            'data'   => $data,
+                            'raison' => 'Échec de création (retour null)',
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    $resultats['erreurs'][] = [
+                        'ligne'  => $index + 1,
+                        'data'   => $data,
+                        'raison' => $e->getMessage(),
+                    ];
+                }
+            }
+
+            return $resultats;
+        });
     }
 }

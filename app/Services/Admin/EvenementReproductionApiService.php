@@ -26,7 +26,7 @@ class EvenementReproductionApiService extends AdminApiService
         return $this->put("/reproduction/evenements/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteEvenement(string $id): ApiResult
     {
         return $this->delete("/reproduction/evenements/{$id}");
     }

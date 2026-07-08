@@ -141,7 +141,7 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        $response = $this->userApi->delete($id);
+        $response = $this->userApi->deleteUser($id);
 
         return redirect()
             ->route('admin.users.index')
@@ -199,6 +199,19 @@ class UserController extends Controller
                     ? 'Utilisateur restauré avec succès.'
                     : ($response->message ?? 'Erreur.')
             );
+    }
+
+    /**
+     * Recherche utilisateurs pour autocomplete
+     */
+    public function search(Request $request)
+    {
+        $response = $this->userApi->getAll([
+            'search'   => $request->q,
+            'per_page' => 10,
+        ]);
+        $users = $response->success ? ($response->data['users'] ?? []) : [];
+        return response()->json($users);
     }
 
     // =========================================================

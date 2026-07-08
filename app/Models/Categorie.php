@@ -15,11 +15,25 @@ class Categorie extends Model
     protected $fillable = [
         'nom_categorie',
         'type',
+        'description',
+        'farm_id',
+        'sync_status',
+        'last_modified_by',
+        'version',
     ];
 
+    protected $casts = [
+        'sync_status' => 'string',
+        'type' => 'string',
+    ];
 
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function farm()
+    {
+        return $this->belongsTo(Farm::class);
     }
 }

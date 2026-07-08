@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\Admin\EspeceApiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class EspeceController extends Controller
 {
@@ -49,7 +50,6 @@ class EspeceController extends Controller
     public function store(Request $request)
     {
         $response = $this->especeApi->create($request->all());
-
         if (!$response->success) {
             return back()
                 ->withErrors($response->data['errors'] ?? [])
@@ -68,7 +68,6 @@ class EspeceController extends Controller
     public function show(string $id)
     {
         $response = $this->especeApi->find($id);
-
         if (!$response->success) {
             return redirect()
                 ->route('admin.especes.index')
@@ -86,7 +85,6 @@ class EspeceController extends Controller
     public function edit(string $id)
     {
         $response = $this->especeApi->find($id);
-
         if (!$response->success) {
             return redirect()
                 ->route('admin.especes.index')
@@ -122,7 +120,7 @@ class EspeceController extends Controller
      */
     public function destroy(string $id)
     {
-        $response = $this->especeApi->delete($id);
+        $response = $this->especeApi->deleteEspece($id);
 
         return redirect()
             ->route('admin.especes.index')
@@ -191,5 +189,42 @@ class EspeceController extends Controller
             'error',
             $response->message ?? 'Erreur serveur.'
         );
+    }
+
+    /**
+     * Formulaire paramètres espèce
+     */
+    public function editParametres(string $id)
+    {
+        $response = $this->especeApi->find($id);
+
+        if (!$response->success) {
+            return redirect()
+                ->route('admin.especes.index')
+                ->with('error', 'Espèce introuvable.');
+        }
+
+        return view('admin.especes.parametres', [
+            'espece' => $response->data ?? [],
+        ]);
+    }
+
+    /**
+     * Mettre à jour les paramètres d'une espèce
+     */
+    public function updateParametres(Request $request, string $id)
+    {
+        $response = $this->especeApi->updateParametres($id, $request->all());
+
+        if (!$response->success) {
+            return back()
+                ->withErrors($response->data['errors'] ?? [])
+                ->with('error', $response->message ?? 'Erreur.')
+                ->withInput();
+        }
+
+        return redirect()
+            ->route('admin.especes.show', $id)
+            ->with('success', 'Paramètres mis à jour avec succès.');
     }
 }

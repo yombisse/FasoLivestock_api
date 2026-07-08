@@ -5,10 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Reproduction\StoreEvenementReproductionRequest;
 use App\Http\Requests\Reproduction\UpdateEvenementReproductionRequest;
+use App\Http\Requests\Reproduction\SaillieRequest;
+use App\Http\Requests\Reproduction\ChaleurRequest;
+use App\Http\Requests\Reproduction\GestationRequest;
+use App\Http\Requests\Reproduction\MiseBasRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Evenement;
+use App\Models\TypeEvenement;
 use App\Services\EvenementReproductionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class EvenementReproductionController extends Controller
 {
@@ -50,16 +56,58 @@ class EvenementReproductionController extends Controller
 
     /**
      * Créer un événement de reproduction.
+     * LEGACY: Cette méthode devrait être remplacée par le canal sync push/pull.
      */
-    public function store(StoreEvenementReproductionRequest $request)
+    public function store(Request $request)
     {
         $this->authorize('create', Evenement::class);
 
+        // Log d'avertissement pour appel hors canal sync
+        Log::warning('REST API appelée hors canal sync', [
+            'endpoint' => 'POST /reproduction/evenements',
+            'user_id' => auth()->id(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
         $userId = auth()->id();
-        $data = $request->validated();
+        
+        // Déterminer le type d'événement pour utiliser le bon FormRequest
+        $typeEvenementId = $request->type_evenement_id;
+        $typeEvenement = TypeEvenement::find($typeEvenementId);
+        
+        if (!$typeEvenement) {
+            return ApiResponse::error(null, 'Type d\'événement introuvable.', 400);
+        }
+
+        $nomType = strtoupper($typeEvenement->nom_type ?? '');
+
+        // Bloquer la création manuelle d'événements MISE BAS
+        // Ils sont créés automatiquement lors de la déclaration de naissance
+        if ($nomType === 'MISE BAS') {
+            return ApiResponse::error(null, 'Les événements MISE BAS sont créés automatiquement lors de la déclaration de naissance.', 400);
+        }
+
+        // Validation selon le type d'événement
+        switch ($nomType) {
+            case 'SAILLIE':
+                $validated = (new SaillieRequest($request))->validated();
+                break;
+            case 'CHALEUR':
+                $validated = (new ChaleurRequest($request))->validated();
+                break;
+            case 'GESTATION CONFIRMÉE':
+            case 'GESTATION CONFIRMEE':
+                $validated = (new GestationRequest($request))->validated();
+                break;
+            default:
+                // Pour les autres types, utiliser le FormRequest générique
+                $validated = (new StoreEvenementReproductionRequest($request))->validated();
+                break;
+        }
 
         try {
-            $evenement = $this->evenementReproductionService->store($data, $userId);
+            $evenement = $this->evenementReproductionService->store($validated, $userId);
 
             return ApiResponse::success(
                 $this->evenementReproductionService->formatEvenement($evenement->load(['animal', 'type', 'farm'])),

@@ -4,9 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
+use App\Http\Requests\Sante\VaccinationRequest;
+use App\Http\Requests\Sante\TraitementRequest;
+use App\Http\Requests\Sante\MaladieRequest;
+use App\Http\Requests\Sante\ControleRequest;
 use App\Models\Animal;
 use App\Services\SanteEvenementService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SanteEvenementController extends Controller
 {
@@ -26,7 +31,7 @@ class SanteEvenementController extends Controller
      */
     public function index(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('current_farm_id');
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
@@ -46,24 +51,45 @@ class SanteEvenementController extends Controller
 
     /**
      * Créer un événement sanitaire.
+     * LEGACY: Cette méthode devrait être remplacée par le canal sync push/pull.
      */
     public function store(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('current_farm_id');
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
         }
 
-        $request->validate([
-            'animal_id' => 'required|exists:animals,id',
-            'type' => 'required|in:vaccination,traitement,maladie,controle',
-            'date_evenement' => 'required|date',
-            'description' => 'nullable|string',
-            'cout' => 'nullable|numeric|min:0',
+        // Log d'avertissement pour appel hors canal sync
+        Log::warning('REST API appelée hors canal sync', [
+            'endpoint' => 'POST /sante/evenements',
+            'user_id' => auth()->id(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
         ]);
 
-        $evenement = $this->santeEvenementService->store($farmId, $request->all());
+        // Validation selon le type d'événement
+        $type = $request->type;
+        
+        switch ($type) {
+            case 'vaccination':
+                $validated = (new VaccinationRequest($request))->validated();
+                break;
+            case 'traitement':
+                $validated = (new TraitementRequest($request))->validated();
+                break;
+            case 'maladie':
+                $validated = (new MaladieRequest($request))->validated();
+                break;
+            case 'controle':
+                $validated = (new ControleRequest($request))->validated();
+                break;
+            default:
+                return ApiResponse::error(null, 'Type d\'événement invalide.', 400);
+        }
+
+        $evenement = $this->santeEvenementService->store($farmId, $validated);
 
         return ApiResponse::success($evenement, 'Événement sanitaire créé avec succès.', 201);
     }
@@ -80,9 +106,19 @@ class SanteEvenementController extends Controller
 
     /**
      * Modifier un événement sanitaire.
+     * LEGACY: Cette méthode devrait être remplacée par le canal sync push/pull.
      */
     public function update(Request $request, string $evenementId)
     {
+        // Log d'avertissement pour appel hors canal sync
+        Log::warning('REST API appelée hors canal sync', [
+            'endpoint' => 'PUT /sante/evenements/{id}',
+            'user_id' => auth()->id(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'evenement_id' => $evenementId,
+        ]);
+
         $request->validate([
             'type' => 'nullable|in:vaccination,traitement,maladie,controle',
             'date_evenement' => 'nullable|date',
@@ -97,9 +133,19 @@ class SanteEvenementController extends Controller
 
     /**
      * Supprimer un événement sanitaire.
+     * LEGACY: Cette méthode devrait être remplacée par le canal sync push/pull.
      */
     public function destroy(string $evenementId)
     {
+        // Log d'avertissement pour appel hors canal sync
+        Log::warning('REST API appelée hors canal sync', [
+            'endpoint' => 'DELETE /sante/evenements/{id}',
+            'user_id' => auth()->id(),
+            'ip' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'evenement_id' => $evenementId,
+        ]);
+
         $this->santeEvenementService->destroy($evenementId);
 
         return ApiResponse::success(null, 'Événement sanitaire supprimé avec succès.');
@@ -162,7 +208,7 @@ class SanteEvenementController extends Controller
      */
     public function statistiquesParType(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('current_farm_id');
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);

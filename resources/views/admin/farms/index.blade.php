@@ -95,6 +95,11 @@
                        title="Modifier">
                         <i class="bi bi-pencil"></i>
                     </a>
+                    <a href="{{ route('admin.farms.manage', $farm['id']) }}"
+                       class="btn btn-icon btn-outline-success"
+                       title="Administrer">
+                        <i class="bi bi-gear"></i>
+                    </a>
                     <button type="button"
                             class="btn btn-icon btn-outline-danger"
                             title="Archiver"

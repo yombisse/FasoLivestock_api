@@ -5,6 +5,7 @@ namespace App\Http\Requests\Reproduction;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Models\Animal;
 
 class StoreNaissanceRequest extends FormRequest
 {
@@ -16,7 +17,28 @@ class StoreNaissanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'mother_id' => 'required|uuid|exists:animals,id',
+            'mother_id' => [
+                'required',
+                'uuid',
+                'exists:animals,id',
+                function ($attribute, $value, $fail) {
+                    $animal = Animal::find($value);
+                    if (!$animal) return;
+
+                    if ($animal->sexe !== 'femelle') {
+                        $fail('L\'animal sélectionné doit être une femelle.');
+                        return;
+                    }
+
+                    if (!$animal->aGestationEnCours()) {
+                        $fail(
+                            'Cette femelle n\'a pas de gestation confirmée en cours. '
+                            . 'Veuillez d\'abord enregistrer un événement '
+                            . 'GESTATION_CONFIRMEE pour cet animal.'
+                        );
+                    }
+                },
+            ],
             'date_naissance' => 'required|date',
             'nombre_petits' => 'required|integer|min:0',
             'poids_naissance' => 'nullable|numeric|min:0',

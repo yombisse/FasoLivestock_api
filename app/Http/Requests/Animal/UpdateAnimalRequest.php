@@ -20,7 +20,7 @@ class UpdateAnimalRequest extends FormRequest
 
         return [
             'farm_id'              => 'sometimes|uuid|exists:farms,id',
-            'nom'                  => 'sometimes|string|max:255',
+            'nom'                  => 'sometimes|nullable|string|max:255',
             'race'                 => 'sometimes|nullable|string|max:255',
             'sexe'                 => 'sometimes|in:male,femelle',
             'date_naissance'       => 'sometimes|nullable|date',
@@ -28,8 +28,7 @@ class UpdateAnimalRequest extends FormRequest
             'espece_id'            => 'sometimes|nullable|uuid|exists:especes,id',
             'lot_id'               => 'sometimes|nullable|uuid|exists:lots,id',
             'mother_id'            => 'sometimes|nullable|uuid|exists:animals,id',
-            'statut'               => 'sometimes|nullable|string|max:50',
-            'numero_identification' => 'sometimes|nullable|string|max:255',
+            'numero_identification' => 'sometimes|string|max:255|unique:animals,numero_identification,' . $animalId,
             'photo'                => 'sometimes|nullable|string|max:500',
             'naissance_id'         => 'sometimes|nullable|uuid|exists:naissances,id',
         ];
@@ -38,12 +37,13 @@ class UpdateAnimalRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'farm_id.exists'       => 'La ferme sélectionnée est invalide.',
-            'sexe.in'              => 'Le sexe doit être : male ou femelle.',
-            'espece_id.exists'     => 'L\'espèce sélectionnée est invalide.',
-            'lot_id.exists'        => 'Le lot sélectionné est invalide.',
-            'mother_id.exists'     => 'La mère sélectionnée est invalide.',
-            'naissance_id.exists'  => 'La naissance sélectionnée est invalide.',
+            'farm_id.exists'                => 'La ferme sélectionnée est invalide.',
+            'numero_identification.unique'  => 'Ce numéro d\'identification existe déjà.',
+            'sexe.in'                       => 'Le sexe doit être : male ou femelle.',
+            'espece_id.exists'              => 'L\'espèce sélectionnée est invalide.',
+            'lot_id.exists'                 => 'Le lot sélectionné est invalide.',
+            'mother_id.exists'              => 'La mère sélectionnée est invalide.',
+            'naissance_id.exists'           => 'La naissance sélectionnée est invalide.',
         ];
     }
 

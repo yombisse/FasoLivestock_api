@@ -7,8 +7,10 @@ use App\Http\Requests\Finance\StoreTransactionRequest;
 use App\Http\Requests\Finance\UpdateTransactionRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Transaction;
+use App\Models\Animal;
 use App\Services\FinanceTransactionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class FinanceTransactionController extends Controller
 {
@@ -53,10 +55,19 @@ class FinanceTransactionController extends Controller
 
     /**
      * Créer une transaction.
+     * LEGACY: Cette méthode devrait être remplacée par le canal sync push/pull.
      */
     public function store(StoreTransactionRequest $request)
     {
         $this->authorize('create', Transaction::class);
+
+        // Log d'avertissement pour appel hors canal sync
+        Log::warning('REST API appelée hors canal sync', [
+            'endpoint' => 'POST /finance/transactions',
+            'user_id' => auth()->id(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
 
         $userId = auth()->id();
         $data = $request->validated();
@@ -91,10 +102,24 @@ class FinanceTransactionController extends Controller
 
     /**
      * Modifier une transaction — Route Model Binding.
+     * LEGACY: Cette méthode devrait être remplacée par le canal sync push/pull.
      */
     public function update(UpdateTransactionRequest $request, Transaction $transaction)
     {
         $this->authorize('update', $transaction);
+
+        // Log d'avertissement pour appel hors canal sync
+        Log::warning('REST API appelée hors canal sync', [
+            'endpoint' => 'PUT /finance/transactions/{id}',
+            'user_id' => auth()->id(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'transaction_id' => $transaction->id,
+        ]);
+
+        if ($transaction->animal_id !== null) {
+            return response()->json(['error' => 'Les transactions liées aux mouvements de cheptel sont immuables.'], 403);
+        }
 
         $userId = auth()->id();
         $data = $request->validated();
@@ -113,10 +138,24 @@ class FinanceTransactionController extends Controller
 
     /**
      * Archiver une transaction — soft delete — Route Model Binding.
+     * LEGACY: Cette méthode devrait être remplacée par le canal sync push/pull.
      */
     public function destroy(Transaction $transaction)
     {
         $this->authorize('delete', $transaction);
+
+        // Log d'avertissement pour appel hors canal sync
+        Log::warning('REST API appelée hors canal sync', [
+            'endpoint' => 'DELETE /finance/transactions/{id}',
+            'user_id' => auth()->id(),
+            'ip' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'transaction_id' => $transaction->id,
+        ]);
+
+        if ($transaction->animal_id !== null) {
+            return response()->json(['error' => 'Les transactions liées aux mouvements de cheptel sont immuables.'], 403);
+        }
 
         $this->financeTransactionService->destroy($transaction);
 
@@ -160,5 +199,41 @@ class FinanceTransactionController extends Controller
             $this->financeTransactionService->formatTransaction($transaction->load(['farm', 'user', 'animal', 'categorie', 'evenement'])),
             'Transaction restaurée avec succès.'
         );
+    }
+
+    /**
+     * Obtenir le bilan financier.
+     */
+    public function bilan(Request $request)
+    {
+        $dateDebut = $request->date_debut;
+        $dateFin = $request->date_fin;
+
+        $bilan = $this->financeTransactionService->bilan($dateDebut, $dateFin);
+
+        return ApiResponse::success($bilan, 'Bilan financier récupéré avec succès.');
+    }
+
+    /**
+     * Obtenir l'historique transactionnel d'un animal.
+     */
+    public function historiqueAnimal(Request $request, string $animalId)
+    {
+        $animal = Animal::find($animalId);
+        
+        if (!$animal) {
+            return ApiResponse::error(
+                'Animal non trouvé. Veuillez synchroniser vos données locales avec le serveur avant de charger l\'historique.',
+                null,
+                404
+            );
+        }
+
+        $this->authorize('view', $animal);
+
+        $perPage = $request->per_page ?? 15;
+        $historique = $this->financeTransactionService->historiqueAnimal($animalId, $perPage);
+
+        return ApiResponse::success($historique, 'Historique transactionnel de l\'animal récupéré avec succès.');
     }
 }

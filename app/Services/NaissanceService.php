@@ -14,11 +14,13 @@ class NaissanceService
 {
     private ActivityLogService $activityLog;
     private NotificationService $notificationService;
+    private EvenementService $evenementService;
 
-    public function __construct(ActivityLogService $activityLog, NotificationService $notificationService)
+    public function __construct(ActivityLogService $activityLog, NotificationService $notificationService, EvenementService $evenementService)
     {
         $this->activityLog = $activityLog;
         $this->notificationService = $notificationService;
+        $this->evenementService = $evenementService;
     }
     /**
      * Lister les naissances avec pagination et filtres.
@@ -284,6 +286,96 @@ class NaissanceService
                 'name' => $naissance->farm->name,
             ],
         ])->toArray();
+    }
+
+    /**
+     * Déclarer une naissance avec création des petits et événements.
+     * Remplace l'observer booted() de Naissance.
+     *
+     * @param array $data Données de la naissance
+     * @param string $farmId ID de la ferme
+     * @return Naissance
+     */
+    public function declarer(array $data, string $farmId): Naissance
+    {
+        return DB::transaction(function () use ($data, $farmId) {
+            // Calculer explicitement date_mise_bas_prevue si non fournie
+            if (!isset($data['date_mise_bas_prevue']) && isset($data['date_saillie'])) {
+                $mother = Animal::find($data['mother_id'] ?? null);
+                if ($mother && $mother->espece && $mother->espece->parametres) {
+                    $dureeGestation = $mother->espece->parametres->duree_gestation_jours;
+                    if ($dureeGestation) {
+                        $data['date_mise_bas_prevue'] = \Carbon\Carbon::parse($data['date_saillie'])
+                            ->addDays($dureeGestation);
+                    }
+                }
+            }
+
+            $data['farm_id'] = $farmId;
+            $data['sync_status'] = 'synced';
+            $data['version'] = 1;
+
+            $naissance = Naissance::create($data);
+
+            // Créer les fiches Animal pour chaque petit
+            $nombrePetits = $data['nombre_petits'] ?? 0;
+            $petitsData = $data['petits'] ?? [];
+
+            for ($i = 0; $i < $nombrePetits; $i++) {
+                $petitData = $petitsData[$i] ?? [];
+                $animal = Animal::create(array_merge($petitData, [
+                    'farm_id' => $farmId,
+                    'mother_id' => $data['mother_id'],
+                    'naissance_id' => $naissance->id,
+                    'date_naissance' => $data['date_naissance'],
+                    'statut' => 'ACTIF',
+                    'origine' => 'naissance',
+                    'sync_status' => 'synced',
+                    'version' => 1,
+                ]));
+
+                // Créer l'événement de naissance pour chaque petit
+                $typeNaissance = TypeEvenement::where('nom_type', 'NAISSANCE')
+                    ->whereNull('farm_id')
+                    ->first();
+
+                if ($typeNaissance) {
+                    $this->evenementService->creerMouvement([
+                        'farm_id' => $farmId,
+                        'type_evenement_id' => $typeNaissance->id,
+                        'animal_id' => $animal->id,
+                        'date_evenement' => $data['date_naissance'],
+                        'description' => 'Naissance de l\'animal',
+                        'statut_apres' => 'ACTIF',
+                        'sync_status' => 'synced',
+                        'version' => 1,
+                    ], $animal);
+                }
+            }
+
+            // Créer l'événement MISE BAS pour la mère
+            $typeMiseBas = TypeEvenement::where('nom_type', 'MISE BAS')->first();
+            if ($typeMiseBas) {
+                Evenement::create([
+                    'farm_id' => $farmId,
+                    'type_evenement_id' => $typeMiseBas->id,
+                    'categorie' => 'REPRODUCTION',
+                    'animal_id' => $data['mother_id'],
+                    'date_evenement' => $data['date_naissance'],
+                    'description' => 'Mise bas - ' . $nombrePetits . ' petit(s)',
+                    'metadonnees' => [
+                        'nombre_petits' => $nombrePetits,
+                        'naissance_id' => $naissance->id,
+                    ],
+                    'sync_status' => 'synced',
+                    'version' => 1,
+                ]);
+            }
+
+            $this->activityLog->log('created', $naissance, null, $data);
+
+            return $naissance->fresh();
+        });
     }
 
     /**

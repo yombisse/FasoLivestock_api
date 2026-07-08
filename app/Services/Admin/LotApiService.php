@@ -26,7 +26,7 @@ class LotApiService extends AdminApiService
         return $this->put("/lots/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteLot(string $id): ApiResult
     {
         return $this->delete("/lots/{$id}");
     }

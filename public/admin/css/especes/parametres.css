@@ -1,0 +1,140 @@
+/* ═══════════════════════════════════════════════════════════
+   FasoLivestock Admin — Especes Parametres CSS
+═══════════════════════════════════════════════════════ */
+
+/* ─── Form page ─────────────────────────────────────────── */
+.form-page {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* ─── Form section ──────────────────────────────────────── */
+.form-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.form-section-header {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: 1.1rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.section-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary-xlight);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 1rem;
+}
+
+.form-section-header h3 {
+    font-size: .95rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+}
+
+.form-section-body {
+    padding: 1.5rem;
+}
+
+/* ─── Form group ─────────────────────────────────────────── */
+.form-group { margin-bottom: 1.25rem; }
+
+.form-label {
+    display: block;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: .4rem;
+}
+
+.form-control {
+    font-size: .845rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: .5rem .75rem;
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color var(--transition);
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-xlight);
+}
+
+.form-control.is-invalid {
+    border-color: #DC2626;
+}
+
+.form-control.is-invalid:focus {
+    box-shadow: 0 0 0 3px #FEE2E2;
+}
+
+.form-select {
+    font-size: .845rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: .5rem .75rem;
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color var(--transition);
+}
+
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-xlight);
+}
+
+/* ─── Input with icon ───────────────────────────────────── */
+.input-with-icon {
+    position: relative;
+}
+
+.input-with-icon .form-control,
+.input-with-icon .form-select {
+    padding-left: 2.5rem;
+}
+
+.field-icon {
+    position: absolute;
+    left: .85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: .85rem;
+    pointer-events: none;
+}
+
+/* ─── Invalid feedback ───────────────────────────────────── */
+.invalid-feedback {
+    font-size: .75rem;
+    color: #DC2626;
+    margin-top: .25rem;
+}
+
+.invalid-feedback.d-block {
+    display: block;
+}
+
+/* ─── Form actions ───────────────────────────────────────── */
+.form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .75rem;
+    padding: 1.1rem 1.5rem;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+}

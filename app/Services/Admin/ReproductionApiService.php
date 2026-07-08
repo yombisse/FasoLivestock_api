@@ -25,4 +25,11 @@ class ReproductionApiService extends AdminApiService
     {
         return $this->get("/reproduction/animals/{$animalId}/stats");
     }
+
+    public function femellesEligibles(string $farmId): ApiResult
+    {
+        return $this->get('/reproduction/femelles-eligibles', [
+            'farm_id' => $farmId
+        ]);
+    }
 }

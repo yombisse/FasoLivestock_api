@@ -26,7 +26,7 @@ class UserApiService extends AdminApiService
         return $this->put("/users/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteUser(string $id): ApiResult
     {
         return $this->delete("/users/{$id}");
     }

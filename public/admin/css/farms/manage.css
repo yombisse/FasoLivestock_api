@@ -1,0 +1,552 @@
+/* ═══════════════════════════════════════════════════════════
+   FasoLivestock Admin — Farm Manage Page CSS
+═══════════════════════════════════════════════════════════ */
+
+/* ─── Header ferme ─────────────────────────────────────────── */
+.farm-manage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    color: #fff;
+}
+
+.farm-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.farm-header-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.farm-header-info h2 {
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.farm-header-meta {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.25rem;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.farm-location,
+.farm-type {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.farm-header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.farm-status-badge {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.farm-status-badge.active {
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.farm-status-badge.archived {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ─── Onglets ───────────────────────────────────────────────── */
+.farm-tabs {
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 1.5rem;
+    background: var(--surface);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 0 1rem;
+}
+
+.farm-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 1rem 1.25rem;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.farm-tabs .nav-link:hover {
+    color: var(--primary);
+    background: var(--primary-xlight);
+}
+
+.farm-tabs .nav-link.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: var(--primary-xlight);
+}
+
+.farm-tabs .nav-link .badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+}
+
+.farm-tab-content {
+    background: var(--surface);
+    border-radius: 0 0 var(--radius) var(--radius);
+    padding: 1.5rem;
+}
+
+/* ─── Tab Informations ───────────────────────────────────────── */
+.farm-info-form .form-label {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.farm-stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.farm-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+
+.farm-stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.farm-stat-icon.animals {
+    background: var(--primary);
+}
+
+.farm-stat-icon.members {
+    background: var(--accent);
+}
+
+.farm-stat-icon.lots {
+    background: #1565C0;
+}
+
+.farm-stat-content {
+    flex: 1;
+}
+
+.farm-stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+}
+
+.farm-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+}
+
+/* ─── Tab Membres ─────────────────────────────────────────── */
+.member-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.member-info {
+    flex: 1;
+}
+
+.member-name {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.875rem;
+}
+
+.member-email {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.role-select-wrapper {
+    position: relative;
+}
+
+.role-select {
+    min-width: 120px;
+}
+
+.role-select option {
+    color: var(--text);
+}
+
+/* Recherche utilisateur */
+.member-search-wrapper {
+    position: relative;
+}
+
+.search-results-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 10;
+    margin-top: 0.25rem;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background var(--transition);
+    border-bottom: 1px solid var(--border);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background: var(--primary-xlight);
+}
+
+.search-result-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.search-result-info {
+    flex: 1;
+}
+
+.search-result-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.search-result-email {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Liste utilisateurs à ajouter */
+.pending-users-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.pending-user-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+}
+
+.pending-user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.pending-user-info {
+    flex: 1;
+}
+
+.pending-user-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.pending-user-email {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.pending-role-select {
+    min-width: 110px;
+}
+
+/* ─── Tab Animaux ───────────────────────────────────────────── */
+.animal-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.animal-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.animal-info {
+    flex: 1;
+}
+
+.animal-number {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.animal-name {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.status-badge.actif {
+    background: var(--primary-xlight);
+    color: var(--primary);
+}
+
+.status-badge.vendu {
+    background: #E3F2FD;
+    color: #1565C0;
+}
+
+.status-badge.décédé {
+    background: var(--danger-light);
+    color: var(--danger);
+}
+
+.status-badge.transféré {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+.status-badge.abattu {
+    background: #37474F;
+    color: #fff;
+}
+
+.actions-cell {
+    display: flex;
+    gap: 0.25rem;
+}
+
+/* ─── Modal confirmation ───────────────────────────────────── */
+.confirm-modal-box {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+
+.confirm-modal-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+    color: #fff;
+}
+
+.confirm-modal-icon.icon-danger {
+    background: var(--danger);
+}
+
+.confirm-modal-icon.icon-warning {
+    background: var(--accent);
+}
+
+.confirm-modal-icon.icon-success {
+    background: var(--primary);
+}
+
+.confirm-modal-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+}
+
+.confirm-modal-message {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.btn-confirm-cancel {
+    padding: 0.5rem 1.25rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.btn-confirm-cancel:hover {
+    background: var(--bg);
+}
+
+.btn-confirm-ok {
+    padding: 0.5rem 1.25rem;
+    border: none;
+    color: #fff;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.btn-confirm-ok.ok-danger {
+    background: var(--danger);
+}
+
+.btn-confirm-ok.ok-warning {
+    background: var(--accent);
+}
+
+.btn-confirm-ok.ok-success {
+    background: var(--primary);
+}
+
+.btn-confirm-ok:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+/* ─── Empty state ─────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+}
+
+.empty-state-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+/* ─── Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .farm-manage-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .farm-header-left {
+        flex-direction: column;
+    }
+
+    .farm-header-meta {
+        justify-content: center;
+    }
+
+    .farm-header-right {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .farm-tabs .nav-link {
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+    }
+
+    .farm-tab-content {
+        padding: 1rem;
+    }
+}

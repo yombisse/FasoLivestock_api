@@ -12,11 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('animals', function (Blueprint $table) {
-            $table->string('numero_identification')->nullable()->after('statut');
-            $table->string('photo')->nullable()->after('numero_identification');
+            if (!Schema::hasColumn('animals', 'numero_identification')) {
+                $table->string('numero_identification')->nullable()->after('statut');
+            }
+            if (!Schema::hasColumn('animals', 'photo')) {
+                $table->string('photo')->nullable()->after('numero_identification');
+            }
 
             // Index composite pour garantir l'unicité au sein d'une même ferme
-            $table->unique(['farm_id', 'numero_identification']);
+            if (!Schema::hasIndex('animals', ['farm_id', 'numero_identification'])) {
+                $table->unique(['farm_id', 'numero_identification']);
+            }
         });
     }
 
@@ -26,8 +32,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('animals', function (Blueprint $table) {
-            $table->dropUnique(['farm_id', 'numero_identification']);
-            $table->dropColumn(['numero_identification', 'photo']);
+            if (Schema::hasIndex('animals', ['farm_id', 'numero_identification'])) {
+                $table->dropUnique(['farm_id', 'numero_identification']);
+            }
+            if (Schema::hasColumn('animals', 'numero_identification') || Schema::hasColumn('animals', 'photo')) {
+                $table->dropColumn(['numero_identification', 'photo']);
+            }
         });
     }
 };

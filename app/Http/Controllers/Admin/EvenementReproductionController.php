@@ -122,7 +122,7 @@ class EvenementReproductionController extends Controller
      */
     public function destroy(string $id)
     {
-        $response = $this->evenementReproductionApi->delete($id);
+        $response = $this->evenementReproductionApi->deleteEvenement($id);
 
         return redirect()
             ->route('admin.evenements-reproduction.index')

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Farm extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $table = 'farms';
 
@@ -19,10 +20,15 @@ class Farm extends Model
         'type_elevage',
         'photo',
         'owner_id',
+        'sync_status',
+        'last_modified_by',
+        'version',
     ];
 
     protected $casts = [
         'deleted_at' => 'datetime',
+        'sync_status' => 'string',
+        'version' => 'integer',
     ];
 
     public function owner()
@@ -33,6 +39,7 @@ class Farm extends Model
     public function users()
     {
         return $this->belongsToMany(User::class, 'farm_user')
+            ->using(FarmUser::class)
             ->withPivot('role')
             ->withTimestamps();
     }

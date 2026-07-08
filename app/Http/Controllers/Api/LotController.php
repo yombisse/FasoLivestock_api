@@ -58,7 +58,7 @@ class LotController extends Controller
 
         // Utiliser la ferme courante du contexte si non fournie
         if (!isset($data['farm_id'])) {
-            $data['farm_id'] = session('current_farm_id');
+            $data['farm_id'] = $request->current_farm_id;
         }
 
         $lot = $this->lotService->store($data, $userId);

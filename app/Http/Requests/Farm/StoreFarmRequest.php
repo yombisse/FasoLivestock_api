@@ -16,14 +16,16 @@ class StoreFarmRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'         => 'required|string|max:255',
-            'location'     => 'nullable|string|max:255',
-            'description'  => 'nullable|string',
-            'type_elevage' => 'nullable|in:bovin,ovin,caprin,porcin,volaille,cunicole,autre',
-            'photo'        => 'nullable|string|max:500',
-            'users'        => 'nullable|array',
-            'users.*.id'   => 'required|uuid|exists:users,id',
-            'users.*.role' => 'required|string|in:owner,manager,vet,worker',
+            'name'             => 'required|string|max:255',
+            'location'         => 'nullable|string|max:255',
+            'description'      => 'nullable|string',
+            'type_elevage'     => 'nullable|in:bovin,ovin,caprin,porcin,volaille,cunicole,mixte,autre',
+            'photo'            => 'nullable|string|max:500', // URL de l'image (upload fait côté web admin)
+            'owner_id'         => 'nullable|uuid|exists:users,id',
+            'from_admin_panel' => 'nullable|boolean', // Flag pour indiquer que la requête vient de l'admin panel
+            'users'            => 'nullable|array',
+            'users.*.id'       => 'required|uuid|exists:users,id',
+            'users.*.role'     => 'required|string|in:owner,manager,vet,worker',
         ];
     }
 

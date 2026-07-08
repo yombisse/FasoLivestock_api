@@ -26,7 +26,7 @@ class MouvementApiService extends AdminApiService
         return $this->put("/mouvements/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteMouvement(string $id): ApiResult
     {
         return $this->delete("/mouvements/{$id}");
     }

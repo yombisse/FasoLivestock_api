@@ -25,6 +25,19 @@ class FarmContextMiddleware
             return response()->json(['error' => 'Non authentifié'], 401);
         }
 
+        // Superadmin peut voir toutes les données sans farm_id
+        if ($user->hasRole('superadmin')) {
+            if ($farmId) {
+                // Si un farm_id est fourni, vérifier l'accès
+                $farm = Farm::where('id', $farmId)->first();
+                if (!$farm) {
+                    return response()->json(['error' => 'Ferme introuvable'], 404);
+                }
+                $request->merge(['current_farm_id' => $farmId]);
+            }
+            return $next($request);
+        }
+
         if (!$farmId) {
             return response()->json(['error' => 'Farm-ID manquant'], 400);
         }

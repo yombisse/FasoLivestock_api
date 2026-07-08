@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.auth'       => \App\Http\Middleware\AdminAuth::class,
             'guest.admin'      => \App\Http\Middleware\GuestAdmin::class,
             'email.verified'   => EnsureEmailIsVerified::class,
+            'auth'             => \App\Http\Middleware\HandleApiAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -58,7 +59,10 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Erreur serveur',
+                    'message' => $e->getMessage(),
+                    'exception' => get_class($e),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
                 ], 500);
             }
             // Routes web → Laravel gère nativement

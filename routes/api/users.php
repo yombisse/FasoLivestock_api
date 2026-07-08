@@ -27,4 +27,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('users/{id}/restore', [UserController::class, 'restore'])
         ->middleware('permission:users.update');
+
+    // Liste des utilisateurs qui peuvent être propriétaires de ferme (superadmin ou avec rôle owner)
+    Route::get('users/potential-owners', [UserController::class, 'potentialOwners'])
+        ->middleware('permission:users.view');
 });

@@ -36,36 +36,26 @@ class MouvementController extends Controller
     }
 
     /**
-     * Formulaire création
+     * Formulaire création (désactivé : mouvements non gérés manuellement via UI)
      */
     public function create()
     {
-        return view('admin.mouvements.create');
+        abort(403, 'Création de mouvements désactivée via l\'interface web.');
     }
 
     /**
-     * Enregistrer un mouvement
+     * Enregistrer un mouvement (désactivé : mouvements non gérés manuellement via UI)
      */
     public function store(Request $request)
     {
-        $response = $this->mouvementApi->create($request->all());
-
-        if (!$response->success) {
-            return back()
-                ->withErrors($response->data['errors'] ?? [])
-                ->with('error', $response->message ?? 'Erreur.')
-                ->withInput();
-        }
-
-        return redirect()
-            ->route('admin.mouvements.index')
-            ->with('success', 'Mouvement créé avec succès.');
+        abort(403, 'Création de mouvements désactivée via l\'interface web.');
     }
 
     /**
      * Détail d'un mouvement
      */
     public function show(string $id)
+
     {
         $response = $this->mouvementApi->find($id);
 
@@ -81,58 +71,29 @@ class MouvementController extends Controller
     }
 
     /**
-     * Formulaire édition
+     * Formulaire édition (désactivé : mouvements non gérés manuellement via UI)
      */
     public function edit(string $id)
     {
-        $response = $this->mouvementApi->find($id);
-
-        if (!$response->success) {
-            return redirect()
-                ->route('admin.mouvements.index')
-                ->with('error', 'Mouvement introuvable.');
-        }
-
-        return view('admin.mouvements.edit', [
-            'mouvement' => $response->data ?? [],
-        ]);
+        abort(403, 'Modification de mouvements désactivée via l\'interface web.');
     }
 
     /**
-     * Mettre à jour un mouvement
+     * Mettre à jour un mouvement (désactivé : mouvements non gérés manuellement via UI)
      */
     public function update(Request $request, string $id)
     {
-        $response = $this->mouvementApi->update($id, $request->all());
-
-        if (!$response->success) {
-            return back()
-                ->withErrors($response->data['errors'] ?? [])
-                ->with('error', $response->message ?? 'Erreur.')
-                ->withInput();
-        }
-
-        return redirect()
-            ->route('admin.mouvements.index')
-            ->with('success', 'Mouvement mis à jour avec succès.');
+        abort(403, 'Modification de mouvements désactivée via l\'interface web.');
     }
 
     /**
-     * Archiver un mouvement
+     * Archiver un mouvement (désactivé : mouvements non gérés manuellement via UI)
      */
     public function destroy(string $id)
     {
-        $response = $this->mouvementApi->delete($id);
-
-        return redirect()
-            ->route('admin.mouvements.index')
-            ->with(
-                $response->success ? 'success' : 'error',
-                $response->success
-                    ? 'Mouvement archivé avec succès.'
-                    : ($response->message ?? 'Erreur.')
-            );
+        abort(403, 'Suppression/archivage de mouvements désactivé via l\'interface web.');
     }
+
 
     /**
      * Historique des mouvements d'un animal

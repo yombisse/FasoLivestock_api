@@ -24,8 +24,18 @@ class SanteAnimalController extends Controller
     /**
      * Obtenir l'historique médical complet d'un animal.
      */
-    public function historiqueMedical(Animal $animal)
+    public function historiqueMedical(string $animalId)
     {
+        $animal = Animal::find($animalId);
+        
+        if (!$animal) {
+            return ApiResponse::error(
+                'Animal non trouvé. Veuillez synchroniser vos données locales avec le serveur avant de charger l\'historique.',
+                null,
+                404
+            );
+        }
+
         $this->authorize('view', $animal);
 
         $historique = $this->santeAnimalService->historiqueMedical($animal->id);
@@ -36,8 +46,18 @@ class SanteAnimalController extends Controller
     /**
      * Obtenir les statistiques sanitaires d'un animal.
      */
-    public function statistiquesSanitaires(Animal $animal)
+    public function statistiquesSanitaires(string $animalId)
     {
+        $animal = Animal::find($animalId);
+        
+        if (!$animal) {
+            return ApiResponse::error(
+                'Animal non trouvé. Veuillez synchroniser vos données locales avec le serveur avant de charger les statistiques.',
+                null,
+                404
+            );
+        }
+
         $this->authorize('view', $animal);
 
         $statistiques = $this->santeAnimalService->statistiquesSanitaires($animal->id);
@@ -50,7 +70,7 @@ class SanteAnimalController extends Controller
      */
     public function resumeFerme(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('current_farm_id');
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
@@ -66,7 +86,7 @@ class SanteAnimalController extends Controller
      */
     public function alertesFerme(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('current_farm_id');
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);

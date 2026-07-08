@@ -102,12 +102,6 @@ class FinanceTransactionService
                 $data['farm_id'] = session('current_farm_id');
             }
 
-            // Appliquer les règles métier si animal_id présent
-            if (isset($data['animal_id'])) {
-                $animal = Animal::findOrFail($data['animal_id']);
-                $data = $this->appliquerReglesCheptel($data, $animal);
-            }
-
             $transaction = Transaction::create($data);
 
             // Log activity after successful creation
@@ -137,12 +131,6 @@ class FinanceTransactionService
             $data['sync_status'] = 'synced';
             $data['last_modified_by'] = $userId;
             $data['version'] = ($transaction->version ?? 1) + 1;
-
-            // Appliquer les règles métier si animal_id change ou est ajouté
-            if (isset($data['animal_id']) && $data['animal_id'] !== $transaction->animal_id) {
-                $animal = Animal::findOrFail($data['animal_id']);
-                $data = $this->appliquerReglesCheptel($data, $animal);
-            }
 
             $oldValues = $transaction->toArray();
             
@@ -493,88 +481,46 @@ class FinanceTransactionService
         ];
     }
 
+
     /**
-     * Appliquer les règles métier cheptel ↔ finance.
+     * Obtenir l'historique transactionnel d'un animal.
      */
-    private function appliquerReglesCheptel(array $data, Animal $animal): array
+    public function historiqueAnimal(string $animalId, int $perPage = 15): array
     {
-        // CAS VENTE : type_transaction = ENTREE, categorie = vente
-        if (isset($data['type_transaction']) && $data['type_transaction'] === 'ENTREE') {
-            // Vérifier si c'est une vente d'animal
-            if (!isset($data['categorie_id'])) {
-                $categorieVente = Categorie::where('nom_categorie', 'like', '%vente%')
-                    ->where('type', 'revenu')
-                    ->first();
+        $animal = Animal::findOrFail($animalId);
+        
+        $transactions = Transaction::query()
+            ->where('animal_id', $animalId)
+            ->with(['farm', 'user', 'categorie', 'evenement'])
+            ->orderBy('date_transaction', 'desc')
+            ->paginate($perPage);
 
-                if ($categorieVente) {
-                    $data['categorie_id'] = $categorieVente->id;
-                }
-            }
+        $revenus = $transactions->where('type_transaction', 'ENTREE');
+        $charges = $transactions->where('type_transaction', 'SORTIE');
 
-            // Mettre à jour le statut de l'animal
-            $animal->update([
-                'statut' => 'SORTI',
-            ]);
-
-            // Créer un événement de vente si nécessaire
-            $typeEvenementVente = TypeEvenement::where('nom_type', 'like', '%vente%')->first();
-            if ($typeEvenementVente && !isset($data['evenement_id'])) {
-                $evenement = Evenement::create([
-                    'farm_id' => $animal->farm_id,
-                    'animal_id' => $animal->id,
-                    'type_evenement_id' => $typeEvenementVente->id,
-                    'date_evenement' => $data['date_transaction'] ?? now(),
-                    'description' => 'Vente de l\'animal',
-                    'cout' => $data['montant'] ?? 0,
-                    'statut_avant' => $animal->statut,
-                    'statut_apres' => 'SORTI',
-                    'sync_status' => 'synced',
-                    'last_modified_by' => $data['last_modified_by'] ?? auth()->id(),
-                    'version' => 1,
-                ]);
-                $data['evenement_id'] = $evenement->id;
-            }
-        }
-
-        // CAS ACHAT : type_transaction = SORTIE, categorie = achat animal
-        if (isset($data['type_transaction']) && $data['type_transaction'] === 'SORTIE') {
-            // Vérifier si c'est un achat d'animal
-            if (!isset($data['categorie_id'])) {
-                $categorieAchat = Categorie::where('nom_categorie', 'like', '%achat%')
-                    ->where('type', 'charge')
-                    ->first();
-
-                if ($categorieAchat) {
-                    $data['categorie_id'] = $categorieAchat->id;
-                }
-            }
-
-            // Mettre à jour le statut de l'animal
-            $animal->update([
-                'statut' => 'ACTIF',
-            ]);
-
-            // Créer un événement d'achat si nécessaire
-            $typeEvenementAchat = TypeEvenement::where('nom_type', 'like', '%achat%')->first();
-            if ($typeEvenementAchat && !isset($data['evenement_id'])) {
-                $evenement = Evenement::create([
-                    'farm_id' => $animal->farm_id,
-                    'animal_id' => $animal->id,
-                    'type_evenement_id' => $typeEvenementAchat->id,
-                    'date_evenement' => $data['date_transaction'] ?? now(),
-                    'description' => 'Achat de l\'animal',
-                    'cout' => $data['montant'] ?? 0,
-                    'statut_avant' => $animal->statut,
-                    'statut_apres' => 'ACTIF',
-                    'sync_status' => 'synced',
-                    'last_modified_by' => $data['last_modified_by'] ?? auth()->id(),
-                    'version' => 1,
-                ]);
-                $data['evenement_id'] = $evenement->id;
-            }
-        }
-
-        return $data;
+        return [
+            'animal' => [
+                'id' => $animal->id,
+                'nom' => $animal->nom,
+                'statut' => $animal->statut,
+                'espece' => $animal->espece->nom ?? null,
+            ],
+            'transactions' => $transactions->map(fn ($t) => $this->formatTransaction($t)),
+            'statistiques' => [
+                'total_revenus' => $revenus->sum('montant'),
+                'total_charges' => $charges->sum('montant'),
+                'bilan' => $revenus->sum('montant') - $charges->sum('montant'),
+                'nombre_transactions' => $transactions->count(),
+                'nombre_revenus' => $revenus->count(),
+                'nombre_charges' => $charges->count(),
+            ],
+            'meta' => [
+                'total' => $transactions->total(),
+                'per_page' => $transactions->perPage(),
+                'current_page' => $transactions->currentPage(),
+                'last_page' => $transactions->lastPage(),
+            ],
+        ];
     }
 
     /**

@@ -122,7 +122,7 @@ class AlimentController extends Controller
      */
     public function destroy(string $id)
     {
-        $response = $this->alimentApi->delete($id);
+        $response = $this->alimentApi->deleteAliment($id);
 
         return redirect()
             ->route('admin.aliments.index')

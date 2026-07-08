@@ -19,7 +19,6 @@ class StoreTransactionRequest extends FormRequest
             'type_transaction' => 'required|in:ENTREE,SORTIE,TRANSFERT,AJUSTEMENT',
             'montant' => 'required|numeric|min:0',
             'date_transaction' => 'required|date',
-            'animal_id' => 'nullable|uuid|exists:animals,id',
             'categorie_id' => 'nullable|uuid|exists:categories,id',
             'description' => 'nullable|string',
             'evenement_id' => 'nullable|uuid|exists:evenements,id',

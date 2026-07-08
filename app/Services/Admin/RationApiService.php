@@ -26,7 +26,7 @@ class RationApiService extends AdminApiService
         return $this->put("/alimentation/rations/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteRation(string $id): ApiResult
     {
         return $this->delete("/alimentation/rations/{$id}");
     }

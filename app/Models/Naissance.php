@@ -126,19 +126,4 @@ class Naissance extends Model
 
         return $this->date_saillie->addDays($parametres->duree_gestation_jours);
     }
-
-    // =========================================================
-    // OBSERVER
-    // =========================================================
-
-    protected static function booted(): void
-    {
-        // Calculer automatiquement date_mise_bas_prevue à la création
-        static::creating(function (Naissance $naissance) {
-            if ($naissance->date_saillie && !$naissance->date_mise_bas_prevue) {
-                $naissance->date_mise_bas_prevue =
-                    $naissance->date_mise_bas_prevue_calculee;
-            }
-        });
-    }
 }

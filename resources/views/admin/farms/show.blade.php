@@ -16,22 +16,22 @@
         <div class="card-header">
             <div class="d-flex align-items-center gap-3">
                 <div class="farm-avatar">
-                    {{ strtoupper(substr($farm['nom'] ?? 'F', 0, 1)) }}
+                    {{ strtoupper(substr($farm['name'] ?? 'F', 0, 1)) }}
                 </div>
                 <div>
-                    <h4>{{ $farm['nom'] ?? 'Ferme' }}</h4>
-                    <p class="text-muted mb-0">{{ $farm['localisation'] ?? 'Non défini' }}</p>
+                    <h4>{{ $farm['name'] ?? 'Ferme' }}</h4>
+                    <p class="text-muted mb-0">{{ $farm['location'] ?? 'Non défini' }}</p>
                 </div>
             </div>
             <div class="ms-auto">
-                <span class="badge bg-success">{{ $farm['statut'] ?? 'ACTIF' }}</span>
+                <span class="badge bg-success">{{ $farm['status'] ?? 'ACTIF' }}</span>
             </div>
         </div>
         <div class="card-body">
             <div class="row g-4">
                 <div class="col-md-3">
                     <div class="stat-item">
-                        <div class="stat-value">{{ $farm['animaux'] ?? 0 }}</div>
+                        <div class="stat-value">{{ $farm['animals_count'] ?? 0 }}</div>
                         <div class="stat-label">Animaux</div>
                     </div>
                 </div>

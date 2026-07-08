@@ -1,38 +1,32 @@
 <?php
 
-use App\Http\Controllers\Api\MouvementController;
+use App\Http\Controllers\Api\EvenementMouvementController;
 
 Route::middleware(['auth:sanctum', 'farm.context'])->group(function () {
 
     // Liste des mouvements avec filtres
-    Route::get('mouvements', [MouvementController::class, 'index'])
+    Route::get('mouvements', [EvenementMouvementController::class, 'index'])
         ->middleware('permission:mouvements.view');
-
-    // Créer un mouvement
-    Route::post('mouvements', [MouvementController::class, 'store'])
-        ->middleware('permission:mouvements.create');
 
     // Détail d'un mouvement
-    Route::get('mouvements/{evenement}', [MouvementController::class, 'show'])
+    Route::get('mouvements/{evenement}', [EvenementMouvementController::class, 'show'])
         ->middleware('permission:mouvements.view');
 
-    // Modifier un mouvement
-    Route::put('mouvements/{evenement}', [MouvementController::class, 'update'])
-        ->middleware('permission:mouvements.update');
+    // IMPORTANT: création / modification / suppression volontairement désactivées côté API
+    // Les mouvements doivent être générés par les observateurs / autres modules (traçabilité).
 
-    // Archiver un mouvement
-    Route::delete('mouvements/{evenement}', [MouvementController::class, 'destroy'])
-        ->middleware('permission:mouvements.delete');
+    // (Routes POST/PUT/DELETE laissées intentionnellement absentes)
+
 
     // Historique des mouvements d'un animal
-    Route::get('animals/{animal}/mouvements', [MouvementController::class, 'animalHistory'])
+    Route::get('animals/{animal}/mouvements', [EvenementMouvementController::class, 'animalHistory'])
         ->middleware('permission:mouvements.view');
 
     // Traçabilité complète d'un animal
-    Route::get('mouvements/trace/{animal}', [MouvementController::class, 'trace'])
+    Route::get('mouvements/trace/{animal}', [EvenementMouvementController::class, 'trace'])
         ->middleware('permission:mouvements.view');
 
     // Statistiques des mouvements
-    Route::get('mouvements/statistiques', [MouvementController::class, 'statistiques'])
+    Route::get('mouvements/statistiques', [EvenementMouvementController::class, 'statistiques'])
         ->middleware('permission:mouvements.view');
 });

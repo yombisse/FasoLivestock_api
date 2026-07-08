@@ -15,6 +15,8 @@ class TypeEvenement extends Model
     protected $fillable = [
         'nom_type',
         'description',
+        'categorie',
+        'is_system',
         'farm_id',
         'sync_status',
         'last_modified_by',
@@ -23,6 +25,8 @@ class TypeEvenement extends Model
 
     protected $casts = [
         'sync_status' => 'string',
+        'categorie' => 'string',
+        'is_system' => 'boolean',
     ];
 
     public function farm()

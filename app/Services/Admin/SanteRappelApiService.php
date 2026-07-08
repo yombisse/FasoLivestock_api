@@ -26,7 +26,7 @@ class SanteRappelApiService extends AdminApiService
         return $this->put("/sante/rappels/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteRappel(string $id): ApiResult
     {
         return $this->delete("/sante/rappels/{$id}");
     }

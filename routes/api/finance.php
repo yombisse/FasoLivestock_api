@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * LEGACY: Ces endpoints REST sont destinés à être remplacés par le canal sync push/pull.
+ * Le mobile doit n'utiliser que /sync/push et /sync/pull pour la création/modification/suppression.
+ * Ces endpoints sont conservés temporairement pour l'admin web panel et seront restreints
+ * au rôle admin-only après une période d'observation des logs (2 semaines recommandées).
+ */
+
 use App\Http\Controllers\Api\FinanceTransactionController;
 use App\Http\Controllers\Api\FinanceRevenueController;
 use App\Http\Controllers\Api\FinanceChargeController;

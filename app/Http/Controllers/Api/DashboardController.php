@@ -17,14 +17,25 @@ class DashboardController extends Controller
     }
 
     /**
-     * Obtenir le tableau de bord global pour la ferme courante.
+     * Obtenir le tableau de bord global pour une ferme.
+     * Accepte farm_id en paramètre ou utilise la ferme courante du contexte.
      */
     public function index(Request $request)
     {
-        $farmId = session('current_farm_id');
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$farmId) {
-            return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
+            return ApiResponse::error(null, 'Aucune ferme spécifiée ou ferme courante définie.', 400);
+        }
+
+        // Vérifier que l'utilisateur a accès à cette ferme
+        $user = auth()->user();
+        $farm = \App\Models\Farm::findOrFail($farmId);
+        
+        if (!$user->hasRole('superadmin') && 
+            $farm->owner_id !== $user->id && 
+            !$farm->users()->where('user_id', $user->id)->exists()) {
+            return ApiResponse::error(null, 'Vous n\'avez pas accès à cette ferme.', 403);
         }
 
         $dashboard = $this->dashboardService->getDashboard($farmId);

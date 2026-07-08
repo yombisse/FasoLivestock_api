@@ -1,0 +1,112 @@
+/* ═══════════════════════════════════════════════════════════
+   FasoLivestock Admin — Lots Assign CSS
+═══════════════════════════════════════════════════════ */
+
+/* ─── Header page ───────────────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-header-left h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+}
+
+.page-header-left p {
+    font-size: .8rem;
+    color: var(--text-muted);
+    margin: .2rem 0 0;
+}
+
+/* ─── Animal card ───────────────────────────────────────── */
+.animal-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: .5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--surface);
+}
+
+.animal-card:hover {
+    border-color: var(--primary);
+    background: var(--primary-xlight);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.animal-card.selected {
+    border-color: var(--primary);
+    background: var(--primary-xlight);
+    box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.animal-card input[type="checkbox"] {
+    width: 1.2rem;
+    height: 1.2rem;
+    cursor: pointer;
+}
+
+/* ─── Card ───────────────────────────────────────────────── */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.card-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: .85rem 1.25rem;
+}
+
+.card-header h5 {
+    font-size: .9rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+/* ─── Avatar ────────────────────────────────────────────── */
+.user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: .8rem;
+    flex-shrink: 0;
+}
+
+/* ─── Form actions ───────────────────────────────────────── */
+.form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .75rem;
+    padding: 1.1rem 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-top: 1.25rem;
+}
+
+/* ─── Alpine x-cloak ────────────────────────────────────── */
+[x-cloak] { display: none !important; }

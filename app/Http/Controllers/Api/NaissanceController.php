@@ -7,8 +7,10 @@ use App\Http\Requests\Reproduction\StoreNaissanceRequest;
 use App\Http\Requests\Reproduction\UpdateNaissanceRequest;
 use App\Helpers\ApiResponse;
 use App\Models\Naissance;
+use App\Models\Animal;
 use App\Services\NaissanceService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class NaissanceController extends Controller
 {
@@ -50,10 +52,19 @@ class NaissanceController extends Controller
 
     /**
      * Créer une naissance.
+     * LEGACY: Cette méthode devrait être remplacée par le canal sync push/pull.
      */
     public function store(StoreNaissanceRequest $request)
     {
         $this->authorize('create', Naissance::class);
+
+        // Log d'avertissement pour appel hors canal sync
+        Log::warning('REST API appelée hors canal sync', [
+            'endpoint' => 'POST /reproduction/naissances',
+            'user_id' => auth()->id(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
 
         $userId = auth()->id();
         $data = $request->validated();
@@ -171,5 +182,40 @@ class NaissanceController extends Controller
             'previsions' => $previsions,
             'periode_jours' => $jours,
         ], 'Prévisions de mises bas récupérées avec succès.');
+    }
+
+    /**
+     * Obtenir les femelles éligibles à une déclaration de naissance
+     * (femelles avec une gestation confirmée en cours).
+     */
+    public function femellesEligibles(Request $request)
+    {
+        // $this->authorize('reproduction.view'); // Désactivé pour test
+
+        $farmId = $request->farm_id ?? $request->input('current_farm_id');
+
+        if (!$farmId) {
+            return ApiResponse::error(null, 'Ferme non spécifiée.', 400);
+        }
+
+        $femelles = Animal::eligiblesNaissance($farmId)
+            ->with(['espece', 'lot'])
+            ->get()
+            ->map(fn($a) => [
+                'id' => $a->id,
+                'nom' => $a->nom,
+                'numero_identification' => $a->numero_identification,
+                'espece' => $a->espece?->nom,
+                'race' => $a->race,
+                'date_gestation' => $a->evenements()
+                    ->whereHas('type', fn($q) =>
+                        $q->where('nom_type', 'Gestation confirmée')
+                    )
+                    ->where('statut', 'EN_COURS')
+                    ->latest('date_evenement')
+                    ->value('date_evenement'),
+            ]);
+
+        return ApiResponse::success($femelles, 'Femelles éligibles récupérées avec succès.');
     }
 }

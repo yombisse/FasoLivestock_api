@@ -12,13 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('animals', function (Blueprint $table) {
-            $table->foreignUuid('naissance_id')
-                ->nullable()
-                ->constrained('naissances')
-                ->nullOnDelete()
-                ->after('mother_id');
+            if (!Schema::hasColumn('animals', 'naissance_id')) {
+                $table->foreignUuid('naissance_id')
+                    ->nullable()
+                    ->constrained('naissances')
+                    ->nullOnDelete()
+                    ->after('mother_id');
 
-            $table->index('naissance_id');
+                $table->index('naissance_id');
+            }
         });
     }
 
@@ -28,9 +30,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('animals', function (Blueprint $table) {
-            $table->dropForeign(['naissance_id']);
-            $table->dropIndex(['naissance_id']);
-            $table->dropColumn('naissance_id');
+            if (Schema::hasColumn('animals', 'naissance_id')) {
+                $table->dropForeign(['naissance_id']);
+                $table->dropIndex(['naissance_id']);
+                $table->dropColumn('naissance_id');
+            }
         });
     }
 };

@@ -19,6 +19,9 @@ class FinanceTransactionController extends Controller
     {
         $params = [
             'search'   => $request->search,
+            'type_transaction' => $request->type_transaction,
+            'date_debut' => $request->date_debut,
+            'date_fin' => $request->date_fin,
             'page'     => $request->page,
             'per_page' => 15,
         ];
@@ -29,9 +32,14 @@ class FinanceTransactionController extends Controller
             return $this->handleApiError($response);
         }
 
+        // Récupérer le bilan pour affichage en en-tête
+        $bilanResponse = $this->financeTransactionApi->bilan();
+        $bilan = $bilanResponse->success ? ($bilanResponse->data ?? []) : [];
+
         return view('admin.finance.index', [
             'transactions' => $response->data['transactions'] ?? [],
             'meta'         => $response->data['meta'] ?? [],
+            'bilan'        => $bilan,
         ]);
     }
 
@@ -122,7 +130,7 @@ class FinanceTransactionController extends Controller
      */
     public function destroy(string $id)
     {
-        $response = $this->financeTransactionApi->delete($id);
+        $response = $this->financeTransactionApi->deleteTransaction($id);
 
         return redirect()
             ->route('admin.finance.index')

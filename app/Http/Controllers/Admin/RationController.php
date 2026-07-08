@@ -122,7 +122,7 @@ class RationController extends Controller
      */
     public function destroy(string $id)
     {
-        $response = $this->rationApi->delete($id);
+        $response = $this->rationApi->deleteRation($id);
 
         return redirect()
             ->route('admin.rations.index')

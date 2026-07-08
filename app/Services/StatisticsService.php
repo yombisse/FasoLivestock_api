@@ -179,12 +179,12 @@ class StatisticsService
     {
         $males = Animal::where('farm_id', $farmId)
             ->where('statut', 'ACTIF')
-            ->where('sexe', 'M')
+            ->where('sexe', 'male')
             ->count();
 
         $femelles = Animal::where('farm_id', $farmId)
             ->where('statut', 'ACTIF')
-            ->where('sexe', 'F')
+            ->where('sexe', 'femelle')
             ->count();
 
         return [

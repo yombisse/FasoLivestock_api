@@ -6,6 +6,7 @@ use App\Models\Evenement;
 use App\Models\Animal;
 use App\Models\TypeEvenement;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\ValidationException;
 
 class EvenementReproductionService
 {
@@ -41,7 +42,42 @@ class EvenementReproductionService
         $data['last_modified_by'] = $userId;
         $data['version'] = 1;
 
-        return Evenement::create($data);
+        $evenement = Evenement::create($data);
+
+        // Créer une transaction financière via le service centralisé si le coût est > 0
+        $cout = $data['cout'] ?? 0;
+        if ($cout > 0) {
+            app(EvenementTransactionService::class)->creerTransactionDepuisEvenement(
+                $evenement,
+                (float) $cout,
+                'FRAIS_REPRODUCTION'
+            );
+        }
+
+        // Logique métier après création
+        $typeNom = $evenement->type?->nom_type;
+
+        // Si type = GESTATION_CONFIRMEE : mettre statut = EN_COURS
+        if ($typeNom === 'Gestation confirmée') {
+            $evenement->update(['statut' => Evenement::STATUT_EN_COURS]);
+        }
+
+        // Si type = MISE_BAS : vérifier qu'il existe une GESTATION_CONFIRMEE EN_COURS
+        if ($typeNom === 'Mise bas') {
+            $gestationEnCours = Evenement::where('animal_id', $evenement->animal_id)
+                ->whereHas('type', fn($q) => $q->where('nom_type', 'Gestation confirmée'))
+                ->where('statut', Evenement::STATUT_EN_COURS)
+                ->latest('date_evenement')
+                ->first();
+
+            if (!$gestationEnCours) {
+                throw ValidationException::withMessages([
+                    'type_evenement_id' => 'Impossible de créer un événement MISE_BAS : aucune gestation confirmée en cours pour cet animal.'
+                ]);
+            }
+        }
+
+        return $evenement->fresh();
     }
 
     /**
@@ -49,11 +85,23 @@ class EvenementReproductionService
      */
     public function update(Evenement $evenement, array $data, string $userId): Evenement
     {
+        $oldCout = $evenement->cout ?? 0;
+        $newCout = $data['cout'] ?? $oldCout;
+
         $data['sync_status'] = 'synced';
         $data['last_modified_by'] = $userId;
         $data['version'] = ($evenement->version ?? 1) + 1;
 
         $evenement->update($data);
+
+        // Synchroniser la transaction associée via le service centralisé si le coût change
+        if ($oldCout !== $newCout) {
+            app(EvenementTransactionService::class)->synchroniserTransactionDepuisEvenement(
+                $evenement,
+                (float) $newCout,
+                'FRAIS_REPRODUCTION'
+            );
+        }
 
         return $evenement->fresh();
     }
@@ -67,6 +115,9 @@ class EvenementReproductionService
             'sync_status' => 'synced',
             'version' => ($evenement->version ?? 1) + 1,
         ]);
+
+        // Soft-delete la transaction associée via le service centralisé
+        app(EvenementTransactionService::class)->supprimerTransactionDepuisEvenement($evenement);
 
         return $evenement->delete();
     }

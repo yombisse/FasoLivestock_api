@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignUuid('farm_id')->constrained('farms')->cascadeOnDelete();
             $table->string('nom')->nullable();
             $table->string('race')->nullable();
-            $table->enum('sexe', ['M', 'F'])->nullable();
+            $table->enum('sexe', ['male', 'femelle'])->nullable();
             $table->date('date_naissance')->nullable();
             $table->decimal('poids', 10, 2)->nullable();
             $table->enum('statut', ['ACTIF', 'VENDU', 'MORT', 'PERDU'])->default('ACTIF');
@@ -24,6 +24,10 @@ return new class extends Migration
             $table->foreignUuid('espece_id')->constrained('especes');
             $table->foreignUuid('lot_id')->nullable()->constrained('lots');
             $table->uuid('mother_id')->nullable();
+
+            $table->string('numero_identification')->nullable();
+            $table->string('photo')->nullable();
+            $table->uuid('naissance_id')->nullable();
 
             $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
             $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();

@@ -1,0 +1,93 @@
+/* ═══════════════════════════════════════════════════════════
+   FasoLivestock Admin — Animals Edit CSS
+═══════════════════════════════════════════════════════ */
+
+/* ─── Header page ───────────────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-header-left h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+}
+
+.page-header-left p {
+    font-size: .8rem;
+    color: var(--text-muted);
+    margin: .2rem 0 0;
+}
+
+/* ─── Form card ──────────────────────────────────────────── */
+.form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-section-title {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 1rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+/* ─── Form grid ──────────────────────────────────────────── */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: .35rem;
+}
+
+.form-group .form-control,
+.form-group .form-select {
+    font-size: .845rem;
+    border-radius: var(--radius-sm);
+}
+
+/* ─── Photo preview ───────────────────────────────────────── */
+.photo-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius);
+    object-fit: cover;
+    border: 2px solid var(--border);
+    background: var(--bg);
+}
+
+/* ─── Alpine x-cloak ────────────────────────────────────── */
+[x-cloak] { display: none !important; }
+
+/* ─── Fade animation ───────────────────────────────────── */
+.fade-in {
+    animation: fadeIn .3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

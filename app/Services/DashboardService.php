@@ -79,8 +79,8 @@ class DashboardService
             ->values();
 
         // Par sexe
-        $males = Animal::where('farm_id', $farmId)->where('statut', 'ACTIF')->where('sexe', 'M')->count();
-        $femelles = Animal::where('farm_id', $farmId)->where('statut', 'ACTIF')->where('sexe', 'F')->count();
+        $males = Animal::where('farm_id', $farmId)->where('statut', 'ACTIF')->where('sexe', 'male')->count();
+        $femelles = Animal::where('farm_id', $farmId)->where('statut', 'ACTIF')->where('sexe', 'femelle')->count();
 
         // Taux d'activité
         $tauxActivite = $totalAnimaux > 0 ? round(($animauxActifs / $totalAnimaux) * 100, 2) : 0;
@@ -190,7 +190,7 @@ class DashboardService
     {
         // Femelles actives
         $femellesActives = Animal::where('farm_id', $farmId)
-            ->where('sexe', 'F')
+            ->where('sexe', 'femelle')
             ->where('statut', 'ACTIF')
             ->count();
 

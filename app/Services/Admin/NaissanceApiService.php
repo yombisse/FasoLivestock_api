@@ -26,7 +26,7 @@ class NaissanceApiService extends AdminApiService
         return $this->put("/reproduction/naissances/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteNaissance(string $id): ApiResult
     {
         return $this->delete("/reproduction/naissances/{$id}");
     }
@@ -44,5 +44,12 @@ class NaissanceApiService extends AdminApiService
     public function previsions(array $params = []): ApiResult
     {
         return $this->get('/reproduction/naissances/previsions', $params);
+    }
+
+    public function femellesEligibles(string $farmId): ApiResult
+    {
+        return $this->get('/reproduction/femelles-eligibles', [
+            'farm_id' => $farmId
+        ]);
     }
 }

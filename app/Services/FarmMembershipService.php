@@ -13,7 +13,7 @@ use App\Models\Farm;
  */
 class FarmMembershipService
 {
-    public function syncMembers(Farm $farm, array $users, ?int $excludeId = null): void
+    public function syncMembers(Farm $farm, array $users, ?string $excludeId = null): void
     {
         $syncData = collect($users)
             ->reject(fn ($u) => $excludeId !== null && $u['id'] === $excludeId)

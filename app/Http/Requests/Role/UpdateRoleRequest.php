@@ -16,14 +16,16 @@ class UpdateRoleRequest extends FormRequest
 
     public function rules(): array
     {
+        $roleId = $this->route('id'); // Le paramètre de route est 'id' pour PUT/PATCH
+
         return [
             'name'          => [
                 'sometimes',
                 'string',
                 'max:50',
-                Rule::unique('roles', 'name')->ignore($this->route('role')),
+                Rule::unique('roles', 'name')->ignore($roleId),
             ],
-            'permissions'   => 'sometimes|array|min:1',
+            'permissions'   => 'sometimes|array',
             'permissions.*' => 'required|string|exists:permissions,name',
         ];
     }

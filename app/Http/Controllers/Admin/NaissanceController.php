@@ -40,7 +40,26 @@ class NaissanceController extends Controller
      */
     public function create()
     {
-        return view('admin.naissances.create');
+        $farmId = session('current_farm_id');
+        $femellesEligibles = [];
+        $warningMessage = null;
+
+        if ($farmId) {
+            $response = $this->reproductionApi->femellesEligibles($farmId);
+            
+            if ($response->success) {
+                $femellesEligibles = $response->data ?? [];
+                
+                if (empty($femellesEligibles)) {
+                    $warningMessage = 'Aucune femelle avec une gestation confirmée en cours. Veuillez d\'abord enregistrer une GESTATION_CONFIRMEE dans les événements reproductifs.';
+                }
+            }
+        }
+
+        return view('admin.naissances.create', [
+            'femellesEligibles' => $femellesEligibles,
+            'warningMessage' => $warningMessage,
+        ]);
     }
 
     /**
@@ -122,7 +141,7 @@ class NaissanceController extends Controller
      */
     public function destroy(string $id)
     {
-        $response = $this->naissanceApi->delete($id);
+        $response = $this->naissanceApi->deleteNaissance($id);
 
         return redirect()
             ->route('admin.naissances.index')

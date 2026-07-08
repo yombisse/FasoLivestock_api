@@ -26,7 +26,7 @@ class FinanceTransactionApiService extends AdminApiService
         return $this->put("/finance/transactions/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteTransaction(string $id): ApiResult
     {
         return $this->delete("/finance/transactions/{$id}");
     }

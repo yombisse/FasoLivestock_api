@@ -226,7 +226,7 @@ class SanteRappelController extends Controller
     {
         $this->authorize('create', SanteRappel::class);
 
-        $farmId = session('current_farm_id');
+        $farmId = $request->current_farm_id;
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
@@ -279,7 +279,7 @@ class SanteRappelController extends Controller
     {
         $this->authorize('view', SanteRappel::class);
 
-        $farmId = session('current_farm_id');
+        $farmId = $request->current_farm_id;
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);

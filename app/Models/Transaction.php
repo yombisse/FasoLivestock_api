@@ -27,6 +27,7 @@ class Transaction extends Model
 
     protected $fillable = [
         'farm_id',
+        'numero_transaction',
         'type_transaction',
         'montant',
         'date_transaction',
@@ -48,6 +49,37 @@ class Transaction extends Model
         'sync_status'      => 'string',
         'type_transaction' => 'string',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($transaction) {
+            if (empty($transaction->numero_transaction)) {
+                $transaction->numero_transaction = self::generateNumero();
+            }
+        });
+    }
+
+    /**
+     * Générer un numéro de transaction unique
+     * Format: TRX-YYYY-XXXXXX (ex: TRX-2026-000001)
+     */
+    public static function generateNumero(): string
+    {
+        $year = date('Y');
+        $prefix = "TRX-{$year}-";
+        
+        $lastNumero = self::where('numero_transaction', 'like', "{$prefix}%")
+            ->orderBy('numero_transaction', 'desc')
+            ->value('numero_transaction');
+        
+        $sequence = $lastNumero 
+            ? (int) substr($lastNumero, -6) + 1 
+            : 1;
+        
+        return sprintf("{$prefix}%06d", $sequence);
+    }
 
     // =========================================================
     // RELATIONS EXISTANTES

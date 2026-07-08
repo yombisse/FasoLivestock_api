@@ -26,7 +26,7 @@ class AnimalApiService extends AdminApiService
         return $this->put("/animals/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteAnimal(string $id): ApiResult
     {
         return $this->delete("/animals/{$id}");
     }
@@ -39,5 +39,20 @@ class AnimalApiService extends AdminApiService
     public function restore(string $id): ApiResult
     {
         return $this->post("/animals/{$id}/restore");
+    }
+
+    public function purchase(array $data): ApiResult
+    {
+        return $this->post('/animals/purchase', $data);
+    }
+
+    public function birth(array $data): ApiResult
+    {
+        return $this->post('/animals/birth', $data);
+    }
+
+    public function importBatch(array $data): ApiResult
+    {
+        return $this->post('/animals/import', $data);
     }
 }

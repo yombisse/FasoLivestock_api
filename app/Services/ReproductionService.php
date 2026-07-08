@@ -15,7 +15,7 @@ class ReproductionService
     public function dashboard(string $farmId): array
     {
         $femelles = Animal::where('farm_id', $farmId)
-            ->where('sexe', 'F')
+            ->where('sexe', 'femelle')
             ->where('statut', 'ACTIF')
             ->count();
 
@@ -84,7 +84,7 @@ class ReproductionService
             ]);
 
         $femellesEnAge = Animal::where('farm_id', $farmId)
-            ->where('sexe', 'F')
+            ->where('sexe', 'femelle')
             ->where('statut', 'ACTIF')
             ->with('espece.parametre')
             ->get()

@@ -5,7 +5,10 @@ namespace App\Services;
 use App\Models\Evenement;
 use App\Models\TypeEvenement;
 use App\Models\Animal;
+use App\Models\Transaction;
+use App\Models\Categorie;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 class SanteEvenementService
 {
@@ -42,28 +45,49 @@ class SanteEvenementService
      */
     public function store(string $farmId, array $data): Evenement
     {
-        // Récupérer ou créer le type d'événement
-        $typeEvenement = TypeEvenement::firstOrCreate(
-            ['nom_type' => strtoupper($data['type'])],
-            [
-                'description' => $this->getTypeDescription($data['type']),
-                'farm_id' => null, // Type global
-                'sync_status' => 'synced',
-                'version' => 1,
-            ]
-        );
+        return DB::transaction(function () use ($farmId, $data) {
+            // Récupérer ou créer le type d'événement
+            $typeEvenement = TypeEvenement::firstOrCreate(
+                ['nom_type' => strtoupper($data['type'])],
+                [
+                    'description' => $this->getTypeDescription($data['type']),
+                    'farm_id' => null, // Type global
+                    'sync_status' => 'synced',
+                    'version' => 1,
+                ]
+            );
 
-        return Evenement::create([
-            'farm_id' => $farmId,
-            'type_evenement_id' => $typeEvenement->id,
-            'animal_id' => $data['animal_id'],
-            'date_evenement' => $data['date_evenement'],
-            'description' => $data['description'] ?? null,
-            'cout' => $data['cout'] ?? 0,
-            'sync_status' => 'synced',
-            'last_modified_by' => auth()->id(),
-            'version' => 1,
-        ]);
+            $evenement = Evenement::create([
+                'farm_id' => $farmId,
+                'type_evenement_id' => $typeEvenement->id,
+                'animal_id' => $data['animal_id'],
+                'date_evenement' => $data['date_evenement'],
+                'description' => $data['description'] ?? null,
+                'cout' => $data['cout'] ?? 0,
+                'sync_status' => 'synced',
+                'last_modified_by' => auth()->id(),
+                'version' => 1,
+            ]);
+
+            // Créer une transaction financière via le service centralisé si le coût est > 0
+            $cout = $data['cout'] ?? 0;
+            if ($cout > 0) {
+                // Déterminer la catégorie selon le type d'événement
+                $typeEvenement = strtoupper($data['type']);
+                $categorie = match ($typeEvenement) {
+                    'MALADIE' => 'FRAIS_MALADIE',
+                    default => 'FRAIS_SANITAIRE',
+                };
+
+                app(EvenementTransactionService::class)->creerTransactionDepuisEvenement(
+                    $evenement,
+                    (float) $cout,
+                    $categorie
+                );
+            }
+
+            return $evenement->fresh(['transaction']);
+        });
     }
 
     /**
@@ -81,41 +105,70 @@ class SanteEvenementService
      */
     public function update(string $evenementId, array $data): Evenement
     {
-        $evenement = Evenement::sanitaires()->findOrFail($evenementId);
+        return DB::transaction(function () use ($evenementId, $data) {
+            $evenement = Evenement::sanitaires()->findOrFail($evenementId);
 
-        // Si le type change, mettre à jour le type_evenement_id
-        if (!empty($data['type'])) {
-            $typeEvenement = TypeEvenement::firstOrCreate(
-                ['nom_type' => strtoupper($data['type'])],
-                [
-                    'description' => $this->getTypeDescription($data['type']),
-                    'farm_id' => null,
-                    'sync_status' => 'synced',
-                    'version' => 1,
-                ]
-            );
-            $data['type_evenement_id'] = $typeEvenement->id;
-        }
+            // Si le type change, mettre à jour le type_evenement_id
+            if (!empty($data['type'])) {
+                $typeEvenement = TypeEvenement::firstOrCreate(
+                    ['nom_type' => strtoupper($data['type'])],
+                    [
+                        'description' => $this->getTypeDescription($data['type']),
+                        'farm_id' => null,
+                        'sync_status' => 'synced',
+                        'version' => 1,
+                    ]
+                );
+                $data['type_evenement_id'] = $typeEvenement->id;
+            }
 
-        $evenement->update([
-            'date_evenement' => $data['date_evenement'] ?? $evenement->date_evenement,
-            'description' => $data['description'] ?? $evenement->description,
-            'cout' => $data['cout'] ?? $evenement->cout,
-            'type_evenement_id' => $data['type_evenement_id'] ?? $evenement->type_evenement_id,
-            'last_modified_by' => auth()->id(),
-            'version' => $evenement->version + 1,
-        ]);
+            $oldCout = $evenement->cout;
+            $newCout = $data['cout'] ?? $oldCout;
 
-        return $evenement->fresh();
+            $evenement->update([
+                'date_evenement' => $data['date_evenement'] ?? $evenement->date_evenement,
+                'description' => $data['description'] ?? $evenement->description,
+                'cout' => $newCout,
+                'type_evenement_id' => $data['type_evenement_id'] ?? $evenement->type_evenement_id,
+                'last_modified_by' => auth()->id(),
+                'version' => $evenement->version + 1,
+            ]);
+
+            // Synchroniser la transaction associée via le service centralisé si le coût change
+            if ($oldCout !== $newCout) {
+                // Déterminer la catégorie selon le type d'événement
+                $typeEvenement = $evenement->type?->nom_type ? strtoupper($evenement->type->nom_type) : 'SANITAIRE';
+                $categorie = match ($typeEvenement) {
+                    'MALADIE' => 'FRAIS_MALADIE',
+                    default => 'FRAIS_SANITAIRE',
+                };
+
+                app(EvenementTransactionService::class)->synchroniserTransactionDepuisEvenement(
+                    $evenement,
+                    (float) $newCout,
+                    $categorie
+                );
+            }
+
+            return $evenement->fresh(['transaction']);
+        });
     }
 
     /**
      * Supprimer un événement sanitaire.
+     * Soft-delete l'événement et sa transaction associée si elle existe.
      */
     public function destroy(string $evenementId): bool
     {
-        $evenement = Evenement::sanitaires()->findOrFail($evenementId);
-        return $evenement->delete();
+        return DB::transaction(function () use ($evenementId) {
+            $evenement = Evenement::sanitaires()->findOrFail($evenementId);
+
+            // Soft-delete la transaction associée via le service centralisé
+            app(EvenementTransactionService::class)->supprimerTransactionDepuisEvenement($evenement);
+
+            // Soft-delete l'événement
+            return $evenement->delete();
+        });
     }
 
     /**

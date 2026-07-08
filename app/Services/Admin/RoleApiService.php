@@ -31,7 +31,7 @@ class RoleApiService extends AdminApiService
         return $this->put("/roles/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteRole(string $id): ApiResult
     {
         return $this->delete("/roles/{$id}");
     }

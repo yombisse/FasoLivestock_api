@@ -122,7 +122,7 @@ class SanteRappelController extends Controller
      */
     public function destroy(string $id)
     {
-        $response = $this->santeRappelApi->delete($id);
+        $response = $this->santeRappelApi->deleteRappel($id);
 
         return redirect()
             ->route('admin.sante-rappels.index')

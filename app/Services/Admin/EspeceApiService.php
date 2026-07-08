@@ -26,7 +26,7 @@ class EspeceApiService extends AdminApiService
         return $this->put("/especes/{$id}", $data);
     }
 
-    public function delete(string $id): ApiResult
+    public function deleteEspece(string $id): ApiResult
     {
         return $this->delete("/especes/{$id}");
     }

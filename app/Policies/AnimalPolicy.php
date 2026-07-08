@@ -15,7 +15,7 @@ class AnimalPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasPermissionTo('animals.view', 'api') || $user->hasRole('superadmin');
+        return $user->hasPermissionTo('animals.view') || $user->hasRole('superadmin');
     }
 
     /**
@@ -23,7 +23,17 @@ class AnimalPolicy
      */
     public function view(User $user, Animal $animal): bool
     {
-        return $user->hasPermissionTo('animals.view', 'api') || $user->hasRole('superadmin');
+        if ($user->hasRole('superadmin')) {
+            return true;
+        }
+
+        if (!$user->hasPermissionTo('animals.view')) {
+            return false;
+        }
+
+        // Vérifier que l'utilisateur a accès à la ferme de l'animal
+        return $animal->farm->owner_id === $user->id
+            || $animal->farm->users()->where('user_id', $user->id)->exists();
     }
 
     /**
@@ -31,7 +41,7 @@ class AnimalPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('animals.create', 'api') || $user->hasRole('superadmin');
+        return $user->hasPermissionTo('animals.create') || $user->hasRole('superadmin');
     }
 
     /**
@@ -39,7 +49,17 @@ class AnimalPolicy
      */
     public function update(User $user, Animal $animal): bool
     {
-        return $user->hasPermissionTo('animals.update', 'api') || $user->hasRole('superadmin');
+        if ($user->hasRole('superadmin')) {
+            return true;
+        }
+
+        if (!$user->hasPermissionTo('animals.update')) {
+            return false;
+        }
+
+        // Vérifier que l'utilisateur a accès à la ferme de l'animal
+        return $animal->farm->owner_id === $user->id
+            || $animal->farm->users()->where('user_id', $user->id)->exists();
     }
 
     /**
@@ -47,7 +67,17 @@ class AnimalPolicy
      */
     public function delete(User $user, Animal $animal): bool
     {
-        return $user->hasPermissionTo('animals.delete', 'api') || $user->hasRole('superadmin');
+        if ($user->hasRole('superadmin')) {
+            return true;
+        }
+
+        if (!$user->hasPermissionTo('animals.delete')) {
+            return false;
+        }
+
+        // Vérifier que l'utilisateur a accès à la ferme de l'animal
+        return $animal->farm->owner_id === $user->id
+            || $animal->farm->users()->where('user_id', $user->id)->exists();
     }
 
     /**
@@ -55,6 +85,16 @@ class AnimalPolicy
      */
     public function restore(User $user, Animal $animal): bool
     {
-        return $user->hasPermissionTo('animals.update', 'api') || $user->hasRole('superadmin');
+        if ($user->hasRole('superadmin')) {
+            return true;
+        }
+
+        if (!$user->hasPermissionTo('animals.update')) {
+            return false;
+        }
+
+        // Vérifier que l'utilisateur a accès à la ferme de l'animal
+        return $animal->farm->owner_id === $user->id
+            || $animal->farm->users()->where('user_id', $user->id)->exists();
     }
 }

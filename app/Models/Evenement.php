@@ -16,13 +16,28 @@ class Evenement extends Model
     // ─── Types d'événements qui constituent un mouvement ─────────
     const TYPES_MOUVEMENT = ['VENTE', 'ACHAT', 'TRANSFERT', 'DECES', 'PERTE', 'ABATTAGE'];
 
+    // ─── Statuts des événements reproductifs ─────────────────────
+    const STATUT_EN_COURS = 'EN_COURS';
+    const STATUT_TERMINE = 'TERMINE';
+    const STATUT_ANNULE = 'ANNULE';
+
+    // ─── Types d'événements reproductifs (nom_type dans type_evenements) ───
+    const TYPE_GESTATION = 'Gestation confirmée';
+    const TYPE_MISE_BAS = 'Mise bas';
+    const TYPE_SAILLIE = 'Saillie';
+    const TYPE_CHALEUR = 'Chaleur';
+
     protected $fillable = [
         'farm_id',
         'type_evenement_id',
+        'categorie',
         'animal_id',
         'date_evenement',
         'description',
+        'metadonnees',
         'cout',
+        'statut',
+        'date_fin',
         // ─── Nouveaux champs mouvement ───
         'farm_destination_id',
         'statut_avant',
@@ -36,10 +51,13 @@ class Evenement extends Model
 
     protected $casts = [
         'date_evenement' => 'date',
+        'date_fin' => 'date',
         'cout'           => 'decimal:2',
         'sync_status'    => 'string',
         'statut_avant'   => 'string',
         'statut_apres'   => 'string',
+        'categorie'      => 'string',
+        'metadonnees'    => 'array',
     ];
 
     // =========================================================
@@ -95,13 +113,11 @@ class Evenement extends Model
 
     /**
      * Vérifie si cet événement est un mouvement (vente, transfert, décès...)
+     * Utilise la colonne categorie au lieu du nom_type pour plus de robustesse
      */
     public function getEstMouvementAttribute(): bool
     {
-        return in_array(
-            strtoupper($this->type?->nom_type ?? ''),
-            self::TYPES_MOUVEMENT
-        );
+        return $this->categorie === 'MOUVEMENT';
     }
 
     /**
@@ -109,7 +125,8 @@ class Evenement extends Model
      */
     public function getEstTransfertAttribute(): bool
     {
-        return strtoupper($this->type?->nom_type ?? '') === 'TRANSFERT'
+        return $this->categorie === 'MOUVEMENT'
+            && strtoupper($this->type?->nom_type ?? '') === 'TRANSFERT'
             && $this->farm_destination_id !== null;
     }
 
@@ -130,9 +147,7 @@ class Evenement extends Model
      */
     public function scopeSanitaires($query)
     {
-        return $query->whereHas('type', function ($q) {
-            $q->whereNotIn('nom_type', self::TYPES_MOUVEMENT);
-        });
+        return $query->where('categorie', 'SANITAIRE');
     }
 
     /**
@@ -140,9 +155,15 @@ class Evenement extends Model
      */
     public function scopeMouvements($query)
     {
-        return $query->whereHas('type', function ($q) {
-            $q->whereIn('nom_type', self::TYPES_MOUVEMENT);
-        });
+        return $query->where('categorie', 'MOUVEMENT');
+    }
+
+    /**
+     * Uniquement les événements reproductifs
+     */
+    public function scopeReproduction($query)
+    {
+        return $query->where('categorie', 'REPRODUCTION');
     }
 
     /**
@@ -159,30 +180,5 @@ class Evenement extends Model
     public function scopeEnAttente($query)
     {
         return $query->where('sync_status', 'pending');
-    }
-
-    // =========================================================
-    // OBSERVER INTÉGRÉ — logique métier automatique
-    // =========================================================
-
-    protected static function booted(): void
-    {
-        static::created(function (Evenement $evenement) {
-            $nomType = strtoupper($evenement->type?->nom_type ?? '');
-
-            // 1. Mettre à jour le statut de l'animal si c'est un mouvement
-            if ($evenement->statut_apres) {
-                $evenement->animal->update([
-                    'statut' => $evenement->statut_apres
-                ]);
-            }
-
-            // 2. Changer la ferme de l'animal si c'est un transfert
-            if ($nomType === 'TRANSFERT' && $evenement->farm_destination_id) {
-                $evenement->animal->update([
-                    'farm_id' => $evenement->farm_destination_id
-                ]);
-            }
-        });
     }
 }

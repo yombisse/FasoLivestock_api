@@ -1,0 +1,165 @@
+/* ═══════════════════════════════════════════════════════════
+   FasoLivestock Admin — Animals Trashed CSS
+═══════════════════════════════════════════════════════ */
+
+/* ─── Header page ───────────────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-header-left h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+}
+
+.page-header-left p {
+    font-size: .8rem;
+    color: var(--text-muted);
+    margin: .2rem 0 0;
+}
+
+/* ─── Filters bar ───────────────────────────────────────── */
+.filters-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .85rem 1.1rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+
+.filters-bar .filter-search {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+}
+
+.filters-bar .filter-search input {
+    width: 100%;
+    padding-left: 2.25rem;
+    border-radius: 20px;
+    font-size: .845rem;
+    border: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.filters-bar .filter-search .search-icon {
+    position: absolute;
+    left: .8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: .85rem;
+    pointer-events: none;
+}
+
+.filters-bar .filter-count {
+    font-size: .78rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+/* ─── Table card ────────────────────────────────────────── */
+.animals-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+/* ─── Avatar ────────────────────────────────────────────── */
+.user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: .8rem;
+    flex-shrink: 0;
+}
+
+.user-avatar.inactive {
+    background: #B0BEC5;
+}
+
+.user-info { line-height: 1.3; }
+
+.user-name {
+    font-weight: 600;
+    font-size: .875rem;
+    color: var(--text);
+}
+
+/* ─── Actions ───────────────────────────────────────────── */
+.actions-cell {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+}
+
+/* ─── Pagination ────────────────────────────────────────── */
+.pagination-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .85rem 1.1rem;
+    border-top: 1px solid var(--border);
+    font-size: .8rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.pagination {
+    margin: 0;
+    gap: .2rem;
+}
+
+.pagination .page-link {
+    border-radius: var(--radius-sm) !important;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: .8rem;
+    padding: .3rem .65rem;
+    transition: all var(--transition);
+}
+
+.pagination .page-link:hover {
+    background: var(--primary-xlight);
+    border-color: var(--primary-light);
+    color: var(--primary);
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+/* ─── Alpine x-cloak ────────────────────────────────────── */
+[x-cloak] { display: none !important; }
+
+/* ─── Fade animation ───────────────────────────────────── */
+.fade-in {
+    animation: fadeIn .3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

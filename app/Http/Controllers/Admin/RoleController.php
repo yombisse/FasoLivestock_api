@@ -130,7 +130,7 @@ class RoleController extends Controller
      */
     public function destroy(string $id)
     {
-        $response = $this->roleApi->delete($id);
+        $response = $this->roleApi->deleteRole($id);
 
         return redirect()
             ->route('admin.roles.index')

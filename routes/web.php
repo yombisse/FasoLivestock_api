@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\EvenementReproductionController;
 use App\Http\Controllers\Admin\NaissanceController;
 use App\Http\Controllers\Admin\MouvementController;
 use App\Http\Controllers\Admin\FinanceTransactionController;
+use App\Http\Controllers\Admin\SanteEvenementController;
 
 Route::prefix('admin')->name('admin.')->group(function () {
 
@@ -57,6 +58,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('users.restore');
         Route::patch('/users/{id}/toggle-active', [UserController::class, 'toggleActive'])
             ->name('users.toggle-active');
+        Route::get('/users/search', [UserController::class, 'search'])
+            ->name('users.search');
         Route::resource('users', UserController::class);
 
         // ─── Rôles ────────────────────────────────────────────
@@ -83,13 +86,47 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('farms.users.manage');
         Route::delete('/farms/{id}/users/{userId}', [FarmController::class, 'removeUser'])
             ->name('farms.users.remove');
+
+        // Administration ferme
+        Route::get('/farms/{id}/manage', [FarmController::class, 'manage'])
+            ->name('farms.manage');
+        Route::post('/farms/{id}/members', [FarmController::class, 'addMembers'])
+            ->name('farms.members.add');
+        Route::post('/farms/{id}/members/update-role', [FarmController::class, 'updateRole'])
+            ->name('farms.members.update-role');
+        Route::delete('/farms/{farmId}/members/{userId}', [FarmController::class, 'removeMember'])
+            ->name('farms.members.remove');
+
         Route::resource('farms', FarmController::class);
 
         // ─── Animaux ───────────────────────────────────────────
+        // IMPORTANT : toutes les routes statiques doivent être déclarées
+        // AVANT Route::resource() pour ne pas être capturées par les
+        // routes paramétrées {animal} du resource controller.
         Route::get('/animals/trashed', [AnimalController::class, 'trashed'])
-            ->name('animals.trashed');
+            ->name('admin.animals.trashed');
         Route::patch('/animals/{id}/restore', [AnimalController::class, 'restore'])
-            ->name('animals.restore');
+            ->name('admin.animals.restore');
+        Route::get('/animals/lots-by-farm', [AnimalController::class, 'getLotsByFarm'])
+            ->name('admin.animals.lots-by-farm');
+        Route::get('/animals/mothers', [AnimalController::class, 'getMothers'])
+            ->name('admin.animals.mothers');
+        // Routes dédiées aux formulaires de création
+        Route::get('/animals/create-achat', [AnimalController::class, 'createAchat'])
+            ->name('admin.animals.create-achat');
+        Route::get('/animals/create-naissance', [AnimalController::class, 'createNaissance'])
+            ->name('admin.animals.create-naissance');
+        // Route dédiée à l'achat (POST sans {animal}) — doit précéder resource()
+        Route::post('/animals/purchase', [AnimalController::class, 'purchase'])
+            ->name('admin.animals.purchase');
+        // Route dédiée à la naissance (POST sans {animal}) — doit précéder resource()
+        Route::post('/animals/naissance', [AnimalController::class, 'naissance'])
+            ->name('admin.animals.naissance');
+        // Routes dédiées à l'import cheptel
+        Route::get('/animals/import', [AnimalController::class, 'importWizard'])
+            ->name('admin.animals.import');
+        Route::post('/animals/import', [AnimalController::class, 'importStore'])
+            ->name('admin.animals.import.store');
         Route::resource('animals', AnimalController::class);
 
         // ─── Espèces ──────────────────────────────────────────
@@ -97,6 +134,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('especes.trashed');
         Route::patch('/especes/{id}/restore', [EspeceController::class, 'restore'])
             ->name('especes.restore');
+        Route::get('/especes/{id}/parametres', [EspeceController::class, 'editParametres'])
+            ->name('especes.parametres');
+        Route::put('/especes/{id}/parametres', [EspeceController::class, 'updateParametres'])
+            ->name('especes.parametres.update');
         Route::resource('especes', EspeceController::class);
 
         // ─── Lots ─────────────────────────────────────────────
@@ -104,6 +145,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('lots.trashed');
         Route::patch('/lots/{id}/restore', [LotController::class, 'restore'])
             ->name('lots.restore');
+        Route::get('/lots/{id}/assign', [LotController::class, 'assign'])
+            ->name('lots.assign');
+        Route::post('/lots/{id}/assign', [LotController::class, 'storeAssign'])
+            ->name('lots.storeAssign');
+        Route::delete('/lots/{lotId}/animals/{animalId}', [LotController::class, 'removeAnimal'])
+            ->name('lots.removeAnimal');
         Route::resource('lots', LotController::class);
 
         // ─── Aliments ─────────────────────────────────────────
@@ -143,6 +190,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/sante/alertes-ferme', [SanteAnimalController::class, 'alertesFerme'])
             ->name('sante.alertes-ferme');
 
+        // ─── Événements sanitaires ────────────────────────────
+        Route::get('/sante-evenements/trashed', [SanteEvenementController::class, 'trashed'])
+            ->name('sante-evenements.trashed');
+        Route::patch('/sante-evenements/{id}/restore', [SanteEvenementController::class, 'restore'])
+            ->name('sante-evenements.restore');
+        Route::get('/sante-evenements/statistiques', [SanteEvenementController::class, 'statistiques'])
+            ->name('sante-evenements.statistiques');
+        Route::resource('sante-evenements', SanteEvenementController::class);
+
         // ─── Reproduction ─────────────────────────────────────
         Route::get('/reproduction/dashboard', [ReproductionController::class, 'dashboard'])
             ->name('reproduction.dashboard');
@@ -153,14 +209,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/reproduction/animals/{animalId}/stats', [ReproductionController::class, 'statistiquesAnimal'])
             ->name('reproduction.statistiques-animal');
 
-        // ─── Événements de reproduction ─────────────────────────
+        // ─── Événements de reproduction ──────────────────────
         Route::get('/evenements-reproduction/trashed', [EvenementReproductionController::class, 'trashed'])
             ->name('evenements-reproduction.trashed');
         Route::patch('/evenements-reproduction/{id}/restore', [EvenementReproductionController::class, 'restore'])
             ->name('evenements-reproduction.restore');
         Route::resource('evenements-reproduction', EvenementReproductionController::class);
 
-        // ─── Naissances ────────────────────────────────────────
+        // ─── Naissances ───────────────────────────────────────
         Route::get('/naissances/trashed', [NaissanceController::class, 'trashed'])
             ->name('naissances.trashed');
         Route::patch('/naissances/{id}/restore', [NaissanceController::class, 'restore'])
@@ -182,7 +238,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('mouvements.statistiques');
         Route::resource('mouvements', MouvementController::class);
 
-        // ─── Finance ───────────────────────────────────────────
+        // ─── Finance ──────────────────────────────────────────
         Route::get('/finance/trashed', [FinanceTransactionController::class, 'trashed'])
             ->name('finance.trashed');
         Route::patch('/finance/{id}/restore', [FinanceTransactionController::class, 'restore'])

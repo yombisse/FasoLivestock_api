@@ -192,6 +192,51 @@ class UserController extends Controller
         );
     }
 
+    /**
+     * Lister les utilisateurs qui peuvent être propriétaires de ferme.
+     * 
+     * Règles :
+     * - Un utilisateur avec permission farm.create voit tous les utilisateurs actifs (pour créer des fermes pour eux)
+     * - Un superadmin voit tous les utilisateurs actifs
+     * - Un utilisateur normal sans permission farm.create ne voit que les superadmins
+     */
+    public function potentialOwners(Request $request)
+    {
+        $currentUser = auth()->user();
+
+        $users = User::query()
+            ->with('roles')
+            ->where('is_active', true)
+            ->when($currentUser->hasRole('superadmin') || $currentUser->can('create', \App\Models\Farm::class), function ($query) {
+                // Superadmin ou utilisateur avec permission farm.create voit tous les utilisateurs actifs
+                // Pas de filtre supplémentaire nécessaire
+            }, function ($query) {
+                // Utilisateur normal sans permission farm.create ne voit que les superadmins
+                $query->whereHas('roles', function ($q) {
+                    $q->where('name', 'superadmin')->where('guard_name', 'api');
+                });
+            })
+            ->when($request->search, fn ($q) =>
+                $q->where(fn ($q) =>
+                    $q->where('name', 'like', "%{$request->search}%")
+                      ->orWhere('email', 'like', "%{$request->search}%")
+                )
+            )
+            ->orderBy('name')
+            ->get();
+
+        return ApiResponse::success([
+            'users' => $users->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'photo' => $user->photo,
+                'is_superadmin' => $user->hasRole('superadmin'),
+                'roles' => $user->roles->pluck('name'),
+            ]),
+        ], 'Utilisateurs potentiels propriétaires récupérés avec succès.');
+    }
+
     // =========================================================
     // MÉTHODES PRIVÉES
     // =========================================================
