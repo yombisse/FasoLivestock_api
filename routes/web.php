@@ -104,29 +104,29 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // AVANT Route::resource() pour ne pas être capturées par les
         // routes paramétrées {animal} du resource controller.
         Route::get('/animals/trashed', [AnimalController::class, 'trashed'])
-            ->name('admin.animals.trashed');
+            ->name('animals.trashed');
         Route::patch('/animals/{id}/restore', [AnimalController::class, 'restore'])
-            ->name('admin.animals.restore');
+            ->name('animals.restore');
         Route::get('/animals/lots-by-farm', [AnimalController::class, 'getLotsByFarm'])
-            ->name('admin.animals.lots-by-farm');
+            ->name('animals.lots-by-farm');
         Route::get('/animals/mothers', [AnimalController::class, 'getMothers'])
-            ->name('admin.animals.mothers');
+            ->name('animals.mothers');
         // Routes dédiées aux formulaires de création
         Route::get('/animals/create-achat', [AnimalController::class, 'createAchat'])
-            ->name('admin.animals.create-achat');
+            ->name('animals.create-achat');
         Route::get('/animals/create-naissance', [AnimalController::class, 'createNaissance'])
-            ->name('admin.animals.create-naissance');
+            ->name('animals.create-naissance');
         // Route dédiée à l'achat (POST sans {animal}) — doit précéder resource()
         Route::post('/animals/purchase', [AnimalController::class, 'purchase'])
-            ->name('admin.animals.purchase');
+            ->name('animals.purchase');
         // Route dédiée à la naissance (POST sans {animal}) — doit précéder resource()
         Route::post('/animals/naissance', [AnimalController::class, 'naissance'])
-            ->name('admin.animals.naissance');
+            ->name('animals.naissance');
         // Routes dédiées à l'import cheptel
         Route::get('/animals/import', [AnimalController::class, 'importWizard'])
-            ->name('admin.animals.import');
+            ->name('animals.import');
         Route::post('/animals/import', [AnimalController::class, 'importStore'])
-            ->name('admin.animals.import.store');
+            ->name('animals.import.store');
         Route::resource('animals', AnimalController::class);
 
         // ─── Espèces ──────────────────────────────────────────
