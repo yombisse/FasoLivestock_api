@@ -17,6 +17,7 @@ use App\Models\Espece;
 use App\Models\Categorie;
 use App\Models\TypeEvenement;
 use App\Models\Farm;
+use App\Services\SyncDependencyResolver;
 use Carbon\Carbon;
 
 class SyncController extends Controller
@@ -31,6 +32,12 @@ class SyncController extends Controller
     private const ERROR_CODE_PERMISSION_DENIED = 'PERMISSION_DENIED';
     private const ERROR_CODE_VALIDATION_ERROR = 'VALIDATION_ERROR';
     private const ERROR_CODE_SERVER_ERROR = 'SERVER_ERROR';
+    private const ERROR_CODE_CHUNK_TOO_LARGE = 'CHUNK_TOO_LARGE';
+
+    /**
+     * Maximum number of items per chunk to avoid timeouts
+     */
+    private const MAX_CHUNK_SIZE = 200;
 
     /**
      * Permission mapping for sync operations
@@ -90,12 +97,13 @@ class SyncController extends Controller
     ];
 
     /**
-     * Push changes from mobile to server
+     * Push changes from mobile to server (WatermelonDB format)
+     * Receives changes grouped by table with created/updated/deleted arrays
      */
     public function push(Request $request)
     {
         try {
-            Log::info('SYNC/PUSH - Request received', [
+            Log::info('SYNC/PUSH - Request received (WatermelonDB format)', [
                 'user_id' => $request->user()?->id,
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
@@ -103,16 +111,13 @@ class SyncController extends Controller
 
             $data = $request->validate([
                 'changes' => 'required|array',
-                'changes.*.table' => 'required|string',
-                'changes.*.action' => 'required|in:create,update,delete',
-                'changes.*.data' => 'required|array',
                 'last_sync_at' => 'required|date',
                 'farm_id' => 'required|uuid',
                 'sync_request_id' => 'nullable|uuid',
             ]);
 
             Log::info('SYNC/PUSH - Validation passed', [
-                'total_changes' => count($data['changes']),
+                'total_tables' => count($data['changes']),
                 'farm_id' => $data['farm_id'],
                 'last_sync_at' => $data['last_sync_at'],
             ]);
@@ -138,7 +143,6 @@ class SyncController extends Controller
                         : $existingRequest->updated_at->toIso8601String();
                     return ApiResponse::success([
                         'results' => json_decode($existingRequest->results, true),
-                        'conflicts' => [],
                         'synced_at' => $syncedAt,
                         'cached' => true,
                     ], 'Synchronisation push réussie (cached)');
@@ -179,57 +183,88 @@ class SyncController extends Controller
                 'farm_name' => $farm->name,
             ]);
 
+            // Count total items in chunk
+            $totalItems = 0;
+            foreach ($data['changes'] as $tableData) {
+                if (isset($tableData['created'])) $totalItems += count($tableData['created']);
+                if (isset($tableData['updated'])) $totalItems += count($tableData['updated']);
+                if (isset($tableData['deleted'])) $totalItems += count($tableData['deleted']);
+            }
+
+            // Validate chunk size
+            if ($totalItems > self::MAX_CHUNK_SIZE) {
+                Log::warning('SYNC/PUSH - Chunk size exceeds maximum', [
+                    'total_items' => $totalItems,
+                    'max_chunk_size' => self::MAX_CHUNK_SIZE,
+                    'farm_id' => $farmId,
+                ]);
+                return ApiResponse::error(
+                    "Chunk trop volumineux: {$totalItems} items (maximum: " . self::MAX_CHUNK_SIZE . ")",
+                    null,
+                    413
+                );
+            }
+
+            Log::info('SYNC/PUSH - Chunk size validated', [
+                'total_items' => $totalItems,
+                'max_chunk_size' => self::MAX_CHUNK_SIZE,
+            ]);
+
+            // Resolve dependencies and get processing order
+            $dependencyResolver = new SyncDependencyResolver();
+            $processingOrder = $dependencyResolver->resolveProcessingOrder($data['changes']);
+
             $results = [];
-            $conflicts = [];
 
             // Enable SQL query logging for debugging
             DB::enableQueryLog();
 
+            // Wrap entire chunk processing in a single transaction for FK visibility
             DB::beginTransaction();
 
-            foreach ($data['changes'] as $index => $change) {
-                $table = $change['table'];
-                $action = $change['action'];
-                $recordData = $change['data'];
+            try {
+                foreach ($processingOrder as $index => $item) {
+                    $table = $item['table'];
+                    $action = $item['action'];
+                    $recordData = $item['data'];
 
-                Log::debug('SYNC/PUSH - Processing change', [
-                    'index' => $index,
-                    'table' => $table,
-                    'action' => $action,
-                    'record_id' => $recordData['id'] ?? null,
-                    'data_sample' => array_slice($recordData, 0, 5),
-                ]);
+                    Log::debug('SYNC/PUSH - Processing item', [
+                        'index' => $index,
+                        'table' => $table,
+                        'action' => $action,
+                        'record_id' => $recordData['id'] ?? null,
+                    ]);
 
-                // Create a savepoint for this change so we can rollback individually without aborting the entire transaction
-                $savepointName = 'sp_change_' . $index;
-                DB::statement("SAVEPOINT {$savepointName}");
+                    // Create a savepoint for this item to isolate errors
+                    $savepointName = 'sp_item_' . $index;
+                    DB::statement("SAVEPOINT {$savepointName}");
 
-                try {
-                    // Check Spatie permission for this table+action
-                    $permission = $this->permissionMap[$table][$action] ?? null;
-                    if ($permission && !$request->user()->can($permission)) {
-                        Log::warning('SYNC/PUSH - Permission denied', [
-                            'user_id' => $userId,
-                            'table' => $table,
-                            'action' => $action,
-                            'permission' => $permission,
-                            'record_id' => $recordData['id'] ?? null,
-                        ]);
-                        DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
-                        $results[] = [
-                            'table' => $table,
-                            'action' => $action,
-                            'status' => 'error',
-                            'reason' => 'Permission refusée',
-                            'code' => self::ERROR_CODE_PERMISSION_DENIED,
-                        ];
-                        continue;
-                    }
-                    // Validate farm_id in data matches request farm_id for business tables
-                    if (in_array($table, ['animals', 'transactions', 'evenements', 'lots', 'notifications', 'naissances'])) {
-                        if (isset($recordData['farm_id']) && $recordData['farm_id'] !== $farmId) {
-                            // Verify user has access to the data's farm_id
-                            try {
+                    try {
+                        // Check Spatie permission for this table+action
+                        $permission = $this->permissionMap[$table][$action] ?? null;
+                        if ($permission && !$request->user()->can($permission)) {
+                            Log::warning('SYNC/PUSH - Permission denied', [
+                                'user_id' => $userId,
+                                'table' => $table,
+                                'action' => $action,
+                                'permission' => $permission,
+                                'record_id' => $recordData['id'] ?? null,
+                            ]);
+                            DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
+                            $results[] = [
+                                'table' => $table,
+                                'id' => $recordData['id'] ?? null,
+                                'status' => 'error',
+                                'reason' => 'Permission refusée',
+                                'code' => self::ERROR_CODE_PERMISSION_DENIED,
+                            ];
+                            continue;
+                        }
+
+                        // Validate farm_id in data matches request farm_id for business tables
+                        if (in_array($table, ['animals', 'transactions', 'evenements', 'lots', 'notifications', 'naissances'])) {
+                            if (isset($recordData['farm_id']) && $recordData['farm_id'] !== $farmId) {
+                                // Verify user has access to the data's farm_id
                                 $dataFarm = \App\Models\Farm::where('id', $recordData['farm_id'])
                                     ->where(function ($query) use ($userId) {
                                         $query->where('owner_id', $userId)
@@ -238,242 +273,194 @@ class SyncController extends Controller
                                             });
                                     })
                                     ->first();
-                            } catch (\Exception $e) {
-                                Log::error('SYNC/PUSH - Error checking farm access', [
-                                    'table' => $table,
-                                    'record_id' => $recordData['id'] ?? null,
-                                    'data_farm_id' => $recordData['farm_id'],
-                                    'error' => $e->getMessage(),
-                                ]);
-                                DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
-                                $results[] = [
-                                    'table' => $table,
-                                    'action' => $action,
-                                    'status' => 'error',
-                                    'reason' => 'Error verifying farm access',
-                                    'code' => self::ERROR_CODE_SERVER_ERROR,
-                                ];
-                                continue;
-                            }
 
-                            if ($dataFarm) {
-                                // User has access to both farms, accept the data's farm_id
-                                Log::info('SYNC/PUSH - Farm ID mismatch but user has access, accepting data farm_id', [
-                                    'table' => $table,
-                                    'record_id' => $recordData['id'] ?? null,
-                                    'data_farm_id' => $recordData['farm_id'],
-                                    'request_farm_id' => $farmId,
-                                ]);
-                                // Keep the data's farm_id, don't override
-                            } else {
-                                Log::warning('SYNC/PUSH - Farm ID mismatch and no access to data farm', [
-                                    'table' => $table,
-                                    'record_id' => $recordData['id'] ?? null,
-                                    'data_farm_id' => $recordData['farm_id'],
-                                    'request_farm_id' => $farmId,
-                                ]);
-                                DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
-                                $conflicts[] = [
-                                    'table' => $table,
-                                    'id' => $recordData['id'] ?? null,
-                                    'reason' => 'Farm-ID mismatch and no access to data farm',
-                                ];
-                                continue;
-                            }
-                        }
-                        // Ensure farm_id is set if not present
-                        if (!isset($recordData['farm_id'])) {
-                            $recordData['farm_id'] = $farmId;
-                        }
-                    }
-
-                    // Validate UUID format for ID fields
-                    if (isset($recordData['id']) && !$this->isValidUUID($recordData['id'])) {
-                        Log::error('SYNC/PUSH - Invalid UUID format', [
-                            'table' => $table,
-                            'record_id' => $recordData['id'],
-                        ]);
-                        DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
-                        $results[] = [
-                            'table' => $table,
-                            'action' => $action,
-                            'status' => 'error',
-                            'reason' => 'Invalid UUID format',
-                            'code' => self::ERROR_CODE_UUID_INVALID,
-                        ];
-                        continue;
-                    }
-
-                    // Check for ID conflicts on create
-                    if ($action === 'create' && isset($recordData['id'])) {
-                        $modelClass = $this->getModelClass($table);
-                        if ($modelClass) {
-                            try {
-                                $exists = $modelClass::withTrashed()->where('id', $recordData['id'])->exists();
-                                if ($exists) {
-                                    Log::warning('SYNC/PUSH - ID already exists on server', [
+                                if (!$dataFarm) {
+                                    Log::warning('SYNC/PUSH - Farm ID mismatch and no access to data farm', [
                                         'table' => $table,
-                                        'record_id' => $recordData['id'],
+                                        'record_id' => $recordData['id'] ?? null,
+                                        'data_farm_id' => $recordData['farm_id'],
+                                        'request_farm_id' => $farmId,
                                     ]);
+                                    DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
                                     $results[] = [
                                         'table' => $table,
-                                        'action' => $action,
+                                        'id' => $recordData['id'] ?? null,
                                         'status' => 'error',
-                                        'reason' => 'ID already exists on server',
-                                        'code' => self::ERROR_CODE_ID_EXISTS,
+                                        'reason' => 'Farm-ID mismatch and no access to data farm',
+                                        'code' => self::ERROR_CODE_PERMISSION_DENIED,
                                     ];
                                     continue;
                                 }
-                            } catch (\Exception $e) {
-                                Log::error('SYNC/PUSH - Error checking ID existence', [
-                                    'table' => $table,
-                                    'record_id' => $recordData['id'],
-                                    'error' => $e->getMessage(),
+                            }
+                            // Ensure farm_id is set if not present
+                            if (!isset($recordData['farm_id'])) {
+                                $recordData['farm_id'] = $farmId;
+                            }
+                        }
+
+                        // Validate UUID format for ID fields
+                        if (isset($recordData['id']) && !$this->isValidUUID($recordData['id'])) {
+                            Log::error('SYNC/PUSH - Invalid UUID format', [
+                                'table' => $table,
+                                'record_id' => $recordData['id'],
+                            ]);
+                            DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
+                            $results[] = [
+                                'table' => $table,
+                                'id' => $recordData['id'] ?? null,
+                                'status' => 'error',
+                                'reason' => 'Invalid UUID format',
+                                'code' => self::ERROR_CODE_UUID_INVALID,
+                            ];
+                            continue;
+                        }
+
+                        // Anti-duplication de transaction (règle du contrat d'interface)
+                        // Si une transaction liée au même evenement_id existe déjà (créée par EvenementTransactionService via l'observer),
+                        // on ignore silencieusement l'item côté client pour éviter la duplication.
+                        if ($table === 'transactions' && $action === 'create' && isset($recordData['evenement_id'])) {
+                            $existingTransaction = Transaction::where('evenement_id', $recordData['evenement_id'])
+                                ->where('farm_id', $recordData['farm_id'] ?? $farmId)
+                                ->first();
+
+                            if ($existingTransaction) {
+                                Log::info('SYNC/PUSH - Transaction already exists for evenement, ignoring client transaction', [
+                                    'evenement_id' => $recordData['evenement_id'],
+                                    'existing_transaction_id' => $existingTransaction->id,
+                                    'client_transaction_id' => $recordData['id'],
                                 ]);
                                 DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
                                 $results[] = [
                                     'table' => $table,
-                                    'action' => $action,
-                                    'status' => 'error',
-                                    'reason' => 'Error checking ID existence (transaction may be in failed state)',
-                                    'code' => self::ERROR_CODE_SERVER_ERROR,
+                                    'id' => $recordData['id'] ?? null,
+                                    'status' => 'ignored',
+                                    'reason' => 'Transaction already exists for this evenement (created by server)',
+                                    'existing_id' => $existingTransaction->id,
                                 ];
                                 continue;
                             }
                         }
-                    }
 
-                    $result = $this->processChange($table, $action, $recordData, $userId);
+                        // Normalize foreign keys (convert names to UUIDs)
+                        $recordData = $this->normalizeForeignKeys($table, $recordData);
 
-                    Log::debug('SYNC/PUSH - Change processed', [
-                        'table' => $table,
-                        'action' => $action,
-                        'result_status' => $result['status'],
-                        'result' => $result,
-                    ]);
+                        // Remove WatermelonDB internal fields
+                        $recordData = $this->removeWatermelonDBFields($recordData);
 
-                    if ($result['status'] === 'conflict') {
-                        Log::warning('SYNC/PUSH - Conflict detected', [
+                        // Convert timestamps from milliseconds to datetime format
+                        $recordData = $this->convertTimestamps($recordData);
+
+                        Log::debug('SYNC/PUSH - Data after normalization', [
                             'table' => $table,
-                            'id' => $recordData['id'] ?? null,
-                            'reason' => $result['reason'],
+                            'record_id' => $recordData['id'] ?? null,
+                            'data_keys' => array_keys($recordData),
                         ]);
-                        $conflictEntry = [
-                            'table' => $table,
-                            'id' => $recordData['id'] ?? null,
-                            'reason' => $result['reason'],
-                        ];
-                        // Include code field if present in result
-                        if (isset($result['code'])) {
-                            $conflictEntry['code'] = $result['code'];
-                        }
-                        if (isset($result['client_version'])) {
-                            $conflictEntry['client_version'] = $result['client_version'];
-                        }
-                        if (isset($result['server_version'])) {
-                            $conflictEntry['server_version'] = $result['server_version'];
-                        }
-                        $conflicts[] = $conflictEntry;
-                    }
 
-                    $results[] = [
-                        'table' => $table,
-                        'action' => $action,
-                        'status' => $result['status'],
-                        'reason' => $result['reason'] ?? null,
-                        'client_version' => $result['client_version'] ?? null,
-                        'server_version' => $result['server_version'] ?? null,
-                        'code' => $result['code'] ?? null,
-                    ];
-                } catch (\Illuminate\Database\QueryException $e) {
-                    // Catch FK constraint violations individually - continue processing other items
-                    if (str_contains($e->getMessage(), 'foreign key constraint') || str_contains($e->getMessage(), 'violates foreign key')) {
-                        Log::error('SYNC/PUSH - Foreign key constraint violation', [
+                        // Process the change with idempotence (updateOrCreate)
+                        $result = $this->processChangeWithIdempotence($table, $action, $recordData, $userId);
+
+                        // Structured logging per item for production debugging
+                        Log::info('SYNC/PUSH - Item processed', [
+                            'farm_id' => $farmId,
                             'table' => $table,
                             'action' => $action,
                             'record_id' => $recordData['id'] ?? null,
-                            'error' => $e->getMessage(),
-                            'sql' => $e->getSql(),
+                            'status' => $result['status'],
+                            'reason' => $result['reason'] ?? null,
+                            'code' => $result['code'] ?? null,
+                            'index' => $index,
                         ]);
-                        DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
+
                         $results[] = [
                             'table' => $table,
-                            'action' => $action,
-                            'status' => 'error',
-                            'reason' => 'Référence introuvable (FK) - probablement un animal ou une entité liée pas encore synchronisée',
-                            'code' => self::ERROR_CODE_FK_MISSING,
+                            'id' => $recordData['id'] ?? null,
+                            'status' => $result['status'],
+                            'reason' => $result['reason'] ?? null,
+                            'code' => $result['code'] ?? null,
                         ];
-                    } else {
-                        // Non-FK errors should still trigger global rollback
-                        Log::error('SYNC/PUSH - Database query exception (non-FK)', [
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        // Catch FK constraint violations individually - continue processing other items
+                        if (str_contains($e->getMessage(), 'foreign key constraint') || str_contains($e->getMessage(), 'violates foreign key')) {
+                            Log::error('SYNC/PUSH - Foreign key constraint violation', [
+                                'table' => $table,
+                                'action' => $action,
+                                'record_id' => $recordData['id'] ?? null,
+                                'error' => $e->getMessage(),
+                            ]);
+                            DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
+                            $results[] = [
+                                'table' => $table,
+                                'id' => $recordData['id'] ?? null,
+                                'status' => 'error',
+                                'reason' => 'Foreign key reference not found (FK_MISSING)',
+                                'code' => self::ERROR_CODE_FK_MISSING,
+                            ];
+                        } else {
+                            // Non-FK errors should still trigger global rollback
+                            Log::error('SYNC/PUSH - Database query exception (non-FK)', [
+                                'table' => $table,
+                                'action' => $action,
+                                'error' => $e->getMessage(),
+                            ]);
+                            DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
+                            throw $e;
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('SYNC/PUSH - Unexpected exception during item processing', [
                             'table' => $table,
                             'action' => $action,
                             'error' => $e->getMessage(),
-                            'sql' => $e->getSql(),
-                            'bindings' => $e->getBindings(),
                         ]);
                         DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
                         throw $e;
                     }
-                } catch (\Exception $e) {
-                    Log::error('SYNC/PUSH - Unexpected exception during change processing', [
-                        'table' => $table,
-                        'action' => $action,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                    ]);
-                    DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
-                    throw $e;
                 }
-            }
 
-            DB::commit();
+                DB::commit();
 
-            // Log SQL queries executed during the sync
-            $queries = DB::getQueryLog();
-            if (count($queries) > 0) {
-                Log::debug('SYNC/PUSH - SQL queries executed', [
-                    'total_queries' => count($queries),
-                    'queries' => array_slice($queries, 0, 10), // Log first 10 queries to avoid overflow
-                ]);
-            }
-
-            Log::info('SYNC/PUSH - Transaction committed', [
-                'total_processed' => count($results),
-                'successful' => count(array_filter($results, fn($r) => in_array($r['status'], ['created', 'updated', 'deleted']))),
-                'errors' => count(array_filter($results, fn($r) => $r['status'] === 'error')),
-                'conflicts' => count($conflicts),
-            ]);
-
-            // Store results in sync_requests if sync_request_id was provided
-            if ($syncRequestId) {
-                \DB::table('sync_requests')
-                    ->where('id', $syncRequestId)
-                    ->update([
-                        'status' => 'completed',
-                        'results' => json_encode($results),
-                        'updated_at' => now(),
+                // Log SQL queries executed during the sync
+                $queries = DB::getQueryLog();
+                if (count($queries) > 0) {
+                    Log::debug('SYNC/PUSH - SQL queries executed', [
+                        'total_queries' => count($queries),
+                        'queries' => array_slice($queries, 0, 10),
                     ]);
-                Log::info('SYNC/PUSH - Stored results in sync_requests', [
-                    'sync_request_id' => $syncRequestId,
-                ]);
-            }
+                }
 
-            return ApiResponse::success([
-                'results' => $results,
-                'conflicts' => $conflicts,
-                'synced_at' => now()->toIso8601String(),
-            ], 'Synchronisation push réussie');
-        } catch (\Exception $e) {
-            // Only rollback for non-FK errors (system errors)
-            // FK errors are handled individually per item and should not reach here
-            if (!str_contains($e->getMessage(), 'foreign key constraint') && !str_contains($e->getMessage(), 'violates foreign key')) {
+                Log::info('SYNC/PUSH - Transaction committed', [
+                    'total_processed' => count($results),
+                    'successful' => count(array_filter($results, fn($r) => in_array($r['status'], ['created', 'updated', 'deleted']))),
+                    'errors' => count(array_filter($results, fn($r) => $r['status'] === 'error')),
+                    'ignored' => count(array_filter($results, fn($r) => $r['status'] === 'ignored')),
+                ]);
+
+                // Store results in sync_requests if sync_request_id was provided
+                if ($syncRequestId) {
+                    \DB::table('sync_requests')
+                        ->where('id', $syncRequestId)
+                        ->update([
+                            'status' => 'completed',
+                            'results' => json_encode($results),
+                            'updated_at' => now(),
+                        ]);
+                    Log::info('SYNC/PUSH - Stored results in sync_requests', [
+                        'sync_request_id' => $syncRequestId,
+                    ]);
+                }
+
+                return ApiResponse::success([
+                    'results' => $results,
+                    'synced_at' => now()->toIso8601String(),
+                ], 'Synchronisation push réussie (WatermelonDB format)');
+            } catch (\Exception $e) {
                 DB::rollBack();
                 Log::error('SYNC/PUSH - Transaction rolled back', [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
+                throw $e;
             }
+        } catch (\Exception $e) {
             Log::error('SYNC/PUSH - Request failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -483,19 +470,27 @@ class SyncController extends Controller
     }
 
     /**
-     * Pull changes from server to mobile
+     * Pull changes from server to mobile (WatermelonDB format)
+     * Returns changes grouped by table with created/updated/deleted arrays
      */
     public function pull(Request $request)
     {
         try {
+            // WatermelonDB sends 'last_pulled_at' but we also accept 'last_sync_at' for compatibility
+            $lastPulledAt = $request->input('last_pulled_at') ?? $request->input('last_sync_at');
+            
             $request->validate([
-                'last_sync_at' => 'required|date',
                 'farm_id' => 'required|uuid',
+                'schema_version' => 'nullable|integer',
+                'last_pulled_at' => 'nullable|date',
+                'last_sync_at' => 'nullable|date',
             ]);
 
             $userId = $request->user()->id;
             $farmId = $request->farm_id;
-            $lastSyncAt = Carbon::parse($request->last_sync_at);
+            
+            // Handle null last_pulled_at (initial sync - return all data)
+            $lastSyncAt = $lastPulledAt ? Carbon::parse($lastPulledAt) : Carbon::parse('1970-01-01');
 
             // Capture snapshot timestamp at the beginning for consistency
             $snapshotTime = now();
@@ -514,126 +509,108 @@ class SyncController extends Controller
                 return ApiResponse::error('Accès non autorisé à cette ferme', null, 403);
             }
 
+            // Helper function to categorize changes into created/updated/deleted
+            $categorizeChanges = function ($records, $lastSyncAt, $snapshotTime) {
+                $categorized = [
+                    'created' => [],
+                    'updated' => [],
+                    'deleted' => [],
+                ];
+
+                foreach ($records as $record) {
+                    // Convert record to array (handles both Eloquent models and stdClass objects)
+                    if (is_array($record)) {
+                        $recordArray = $record;
+                    } elseif (method_exists($record, 'toArray')) {
+                        $recordArray = $record->toArray();
+                    } else {
+                        $recordArray = (array) $record;
+                    }
+                    
+                    // Remove business metadata (sync_status, version, etc.)
+                    unset($recordArray['sync_status']);
+                    unset($recordArray['last_modified_by']);
+                    unset($recordArray['version']);
+                    
+                    // Keep only essential timestamps
+                    $recordArray['created_at'] = $recordArray['created_at'] ?? null;
+                    $recordArray['updated_at'] = $recordArray['updated_at'] ?? null;
+                    $recordArray['deleted_at'] = $recordArray['deleted_at'] ?? null;
+
+                    // Determine the category based on timestamps
+                    if ($recordArray['deleted_at'] && 
+                        Carbon::parse($recordArray['deleted_at'])->gt($lastSyncAt) && 
+                        Carbon::parse($recordArray['deleted_at'])->lte($snapshotTime)) {
+                        $categorized['deleted'][] = $recordArray;
+                    } elseif (Carbon::parse($recordArray['created_at'])->gt($lastSyncAt) && 
+                              Carbon::parse($recordArray['created_at'])->lte($snapshotTime)) {
+                        $categorized['created'][] = $recordArray;
+                    } elseif (Carbon::parse($recordArray['updated_at'])->gt($lastSyncAt) && 
+                              Carbon::parse($recordArray['updated_at'])->lte($snapshotTime)) {
+                        $categorized['updated'][] = $recordArray;
+                    }
+                }
+
+                return $categorized;
+            };
+
             $changes = [];
 
-            // Get changes for each table with snapshot consistency
-            $changes['animals'] = Animal::where('farm_id', $farmId)
-                ->where(function ($query) use ($lastSyncAt, $snapshotTime) {
-                    $query->where('updated_at', '>', $lastSyncAt)
-                        ->where('updated_at', '<=', $snapshotTime)
-                        ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
-                            $q->where('deleted_at', '>', $lastSyncAt)
-                              ->where('deleted_at', '<=', $snapshotTime);
-                        });
-                })
-                ->withTrashed()
-                ->get()
-                ->toArray();
+            // Get changes for each business table (filtered by farm_id)
+            $businessTables = [
+                'animals' => Animal::class,
+                'transactions' => Transaction::class,
+                'evenements' => Evenement::class,
+                'lots' => Lot::class,
+                'notifications' => Notification::class,
+                'naissances' => Naissance::class,
+            ];
 
-            $changes['transactions'] = Transaction::where('farm_id', $farmId)
-                ->where(function ($query) use ($lastSyncAt, $snapshotTime) {
-                    $query->where('updated_at', '>', $lastSyncAt)
-                        ->where('updated_at', '<=', $snapshotTime)
-                        ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
-                            $q->where('deleted_at', '>', $lastSyncAt)
-                              ->where('deleted_at', '<=', $snapshotTime);
-                        });
-                })
-                ->withTrashed()
-                ->get()
-                ->toArray();
+            foreach ($businessTables as $tableName => $modelClass) {
+                $records = $modelClass::where('farm_id', $farmId)
+                    ->where(function ($query) use ($lastSyncAt, $snapshotTime) {
+                        $query->where('updated_at', '>', $lastSyncAt)
+                            ->where('updated_at', '<=', $snapshotTime)
+                            ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
+                                $q->where('deleted_at', '>', $lastSyncAt)
+                                  ->where('deleted_at', '<=', $snapshotTime);
+                            });
+                    })
+                    ->withTrashed()
+                    ->get();
 
-            $changes['evenements'] = Evenement::where('farm_id', $farmId)
-                ->where(function ($query) use ($lastSyncAt, $snapshotTime) {
-                    $query->where('updated_at', '>', $lastSyncAt)
-                        ->where('updated_at', '<=', $snapshotTime)
-                        ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
-                            $q->where('deleted_at', '>', $lastSyncAt)
-                              ->where('deleted_at', '<=', $snapshotTime);
-                        });
-                })
-                ->withTrashed()
-                ->get()
-                ->toArray();
+                $changes[$tableName] = $categorizeChanges($records, $lastSyncAt, $snapshotTime);
+            }
 
-            $changes['lots'] = Lot::where('farm_id', $farmId)
-                ->where(function ($query) use ($lastSyncAt, $snapshotTime) {
-                    $query->where('updated_at', '>', $lastSyncAt)
-                        ->where('updated_at', '<=', $snapshotTime)
-                        ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
-                            $q->where('deleted_at', '>', $lastSyncAt)
-                              ->where('deleted_at', '<=', $snapshotTime);
-                        });
-                })
-                ->withTrashed()
-                ->get()
-                ->toArray();
+            // Reference tables (no farm_id filter, global changes)
+            // Send only if first sync OR if changed since lastSyncAt
+            $referenceTables = [
+                'especes' => Espece::class,
+                'categories' => Categorie::class,
+                'type_evenements' => TypeEvenement::class,
+            ];
 
-            $changes['notifications'] = Notification::where('farm_id', $farmId)
-                ->where(function ($query) use ($lastSyncAt, $snapshotTime) {
-                    $query->where('updated_at', '>', $lastSyncAt)
-                        ->where('updated_at', '<=', $snapshotTime)
-                        ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
-                            $q->where('deleted_at', '>', $lastSyncAt)
-                              ->where('deleted_at', '<=', $snapshotTime);
-                        });
-                })
-                ->withTrashed()
-                ->get()
-                ->toArray();
+            foreach ($referenceTables as $tableName => $modelClass) {
+                // Fetch records changed since lastSyncAt (or all if first sync)
+                $records = $modelClass::where(function ($query) use ($lastSyncAt, $snapshotTime) {
+                        $query->where('updated_at', '>', $lastSyncAt)
+                            ->where('updated_at', '<=', $snapshotTime)
+                            ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
+                                $q->where('deleted_at', '>', $lastSyncAt)
+                                  ->where('deleted_at', '<=', $snapshotTime);
+                            });
+                    })
+                    ->withTrashed()
+                    ->get();
 
-            $changes['naissances'] = Naissance::where('farm_id', $farmId)
-                ->where(function ($query) use ($lastSyncAt, $snapshotTime) {
-                    $query->where('updated_at', '>', $lastSyncAt)
-                        ->where('updated_at', '<=', $snapshotTime)
-                        ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
-                            $q->where('deleted_at', '>', $lastSyncAt)
-                              ->where('deleted_at', '<=', $snapshotTime);
-                        });
-                })
-                ->withTrashed()
-                ->get()
-                ->toArray();
+                // Make timestamps visible for categorization (some models hide them)
+                $records->makeVisible(['created_at', 'updated_at', 'deleted_at']);
 
-            // Reference tables (no farm_id, but synced)
-            $changes['especes'] = Espece::where(function ($query) use ($lastSyncAt, $snapshotTime) {
-                    $query->where('updated_at', '>', $lastSyncAt)
-                        ->where('updated_at', '<=', $snapshotTime)
-                        ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
-                            $q->where('deleted_at', '>', $lastSyncAt)
-                              ->where('deleted_at', '<=', $snapshotTime);
-                        });
-                })
-                ->withTrashed()
-                ->get()
-                ->toArray();
+                $changes[$tableName] = $categorizeChanges($records, $lastSyncAt, $snapshotTime);
+            }
 
-            $changes['categories'] = Categorie::where(function ($query) use ($lastSyncAt, $snapshotTime) {
-                    $query->where('updated_at', '>', $lastSyncAt)
-                        ->where('updated_at', '<=', $snapshotTime)
-                        ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
-                            $q->where('deleted_at', '>', $lastSyncAt)
-                              ->where('deleted_at', '<=', $snapshotTime);
-                        });
-                })
-                ->withTrashed()
-                ->get()
-                ->toArray();
-
-            $changes['type_evenements'] = TypeEvenement::where(function ($query) use ($lastSyncAt, $snapshotTime) {
-                    $query->where('updated_at', '>', $lastSyncAt)
-                        ->where('updated_at', '<=', $snapshotTime)
-                        ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
-                            $q->where('deleted_at', '>', $lastSyncAt)
-                              ->where('deleted_at', '<=', $snapshotTime);
-                        });
-                })
-                ->withTrashed()
-                ->get()
-                ->toArray();
-
-            // Fermes accessibles à l'utilisateur (owner ou membre via farm_user)
-            $changes['farms'] = Farm::where(function ($query) use ($userId) {
+            // Farms accessible to the user
+            $farmRecords = Farm::where(function ($query) use ($userId) {
                     $query->where('owner_id', $userId)
                         ->orWhereHas('users', function ($q) use ($userId) {
                             $q->where('user_id', $userId);
@@ -649,10 +626,11 @@ class SyncController extends Controller
                 })
                 ->withTrashed()
                 ->with(['owner', 'users'])
-                ->get()
-                ->toArray();
+                ->get();
 
-            // Table pivot farm_user pour les memberships
+            $changes['farms'] = $categorizeChanges($farmRecords, $lastSyncAt, $snapshotTime);
+
+            // Farm user pivot table
             $accessibleFarmIds = Farm::where(function ($query) use ($userId) {
                     $query->where('owner_id', $userId)
                         ->orWhereHas('users', function ($q) use ($userId) {
@@ -662,24 +640,151 @@ class SyncController extends Controller
                 ->pluck('id')
                 ->toArray();
 
-            $changes['farm_user'] = \DB::table('farm_user')
+            $farmUserRecords = \DB::table('farm_user')
                 ->whereIn('farm_id', $accessibleFarmIds)
                 ->where('updated_at', '>', $lastSyncAt)
                 ->where('updated_at', '<=', $snapshotTime)
-                ->get()
-                ->toArray();
+                ->get();
+
+            $changes['farm_user'] = $categorizeChanges($farmUserRecords, $lastSyncAt, $snapshotTime);
 
             return ApiResponse::success([
                 'changes' => $changes,
-                'synced_at' => $snapshotTime->toIso8601String(),
-            ], 'Synchronisation pull réussie');
+                'timestamp' => $snapshotTime->toIso8601String(),
+            ], 'Synchronisation pull réussie (WatermelonDB format)');
         } catch (\Exception $e) {
             return ApiResponse::error($e->getMessage(), null, 400);
         }
     }
 
     /**
-     * Process a single change
+     * Process a single change with idempotence (updateOrCreate)
+     * Ensures retries don't create duplicates
+     */
+    private function processChangeWithIdempotence($table, $action, $data, $userId)
+    {
+        Log::debug('SYNC/PUSH - processChangeWithIdempotence called', [
+            'table' => $table,
+            'action' => $action,
+            'data' => $data,
+        ]);
+
+        $modelMap = [
+            'animals' => Animal::class,
+            'transactions' => Transaction::class,
+            'evenements' => Evenement::class,
+            'lots' => Lot::class,
+            'notifications' => Notification::class,
+            'naissances' => Naissance::class,
+            'especes' => Espece::class,
+            'categories' => Categorie::class,
+            'type_evenements' => TypeEvenement::class,
+            'farms' => Farm::class,
+        ];
+
+        if (!isset($modelMap[$table])) {
+            Log::error('SYNC/PUSH - Unknown table', ['table' => $table]);
+            return ['status' => 'error', 'reason' => 'Table inconnue'];
+        }
+
+        $modelClass = $modelMap[$table];
+        $isBusinessTable = in_array($table, ['animals', 'transactions', 'evenements', 'lots', 'notifications', 'naissances']);
+
+        switch ($action) {
+            case 'create':
+                try {
+                    // Use updateOrCreate for idempotence
+                    $record = $modelClass::updateOrCreate(
+                        ['id' => $data['id']],
+                        $data
+                    );
+
+                    Log::info('SYNC/PUSH - Record created/updated (idempotent)', [
+                        'table' => $table,
+                        'id' => $record->id,
+                        'was_created' => $record->wasRecentlyCreated,
+                    ]);
+
+                    return [
+                        'status' => $record->wasRecentlyCreated ? 'created' : 'updated',
+                        'id' => $record->id,
+                    ];
+                } catch (\Exception $e) {
+                    Log::error('SYNC/PUSH - Create/Update failed', [
+                        'table' => $table,
+                        'error' => $e->getMessage(),
+                    ]);
+                    throw $e;
+                }
+
+            case 'update':
+                try {
+                    // Use updateOrCreate for idempotence
+                    $record = $modelClass::updateOrCreate(
+                        ['id' => $data['id']],
+                        $data
+                    );
+
+                    Log::info('SYNC/PUSH - Record updated/created (idempotent)', [
+                        'table' => $table,
+                        'id' => $record->id,
+                        'was_created' => $record->wasRecentlyCreated,
+                    ]);
+
+                    return [
+                        'status' => $record->wasRecentlyCreated ? 'created' : 'updated',
+                        'id' => $record->id,
+                    ];
+                } catch (\Exception $e) {
+                    Log::error('SYNC/PUSH - Update failed', [
+                        'table' => $table,
+                        'error' => $e->getMessage(),
+                    ]);
+                    throw $e;
+                }
+
+            case 'deleted':
+                try {
+                    $record = $modelClass::withTrashed()->find($data['id']);
+                    if ($record) {
+                        if ($record->trashed()) {
+                            // Already deleted, idempotent
+                            Log::info('SYNC/PUSH - Record already deleted (idempotent)', [
+                                'table' => $table,
+                                'id' => $data['id'],
+                            ]);
+                            return ['status' => 'deleted', 'id' => $data['id']];
+                        }
+                        $record->delete();
+                        Log::info('SYNC/PUSH - Record deleted', [
+                            'table' => $table,
+                            'id' => $data['id'],
+                        ]);
+                        return ['status' => 'deleted', 'id' => $data['id']];
+                    } else {
+                        // Record doesn't exist, idempotent
+                        Log::info('SYNC/PUSH - Record not found for delete (idempotent)', [
+                            'table' => $table,
+                            'id' => $data['id'],
+                        ]);
+                        return ['status' => 'deleted', 'id' => $data['id']];
+                    }
+                } catch (\Exception $e) {
+                    Log::error('SYNC/PUSH - Delete failed', [
+                        'table' => $table,
+                        'error' => $e->getMessage(),
+                    ]);
+                    throw $e;
+                }
+
+            default:
+                Log::error('SYNC/PUSH - Unknown action', ['action' => $action]);
+                return ['status' => 'error', 'reason' => 'Action inconnue'];
+        }
+    }
+
+    /**
+     * Process a single change (legacy method, kept for compatibility)
      */
     private function processChange($table, $action, $data, $userId)
     {
@@ -1018,10 +1123,49 @@ class SyncController extends Controller
 
     /**
      * Vérifier si une chaîne est un UUID valide
+     * Accepte les UUIDs standards (avec tirets) et les IDs courts WatermelonDB (sans tirets)
      */
     private function isValidUUID($uuid)
     {
-        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid);
+        // Accept standard UUID format (with dashes)
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
+            return true;
+        }
+        
+        // Accept WatermelonDB short IDs (16 characters, alphanumeric)
+        if (preg_match('/^[a-zA-Z0-9]{16}$/', $uuid)) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Remove WatermelonDB internal fields from record data
+     */
+    private function removeWatermelonDBFields($data)
+    {
+        $watermelonFields = ['_status', '_changed', '_created_at', '_updated_at'];
+        foreach ($watermelonFields as $field) {
+            unset($data[$field]);
+        }
+        return $data;
+    }
+
+    /**
+     * Convert timestamps from milliseconds to datetime format
+     * WatermelonDB sends created_at/updated_at as milliseconds
+     */
+    private function convertTimestamps($data)
+    {
+        $timestampFields = ['created_at', 'updated_at', 'deleted_at'];
+        foreach ($timestampFields as $field) {
+            if (isset($data[$field]) && is_numeric($data[$field])) {
+                // Convert milliseconds to seconds for Carbon
+                $data[$field] = \Carbon\Carbon::createFromTimestampMs($data[$field])->toDateTimeString();
+            }
+        }
+        return $data;
     }
 
     /**

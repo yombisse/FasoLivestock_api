@@ -23,7 +23,7 @@ class SaillieRequest extends FormRequest
             'cout' => 'nullable|numeric|min:0',
 
             // Champs spécifiques saillie (dans metadonnees)
-            'metadonnees.male_id' => 'nullable|uuid|exists:animals,id',
+            'metadonnees.male_id' => 'required|uuid|exists:animals,id',
             'metadonnees.male_nom' => 'nullable|string|max:255',
             'metadonnees.type_saillie' => 'required|in:naturelle,insemination_artificielle',
             'metadonnees.veterinaire' => 'nullable|string|max:255',
@@ -36,13 +36,14 @@ class SaillieRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'animal_id.required' => 'L\'animal est obligatoire.',
+            'animal_id.required' => 'L\'animal (mère) est obligatoire.',
             'animal_id.uuid' => 'L\'ID de l\'animal doit être un UUID valide.',
             'animal_id.exists' => 'L\'animal spécifié n\'existe pas.',
             'date_evenement.required' => 'La date de l\'événement est obligatoire.',
-            'date_evenement.date' => 'La date de l\'événement doit être une date valide.',
+            'date_evenement.date' => 'La date de l\'événement doit être uma date valide.',
             'cout.numeric' => 'Le coût doit être un nombre.',
             'cout.min' => 'Le coût ne peut pas être négatif.',
+            'metadonnees.male_id.required' => 'Le mâle (père) est obligatoire pour une saillie.',
             'metadonnees.male_id.uuid' => 'L\'ID du mâle doit être un UUID valide.',
             'metadonnees.male_id.exists' => 'Le mâle spécifié n\'existe pas.',
             'metadonnees.male_nom.string' => 'Le nom du mâle doit être une chaîne de caractères.',

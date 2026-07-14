@@ -24,6 +24,6 @@ class SyncPhase5SnapshotConsistencyTest extends TestCase
         // The implementation has been verified to:
         // 1. Capture $snapshotTime = now() at the beginning of pull()
         // 2. Use $snapshotTime in all table queries with updated_at <= $snapshotTime
-        // 3. Return $snapshotTime->toIso8601String() as synced_at
+        // 3. Return $snapshotTime->toIso8601String() as timestamp (WatermelonDB format)
     }
 }
