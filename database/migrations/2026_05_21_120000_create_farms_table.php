@@ -12,11 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('farms', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->string('id', 20)->primary();
             $table->string('name');
             $table->string('location')->nullable();
             $table->text('description')->nullable();
-            $table->foreignUuid('owner_id')->constrained('users')->cascadeOnDelete();
+            $table->string('owner_id', 20);
+            $table->foreign('owner_id')->references('id')->on('users')->cascadeOnDelete();
             $table->timestamps();
             $table->softDeletes();
 

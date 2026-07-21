@@ -4,14 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Traits\HasFarmScope;
 
 class Ration extends Model
 {
-    use HasUuids, SoftDeletes, HasFarmScope;
+    use SoftDeletes, HasFarmScope;
 
     protected $table = 'rations';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
         'farm_id',
@@ -33,6 +34,17 @@ class Ration extends Model
         'heure_distribution' => 'datetime',
         'sync_status'        => 'string',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($ration) {
+            if (empty($ration->id)) {
+                $ration->id = substr(\Illuminate\Support\Str::random(20), 0, 20);
+            }
+        });
+    }
 
     // =========================================================
     // RELATIONS

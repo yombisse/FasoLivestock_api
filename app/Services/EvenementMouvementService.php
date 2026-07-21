@@ -24,11 +24,12 @@ class EvenementMouvementService
     {
         return match(strtoupper($typeNom)) {
             'VENTE'     => 'VENDU',
-            'DECES'     => 'DECEDE',
+            'DECES'     => 'MORT',
             'PERTE'     => 'PERDU',
-            'ABATTAGE'  => 'ABATTU',
-            'TRANSFERT' => 'TRANSFERE',
-            default     => null, // ACHAT et autres : statut reste ACTIF
+            'ABATTAGE'  => 'MORT',
+            'TRANSFERT' => null, // Statut inchangé pour transfert
+            'ACHAT'     => 'SAIN',
+            default     => null,
         };
     }
 
@@ -77,7 +78,7 @@ class EvenementMouvementService
 
         // Récupérer le statut avant de l'animal
         $animal = Animal::findOrFail($data['animal_id']);
-        $data['statut_avant'] = $animal->statut ?? 'ACTIF';
+        $data['statut_avant'] = $animal->statut ?? 'SAIN';
 
         // Déterminer le statut après selon le type
         $data['statut_apres'] = $this->getStatutApres($typeNom);
@@ -268,26 +269,35 @@ class EvenementMouvementService
                 'version' => 1,
             ]);
 
-            // Mettre à jour le statut de l'animal AVANT de créer l'événement
-            $animal->update(['statut' => 'ACTIF']);
+            // Capturer le statut avant la mise à jour
+            $statutAvant = $animal->statut;
 
-            // Créer l'événement via EvenementService
+            // Mettre à jour le statut de l'animal AVANT de créer l'événement
+            $animal->update(['statut' => 'SAIN']);
+
+            // Créer l'événement directement au lieu d'utiliser le service
             $typeAchat = TypeEvenement::where('nom_type', 'Achat')
                 ->whereNull('farm_id')
-                ->firstOrFail();
+                ->first();
 
-            $this->evenementService->creerMouvement([
+            if (!$typeAchat) {
+                throw new \Exception('Type d\'événement Achat non trouvé');
+            }
+
+            $evenement = Evenement::create([
+                'id' => substr(\Illuminate\Support\Str::random(20), 0, 20),
                 'farm_id' => $farmId,
                 'type_evenement_id' => $typeAchat->id,
                 'animal_id' => $animal->id,
                 'date_evenement' => $data['date_achat'] ?? now(),
                 'description' => $description,
                 'cout' => $data['prix_achat'] ?? 0,
-                'statut_apres' => 'ACTIF',
+                'statut_avant' => $statutAvant,
+                'statut_apres' => 'SAIN',
                 'transaction_id' => $transaction->id,
                 'sync_status' => 'synced',
                 'version' => 1,
-            ], $animal);
+            ]);
 
             return $animal->fresh();
         });
@@ -332,7 +342,7 @@ class EvenementMouvementService
                 'date_evenement' => $data['date_vente'] ?? now(),
                 'description' => $data['acheteur'] ?? null,
                 'cout' => $data['prix_vente'] ?? 0,
-                'statut_avant' => $animal->getOriginal('statut') ?? 'ACTIF',
+                'statut_avant' => $animal->getOriginal('statut') ?? 'SAIN',
                 'statut_apres' => 'VENDU',
                 'transaction_id' => $transaction->id,
                 'sync_status' => 'synced',
@@ -364,7 +374,7 @@ class EvenementMouvementService
                 'animal_id' => $animal->id,
                 'date_evenement' => $data['date_transfert'] ?? now(),
                 'description' => $data['motif'] ?? null,
-                'statut_avant' => $animal->getOriginal('statut') ?? 'ACTIF',
+                'statut_avant' => $animal->getOriginal('statut') ?? 'SAIN',
                 'statut_apres' => 'TRANSFERE',
                 'farm_destination_id' => $data['farm_destination_id'],
                 'sync_status' => 'synced',
@@ -396,7 +406,7 @@ class EvenementMouvementService
                 'animal_id' => $animal->id,
                 'date_evenement' => $data['date_deces'] ?? now(),
                 'description' => trim(($data['cause'] ?? '') . ' ' . ($data['observation'] ?? '')),
-                'statut_avant' => $animal->getOriginal('statut') ?? 'ACTIF',
+                'statut_avant' => $animal->getOriginal('statut') ?? 'SAIN',
                 'statut_apres' => 'MORT',
                 'sync_status' => 'synced',
                 'version' => 1,
@@ -427,7 +437,7 @@ class EvenementMouvementService
                 'animal_id' => $animal->id,
                 'date_evenement' => $data['date_perte'] ?? now(),
                 'description' => trim(($data['motif'] ?? '') . ' ' . ($data['observation'] ?? '')),
-                'statut_avant' => $animal->getOriginal('statut') ?? 'ACTIF',
+                'statut_avant' => $animal->getOriginal('statut') ?? 'SAIN',
                 'statut_apres' => 'PERDU',
                 'sync_status' => 'synced',
                 'version' => 1,
@@ -459,7 +469,7 @@ class EvenementMouvementService
                 'date_evenement' => $data['date_abattage'] ?? now(),
                 'description' => trim(($data['motif'] ?? '') . ' poids: ' . ($data['poids_carcasse'] ?? '')),
                 'cout' => $data['valeur_carcasse'] ?? null,
-                'statut_avant' => $animal->getOriginal('statut') ?? 'ACTIF',
+                'statut_avant' => $animal->getOriginal('statut') ?? 'SAIN',
                 'statut_apres' => 'MORT',
                 'sync_status' => 'synced',
                 'version' => 1,
@@ -477,11 +487,11 @@ class EvenementMouvementService
     public function venteLot(\App\Models\Lot $lot, array $data): array
     {
         return \Illuminate\Support\Facades\DB::transaction(function () use ($lot, $data) {
-            // Récupérer tous les animaux ACTIF du lot
-            $animaux = $lot->animals()->where('statut', 'ACTIF')->get();
+            // Récupérer tous les animaux SAIN du lot
+            $animaux = $lot->animals()->where('statut', 'SAIN')->get();
 
             if ($animaux->isEmpty()) {
-                throw new \Exception('Aucun animal actif dans ce lot.');
+                throw new \Exception('Aucun animal sain dans ce lot.');
             }
 
             $resultats = [

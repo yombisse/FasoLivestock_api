@@ -140,7 +140,7 @@ class ExportController extends Controller
         
         $animaux = $this->animalService->index($filters, 1000)->items();
         $totalAnimaux = count($animaux);
-        $animauxActifs = collect($animaux)->where('statut', 'ACTIF')->count();
+        $animauxActifs = collect($animaux)->where('statut', 'SAIN')->count();
         $animauxInactifs = $totalAnimaux - $animauxActifs;
         $tauxActivite = $totalAnimaux > 0 ? round(($animauxActifs / $totalAnimaux) * 100, 2) : 0;
 
@@ -174,7 +174,7 @@ class ExportController extends Controller
             'tauxActivite' => $tauxActivite,
             'repartitionEspece' => $repartitionEspece,
             'repartitionStatut' => $repartitionStatut,
-            'animaux' => collect($animaux)->where('statut', 'ACTIF')->take(100),
+            'animaux' => collect($animaux)->where('statut', 'SAIN')->take(100),
         ];
 
         $fileName = 'rapport-cheptel_' . $farmId . '_' . now()->format('Y-m-d') . '.pdf';

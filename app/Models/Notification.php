@@ -4,14 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Traits\HasFarmScope;
 
 class Notification extends Model
 {
-    use HasUuids, SoftDeletes, HasFarmScope;
+    use SoftDeletes, HasFarmScope;
 
     protected $table = 'notifications';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     const TYPE_VACCINATION = 'VACCINATION';
     const TYPE_TRAITEMENT  = 'TRAITEMENT';
@@ -41,6 +42,17 @@ class Notification extends Model
         'sync_status' => 'string',
         'type'        => 'string',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($notification) {
+            if (empty($notification->id)) {
+                $notification->id = substr(\Illuminate\Support\Str::random(20), 0, 20);
+            }
+        });
+    }
 
     // =========================================================
     // RELATIONS EXISTANTES

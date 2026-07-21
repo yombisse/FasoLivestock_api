@@ -35,7 +35,7 @@ class CategorieController extends Controller
             'nom_categorie' => 'required|string|max:255',
             'type' => 'required|in:REVENU,DEPENSE',
             'description' => 'nullable|string',
-            'farm_id' => 'nullable|uuid|exists:farms,id',
+            'farm_id' => 'nullable|string|min:16|max:20|exists:farms,id',
         ]);
 
         $data['sync_status'] = 'synced';
@@ -66,7 +66,7 @@ class CategorieController extends Controller
             'nom_categorie' => 'sometimes|string|max:255',
             'type' => 'sometimes|in:REVENU,DEPENSE',
             'description' => 'nullable|string',
-            'farm_id' => 'nullable|uuid|exists:farms,id',
+            'farm_id' => 'nullable|string|min:16|max:20|exists:farms,id',
         ]);
 
         $data['sync_status'] = 'synced';

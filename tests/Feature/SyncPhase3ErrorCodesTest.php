@@ -175,7 +175,7 @@ class SyncPhase3ErrorCodesTest extends TestCase
                     'table' => 'animals',
                     'action' => 'create',
                     'data' => [
-                        'id' => \Illuminate\Support\Str::uuid(),
+                        'id' => substr(\Illuminate\Support\Str::random(20), 0, 20),
                         'numero_identification' => 'TAG789',
                         'nom' => 'Test Animal',
                         'sexe' => 'male',
@@ -218,7 +218,7 @@ class SyncPhase3ErrorCodesTest extends TestCase
                     'table' => 'animals',
                     'action' => 'create',
                     'data' => [
-                        'id' => \Illuminate\Support\Str::uuid(),
+                        'id' => substr(\Illuminate\Support\Str::random(20), 0, 20),
                         'numero_identification' => 'TAG999',
                         'nom' => 'Test Animal',
                         'sexe' => 'male',

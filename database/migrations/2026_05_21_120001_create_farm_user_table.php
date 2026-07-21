@@ -12,9 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('farm_user', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('farm_id')->constrained('farms')->cascadeOnDelete();
-            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
+            $table->string('id', 20)->primary();
+            $table->string('farm_id', 20);
+            $table->string('user_id', 20);
+            $table->foreign('farm_id')->references('id')->on('farms')->cascadeOnDelete();
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->enum('role', ['owner', 'manager', 'vet', 'worker'])->default('worker');
             $table->timestamps();
 

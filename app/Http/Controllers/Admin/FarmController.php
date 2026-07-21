@@ -332,11 +332,11 @@ class FarmController extends Controller
     {
         $request->validate([
             'user_id' => 'required',
-            'role'    => 'required|in:manager,vet,worker',
+            'role_id' => 'required|exists:roles,id',
         ]);
 
         $response = $this->farmApi->manageUsers($id, [
-            ['id' => $request->user_id, 'role' => $request->role]
+            ['id' => $request->user_id, 'role_id' => $request->role_id]
         ]);
 
         return response()->json([
@@ -355,13 +355,18 @@ class FarmController extends Controller
         
         $request->merge(['users' => $users]);
         
+        // Logging pour diagnostiquer
+        \Log::info('addMembers appelé', ['users' => $users]);
+        
         $request->validate([
             'users' => 'required|array',
-            'users.*.id'   => 'required',
-            'users.*.role' => 'required|in:manager,vet,worker',
+            'users.*.id'    => 'required',
+            'users.*.role_id' => 'required|exists:roles,id',
         ]);
 
         $response = $this->farmApi->manageUsers($id, $users);
+        
+        \Log::info('Réponse API manageUsers', ['success' => $response->success, 'message' => $response->message, 'data' => $response->data ?? null]);
 
         return redirect()
             ->route('admin.farms.manage', ['id' => $id, 'tab' => 'membres'])

@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\Admin\SanteApiService;
+use App\Services\Admin\FarmApiService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 
 class SanteEvenementController extends Controller
 {
     public function __construct(
-        private SanteApiService $santeApi
+        private SanteApiService $santeApi,
+        private FarmApiService $farmApiService,
+        private ActivityLogService $activityLogService
     ) {}
 
     /**
@@ -17,6 +21,23 @@ class SanteEvenementController extends Controller
      */
     public function index(Request $request)
     {
+        // Récupérer ou définir current_farm_id (comme DashboardController)
+        $farmId = session('current_farm_id');
+        
+        if (empty($farmId)) {
+            $adminUser = session('admin_user');
+            if ($adminUser && isset($adminUser['id'])) {
+                $user = \App\Models\User::find($adminUser['id']);
+                if ($user) {
+                    $firstFarm = $user->farms()->first();
+                    if ($firstFarm) {
+                        $farmId = $firstFarm->id;
+                        session(['current_farm_id' => $farmId]);
+                    }
+                }
+            }
+        }
+
         $params = [
             'search'   => $request->search,
             'type'     => $request->type,
@@ -25,6 +46,7 @@ class SanteEvenementController extends Controller
             'date_fin' => $request->date_fin,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farmId,
         ];
 
         $response = $this->santeApi->getAll($params);
@@ -42,9 +64,13 @@ class SanteEvenementController extends Controller
     /**
      * Formulaire création
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('admin.sante-evenements.create');
+        $farmsResponse = $this->farmApiService->getAll();
+
+        return view('admin.sante-evenements.create', [
+            'farms' => $farmsResponse->success ? ($farmsResponse->data['farms'] ?? []) : [],
+        ]);
     }
 
     /**
@@ -52,13 +78,29 @@ class SanteEvenementController extends Controller
      */
     public function store(Request $request)
     {
-        $response = $this->santeApi->create($request->all());
+        // Ajouter current_farm_id pour l'API
+        $data = $request->all();
+        $data['current_farm_id'] = $request->input('farm_id');
+
+        $response = $this->santeApi->create($data);
 
         if (!$response->success) {
             return back()
                 ->withErrors($response->data['errors'] ?? [])
                 ->with('error', $response->message ?? 'Erreur.')
                 ->withInput();
+        }
+
+        $evenement = $response->data ?? [];
+
+        // Log activity
+        if (isset($evenement['id'])) {
+            $this->activityLogService->log(
+                'created',
+                \App\Models\Evenement::find($evenement['id']),
+                null,
+                $evenement
+            );
         }
 
         return redirect()

@@ -4,6 +4,7 @@
 @section('page-title', 'Détail du rôle')
 
 @push('styles')
+    <link rel="stylesheet" href="{{ asset('admin/css/common/detail.css') }}">
     <link rel="stylesheet" href="{{ asset('admin/css/roles/show.css') }}">
 @endpush
 
@@ -19,7 +20,7 @@
 @endsection
 
 @section('content')
-<div class="role-show-wrapper fade-in"
+<div class="detail-page role-show-wrapper fade-in"
      x-data="roleShow()"
      data-role-id="{{ $role['id'] ?? '' }}">
 
@@ -52,20 +53,19 @@
         <div class="card-body">
 
             {{-- ── Meta (ID / Statut) ───────────────────── --}}
-            <div class="role-meta-grid">
-                <div class="role-meta-item">
-                    <span class="role-meta-label">ID</span>
-                    <span class="role-meta-value">{{ $role['id'] ?? '—' }}</span>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ $role['id'] ?? '—' }}</div>
+                    <div class="stat-label">ID</div>
                 </div>
 
-                <div class="role-meta-item">
-                    <span class="role-meta-label">Nom</span>
-                    <span class="role-meta-value">{{ ucfirst($role['name'] ?? '—') }}</span>
+                <div class="stat-card">
+                    <div class="stat-value">{{ ucfirst($role['name'] ?? '—') }}</div>
+                    <div class="stat-label">Nom</div>
                 </div>
 
-                <div class="role-meta-item">
-                    <span class="role-meta-label">Type</span>
-                    <span class="role-meta-value">
+                <div class="stat-card">
+                    <div class="stat-value">
                         @if($role['name'] === 'superadmin' || ($role['is_system'] ?? false))
                             <span class="badge text-bg-dark">
                                 <i class="bi bi-lock-fill me-1"></i> Système
@@ -75,16 +75,17 @@
                                 <i class="bi bi-shield-check me-1"></i> Personnalisé
                             </span>
                         @endif
-                    </span>
+                    </div>
+                    <div class="stat-label">Type</div>
                 </div>
 
-                <div class="role-meta-item">
-                    <span class="role-meta-label">Créé le</span>
-                    <span class="role-meta-value">
+                <div class="stat-card">
+                    <div class="stat-value">
                         {{ isset($role['created_at'])
                             ? \Carbon\Carbon::parse($role['created_at'])->format('d/m/Y')
                             : '—' }}
-                    </span>
+                    </div>
+                    <div class="stat-label">Créé le</div>
                 </div>
             </div>
 

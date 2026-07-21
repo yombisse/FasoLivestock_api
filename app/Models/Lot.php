@@ -4,14 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Traits\HasFarmScope;
 
 class Lot extends Model
 {
-    use HasUuids, SoftDeletes, HasFarmScope;
+    use SoftDeletes, HasFarmScope;
 
     protected $table = 'lots';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
         'farm_id',
@@ -26,6 +27,17 @@ class Lot extends Model
         'nombre' => 'integer',
         'sync_status' => 'string',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($lot) {
+            if (empty($lot->id)) {
+                $lot->id = substr(\Illuminate\Support\Str::random(20), 0, 20);
+            }
+        });
+    }
 
     public function farm()
     {

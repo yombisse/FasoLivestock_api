@@ -16,7 +16,7 @@ class Verify2FARequest extends FormRequest
     public function rules(): array
     {
         return [
-            'verification_id' => 'required|uuid',
+            'verification_id' => 'required|string|min:16|max:20',
             'code' => 'required|digits:6',
         ];
     }
@@ -25,7 +25,7 @@ class Verify2FARequest extends FormRequest
     {
         return [
             'verification_id.required' => 'verification_id requis.',
-            'verification_id.uuid' => 'verification_id invalide.',
+            'verification_id.string' => 'verification_id invalide.',
             'code.required' => 'code requis.',
             'code.digits' => 'Le code doit contenir 6 chiffres.',
         ];

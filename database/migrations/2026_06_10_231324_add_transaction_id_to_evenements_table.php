@@ -10,12 +10,11 @@ return new class extends Migration
     {
         Schema::table('evenements', function (Blueprint $table) {
             if (!Schema::hasColumn('evenements', 'transaction_id')) {
-                $table->foreignUuid('transaction_id')
+                $table->string('transaction_id', 20)
                     ->nullable()
-                    ->constrained('transactions')
-                    ->nullOnDelete()
                     ->after('statut_apres');
 
+                $table->foreign('transaction_id')->references('id')->on('transactions')->nullOnDelete();
                 $table->index('transaction_id');
             }
         });

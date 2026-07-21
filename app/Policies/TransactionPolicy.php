@@ -15,7 +15,7 @@ class TransactionPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasPermissionTo('finance.view', 'api') || $user->hasRole('superadmin');
+        return $user->hasPermissionTo('transactions.view', 'api') || $user->hasRole('superadmin');
     }
 
     /**
@@ -27,7 +27,7 @@ class TransactionPolicy
             return true;
         }
 
-        if (!$user->hasPermissionTo('finance.view', 'api')) {
+        if (!$user->hasPermissionTo('transactions.view', 'api')) {
             return false;
         }
 
@@ -41,7 +41,7 @@ class TransactionPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('finance.create', 'api') || $user->hasRole('superadmin');
+        return $user->hasPermissionTo('transactions.create', 'api') || $user->hasRole('superadmin');
     }
 
     /**
@@ -53,7 +53,7 @@ class TransactionPolicy
             return true;
         }
 
-        if (!$user->hasPermissionTo('finance.update', 'api')) {
+        if (!$user->hasPermissionTo('transactions.update', 'api')) {
             return false;
         }
 
@@ -71,7 +71,7 @@ class TransactionPolicy
             return true;
         }
 
-        if (!$user->hasPermissionTo('finance.delete', 'api')) {
+        if (!$user->hasPermissionTo('transactions.delete', 'api')) {
             return false;
         }
 
@@ -89,7 +89,7 @@ class TransactionPolicy
             return true;
         }
 
-        if (!$user->hasPermissionTo('finance.update', 'api')) {
+        if (!$user->hasPermissionTo('transactions.update', 'api')) {
             return false;
         }
 

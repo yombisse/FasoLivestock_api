@@ -29,7 +29,7 @@ class SyncPhase4IdempotenceTest extends TestCase
         $farm = Farm::factory()->create(['owner_id' => $user->id]);
         $espece = Espece::factory()->create();
 
-        $syncRequestId = Str::uuid();
+        $syncRequestId = substr(Str::random(20), 0, 20);
 
         // Push with sync_request_id
         $createData = [
@@ -38,7 +38,7 @@ class SyncPhase4IdempotenceTest extends TestCase
                     'table' => 'animals',
                     'action' => 'create',
                     'data' => [
-                        'id' => Str::uuid(),
+                        'id' => substr(Str::random(20), 0, 20),
                         'numero_identification' => 'TAG123',
                         'nom' => 'Test Animal',
                         'sexe' => 'male',
@@ -81,8 +81,8 @@ class SyncPhase4IdempotenceTest extends TestCase
         $farm = Farm::factory()->create(['owner_id' => $user->id]);
         $espece = Espece::factory()->create();
 
-        $syncRequestId = Str::uuid();
-        $animalId = Str::uuid();
+        $syncRequestId = substr(Str::random(20), 0, 20);
+        $animalId = substr(Str::random(20), 0, 20);
 
         // First push
         $createData = [
@@ -146,7 +146,7 @@ class SyncPhase4IdempotenceTest extends TestCase
                     'table' => 'animals',
                     'action' => 'create',
                     'data' => [
-                        'id' => Str::uuid(),
+                        'id' => substr(Str::random(20), 0, 20),
                         'numero_identification' => 'TAG789',
                         'nom' => 'Test Animal',
                         'sexe' => 'male',
@@ -188,8 +188,8 @@ class SyncPhase4IdempotenceTest extends TestCase
         $farm = Farm::factory()->create(['owner_id' => $user->id]);
         $espece = Espece::factory()->create();
 
-        $syncRequestId1 = Str::uuid();
-        $syncRequestId2 = Str::uuid();
+        $syncRequestId1 = substr(Str::random(20), 0, 20);
+        $syncRequestId2 = substr(Str::random(20), 0, 20);
 
         // First push with sync_request_id1
         $createData1 = [
@@ -198,7 +198,7 @@ class SyncPhase4IdempotenceTest extends TestCase
                     'table' => 'animals',
                     'action' => 'create',
                     'data' => [
-                        'id' => Str::uuid(),
+                        'id' => substr(Str::random(20), 0, 20),
                         'numero_identification' => 'TAG111',
                         'nom' => 'Animal 1',
                         'sexe' => 'male',
@@ -225,7 +225,7 @@ class SyncPhase4IdempotenceTest extends TestCase
                     'table' => 'animals',
                     'action' => 'create',
                     'data' => [
-                        'id' => Str::uuid(),
+                        'id' => substr(Str::random(20), 0, 20),
                         'numero_identification' => 'TAG222',
                         'nom' => 'Animal 2',
                         'sexe' => 'male',

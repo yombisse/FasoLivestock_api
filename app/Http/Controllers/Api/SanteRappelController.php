@@ -198,7 +198,7 @@ class SanteRappelController extends Controller
         $this->authorize('update', $rappel);
 
         $request->validate([
-            'type_evenement_id' => 'required|uuid|exists:type_evenements,id',
+            'type_evenement_id' => 'required|string|min:16|max:20|exists:type_evenements,id',
             'date_evenement' => 'nullable|date',
             'description' => 'nullable|string',
             'cout' => 'nullable|numeric|min:0',

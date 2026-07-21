@@ -18,16 +18,16 @@ class StoreAnimalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'farm_id'              => 'required|uuid|exists:farms,id',
+            'farm_id'              => 'required|string|min:16|max:20|exists:farms,id',
             'nom'                  => 'nullable|string|max:255',
             'race'                 => 'nullable|string|max:255',
             'sexe'                 => 'required|in:male,femelle',
             'poids'                => 'nullable|numeric|min:0',
-            'espece_id'            => 'nullable|uuid|exists:especes,id',
-            'lot_id'               => 'nullable|uuid|exists:lots,id',
+            'espece_id'            => 'nullable|string|min:16|max:20|exists:especes,id',
+            'lot_id'               => 'nullable|string|min:16|max:20|exists:lots,id',
             'numero_identification' => 'required|string|max:255|unique:animals,numero_identification',
             'photo'                => 'nullable|string|max:500',
-            'statut'               => 'nullable|in:ACTIF,VENDU,MORT,PERDU',
+            'statut'               => 'nullable|in:SAIN,MALADE,EN_TRAITEMENT,VENDU,MORT,PERDU',
             'origine'              => ['sometimes', 'string', Rule::in(Animal::ORIGINES)],
         ];
     }
@@ -62,7 +62,7 @@ class StoreAnimalRequest extends FormRequest
     protected function prepareForValidation()
     {
         $this->merge([
-            'statut' => 'ACTIF',
+            'statut' => 'SAIN',
         ]);
     }
 }

@@ -19,18 +19,19 @@ class UpdateAnimalRequest extends FormRequest
         $animalId = $this->route('animal');
 
         return [
-            'farm_id'              => 'sometimes|uuid|exists:farms,id',
+            'farm_id'              => 'sometimes|string|min:16|max:20|exists:farms,id',
             'nom'                  => 'sometimes|nullable|string|max:255',
             'race'                 => 'sometimes|nullable|string|max:255',
             'sexe'                 => 'sometimes|in:male,femelle',
             'date_naissance'       => 'sometimes|nullable|date',
             'poids'                => 'sometimes|nullable|numeric|min:0',
-            'espece_id'            => 'sometimes|nullable|uuid|exists:especes,id',
-            'lot_id'               => 'sometimes|nullable|uuid|exists:lots,id',
-            'mother_id'            => 'sometimes|nullable|uuid|exists:animals,id',
+            'espece_id'            => 'sometimes|nullable|string|min:16|max:20|exists:especes,id',
+            'lot_id'               => 'sometimes|nullable|string|min:16|max:20|exists:lots,id',
+            'mother_id'            => 'sometimes|nullable|string|min:16|max:20|exists:animals,id',
             'numero_identification' => 'sometimes|string|max:255|unique:animals,numero_identification,' . $animalId,
             'photo'                => 'sometimes|nullable|string|max:500',
-            'naissance_id'         => 'sometimes|nullable|uuid|exists:naissances,id',
+            'naissance_id'         => 'sometimes|nullable|string|min:16|max:20|exists:naissances,id',
+            'statut'               => 'sometimes|in:SAIN,MALADE,EN_TRAITEMENT,VENDU,MORT,PERDU',
         ];
     }
 

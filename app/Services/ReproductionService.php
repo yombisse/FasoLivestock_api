@@ -16,7 +16,7 @@ class ReproductionService
     {
         $femelles = Animal::where('farm_id', $farmId)
             ->where('sexe', 'femelle')
-            ->where('statut', 'ACTIF')
+            ->where('statut', 'SAIN')
             ->count();
 
         $naissancesEnCours = Naissance::where('farm_id', $farmId)
@@ -85,7 +85,7 @@ class ReproductionService
 
         $femellesEnAge = Animal::where('farm_id', $farmId)
             ->where('sexe', 'femelle')
-            ->where('statut', 'ACTIF')
+            ->where('statut', 'SAIN')
             ->with('espece.parametre')
             ->get()
             ->filter(fn ($animal) =>

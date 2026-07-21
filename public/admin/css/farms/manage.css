@@ -217,14 +217,38 @@
 
 .role-select-wrapper {
     position: relative;
+    z-index: 100;
 }
 
 .role-select {
     min-width: 120px;
+    position: relative;
+    z-index: 101;
 }
 
 .role-select option {
     color: var(--text);
+}
+
+/* S'assurer que le dropdown du select s'affiche au-dessus */
+.table-responsive {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.card-body {
+    overflow: visible;
+}
+
+/* Pour les selects dans les tables */
+.table {
+    position: relative;
+}
+
+.table td,
+.table th {
+    position: relative;
+    overflow: visible;
 }
 
 /* Recherche utilisateur */

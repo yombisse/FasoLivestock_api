@@ -39,7 +39,7 @@ class SyncPhase2PermissionCheckTest extends TestCase
                     'table' => 'animals',
                     'action' => 'create',
                     'data' => [
-                        'id' => \Illuminate\Support\Str::uuid(),
+                        'id' => substr(\Illuminate\Support\Str::random(20), 0, 20),
                         'numero_identification' => 'TAG123',
                         'nom' => 'Test Animal',
                         'sexe' => 'male',
@@ -89,7 +89,7 @@ class SyncPhase2PermissionCheckTest extends TestCase
                     'table' => 'animals',
                     'action' => 'create',
                     'data' => [
-                        'id' => \Illuminate\Support\Str::uuid(),
+                        'id' => substr(\Illuminate\Support\Str::random(20), 0, 20),
                         'numero_identification' => 'TAG456',
                         'nom' => 'Test Animal',
                         'sexe' => 'male',
@@ -147,7 +147,7 @@ class SyncPhase2PermissionCheckTest extends TestCase
                     'table' => 'animals',
                     'action' => 'create',
                     'data' => [
-                        'id' => \Illuminate\Support\Str::uuid(),
+                        'id' => substr(\Illuminate\Support\Str::random(20), 0, 20),
                         'numero_identification' => 'TAG_NEW',
                         'nom' => 'New Animal',
                         'sexe' => 'male',

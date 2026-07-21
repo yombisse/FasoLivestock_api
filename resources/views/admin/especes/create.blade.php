@@ -4,7 +4,7 @@
 @section('page-title', 'Nouvelle espèce')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/especes/create.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/form-create.css') }}">
 @endpush
 
 @section('breadcrumb')

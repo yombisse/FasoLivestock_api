@@ -4,7 +4,7 @@
 @section('page-title', 'Mouvements')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/mouvements/index.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/table-list.css') }}">
 @endpush
 
 @section('breadcrumb')
@@ -41,13 +41,11 @@
                 <input type="text"
                        name="search"
                        placeholder="Rechercher..."
-                       value="{{ request('search') }}"
-                       class="form-control">
+                       value="{{ request('search') }}">
             </div>
 
-            {{-- Type --}}
             <div class="filter-select">
-                <select name="type" class="form-select">
+                <select name="type">
                     <option value="">Tous les types</option>
                     <option value="ACHAT" {{ request('type') === 'ACHAT' ? 'selected' : '' }}>Achat</option>
                     <option value="VENTE" {{ request('type') === 'VENTE' ? 'selected' : '' }}>Vente</option>
@@ -58,21 +56,17 @@
                 </select>
             </div>
 
-            {{-- Date début --}}
             <div class="filter-date">
                 <input type="date"
                        name="date_debut"
                        value="{{ request('date_debut') }}"
-                       class="form-control"
                        placeholder="Du">
             </div>
 
-            {{-- Date fin --}}
             <div class="filter-date">
                 <input type="date"
                        name="date_fin"
                        value="{{ request('date_fin') }}"
-                       class="form-control"
                        placeholder="Au">
             </div>
 
@@ -95,10 +89,10 @@
     </form>
 
     {{-- ── Tableau des mouvements ───────────────────────────── --}}
-    <div class="mouvements-card">
+    <div class="table-list-card">
         @if($mouvements && count($mouvements) > 0)
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table-list">
                     <thead>
                         <tr>
                             <th>Animal</th>
@@ -115,13 +109,13 @@
                         <tr>
                             <td>
                                 @if(isset($mouvement['animal']))
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="user-avatar">
+                                    <div class="table-avatar">
+                                        <div class="table-avatar-icon animal">
                                             {{ substr($mouvement['animal']['nom'] ?? 'A', 0, 1) }}
                                         </div>
-                                        <div class="user-info">
-                                            <div class="user-name">{{ $mouvement['animal']['nom'] ?? '—' }}</div>
-                                            <small class="text-muted">{{ $mouvement['animal']['code'] ?? '' }}</small>
+                                        <div class="table-avatar-info">
+                                            <div class="table-avatar-name">{{ $mouvement['animal']['nom'] ?? '—' }}</div>
+                                            <div class="table-avatar-sub">{{ $mouvement['animal']['code'] ?? '' }}</div>
                                         </div>
                                     </div>
                                 @else
@@ -132,16 +126,16 @@
                                 @php
                                     $type = $mouvement['type_evenement']['nom_type'] ?? '—';
                                     $badgeClass = match(strtoupper($type)) {
-                                        'ACHAT' => 'bg-success',
-                                        'VENTE' => 'bg-primary',
-                                        'DECES' => 'bg-danger',
-                                        'PERTE' => 'bg-warning text-dark',
-                                        'TRANSFERT' => 'bg-info text-dark',
-                                        'ABATTAGE' => 'bg-secondary',
-                                        default => 'bg-secondary'
+                                        'ACHAT' => 'table-badge-success',
+                                        'VENTE' => 'table-badge-primary',
+                                        'DECES' => 'table-badge-danger',
+                                        'PERTE' => 'table-badge-warning',
+                                        'TRANSFERT' => 'table-badge-info',
+                                        'ABATTAGE' => 'table-badge-secondary',
+                                        default => 'table-badge-secondary'
                                     };
                                 @endphp
-                                <span class="badge {{ $badgeClass }}">{{ $type }}</span>
+                                <span class="table-badge {{ $badgeClass }}">{{ $type }}</span>
                             </td>
                             <td>
                                 @if(!empty($mouvement['date_evenement']))
@@ -172,20 +166,19 @@
                                 @endif
                             </td>
                             <td>
-                                <div class="actions-cell justify-content-end">
+                                <div class="table-actions">
                                     <a href="{{ route('admin.mouvements.show', $mouvement['id']) }}"
-                                       class="btn btn-sm btn-outline-primary"
+                                       class="btn-icon"
                                        title="Voir">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                     @if(isset($mouvement['animal']))
                                     <a href="{{ route('admin.mouvements.animal-history', $mouvement['animal']['id']) }}"
-                                       class="btn btn-sm btn-outline-info"
+                                       class="btn-icon btn-outline-info"
                                        title="Historique animal">
                                         <i class="bi bi-clock-history"></i>
                                     </a>
                                     @endif
-
                                 </div>
                             </td>
                         </tr>
@@ -196,8 +189,8 @@
 
             {{-- ── Pagination ───────────────────────────────────── --}}
             @if($mouvements instanceof \Illuminate\Pagination\LengthAwarePaginator && $mouvements->hasPages())
-                <div class="pagination-bar">
-                    <div class="pagination-info">
+                <div class="table-pagination">
+                    <div class="table-pagination-info">
                         Affichage {{ $mouvements->firstItem() }} à {{ $mouvements->lastItem() }}
                         sur {{ $mouvements->total() }}
                     </div>
@@ -207,8 +200,8 @@
                 </div>
             @endif
         @else
-            <div class="empty-state">
-                <div class="empty-state-icon">
+            <div class="table-empty-state">
+                <div class="table-empty-state-icon">
                     <i class="bi bi-arrow-left-right"></i>
                 </div>
                 <p>Aucun mouvement trouvé.</p>

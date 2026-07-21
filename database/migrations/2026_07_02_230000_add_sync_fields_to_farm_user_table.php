@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::table('farm_user', function (Blueprint $table) {
             $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced')->after('role');
-            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete()->after('sync_status');
+            $table->string('last_modified_by', 20)->nullable()->after('sync_status');
+            $table->foreign('last_modified_by')->references('id')->on('users')->nullOnDelete();
             $table->integer('version')->default(1)->after('last_modified_by');
             
             $table->index('sync_status');

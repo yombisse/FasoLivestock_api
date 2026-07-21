@@ -34,7 +34,7 @@ class TypeEvenementController extends Controller
             'nom_type' => 'required|string|max:255',
             'description' => 'nullable|string',
             'categorie' => 'nullable|in:MOUVEMENT,REPRODUCTION,SANITAIRE,AUTRE',
-            'farm_id' => 'nullable|uuid|exists:farms,id',
+            'farm_id' => 'nullable|string|min:16|max:20|exists:farms,id',
         ]);
 
         // Définir la catégorie par défaut à AUTRE si non fournie
@@ -71,7 +71,7 @@ class TypeEvenementController extends Controller
             'nom_type' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'categorie' => 'nullable|in:MOUVEMENT,REPRODUCTION,SANITAIRE,AUTRE',
-            'farm_id' => 'nullable|uuid|exists:farms,id',
+            'farm_id' => 'nullable|string|min:16|max:20|exists:farms,id',
         ]);
 
         $typeEvenement->update($data);

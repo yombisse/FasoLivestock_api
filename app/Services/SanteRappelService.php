@@ -394,7 +394,7 @@ class SanteRappelService
 
             // Récupérer tous les animaux de la ferme
             $animaux = Animal::where('farm_id', $farmId)
-                ->where('statut', 'ACTIF')
+                ->where('statut', 'SAIN')
                 ->with(['espece.parametre'])
                 ->get();
 

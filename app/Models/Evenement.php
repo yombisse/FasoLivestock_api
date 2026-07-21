@@ -4,14 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Traits\HasFarmScope;
 
 class Evenement extends Model
 {
-    use HasUuids, SoftDeletes, HasFarmScope;
+    use SoftDeletes, HasFarmScope;
 
     protected $table = 'evenements';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     // ─── Types d'événements qui constituent un mouvement ─────────
     const TYPES_MOUVEMENT = ['VENTE', 'ACHAT', 'TRANSFERT', 'DECES', 'PERTE', 'ABATTAGE'];
@@ -22,16 +23,33 @@ class Evenement extends Model
     const STATUT_ANNULE = 'ANNULE';
 
     // ─── Types d'événements reproductifs (nom_type dans type_evenements) ───
-    const TYPE_GESTATION = 'Gestation confirmée';
+    const TYPE_GESTATION = 'Gestation';
     const TYPE_MISE_BAS = 'Mise bas';
     const TYPE_SAILLIE = 'Saillie';
     const TYPE_CHALEUR = 'Chaleur';
+
+    /**
+     * Obtenir l'ID du type d'événement à partir du nom
+     */
+    public static function getTypeIdByNom(string $nomType): ?string
+    {
+        return TypeEvenement::where('nom_type', $nomType)->value('id');
+    }
+
+    /**
+     * Obtenir le nom du type d'événement à partir de l'ID
+     */
+    public static function getTypeNomById(string $typeId): ?string
+    {
+        return TypeEvenement::find($typeId)?->nom_type;
+    }
 
     protected $fillable = [
         'farm_id',
         'type_evenement_id',
         'categorie',
         'animal_id',
+        'male_id',
         'date_evenement',
         'description',
         'metadonnees',
@@ -60,6 +78,21 @@ class Evenement extends Model
         'metadonnees'    => 'array',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($evenement) {
+            if (empty($evenement->id)) {
+                $evenement->id = substr(\Illuminate\Support\Str::random(20), 0, 20);
+            }
+            // Définir un coût par défaut de 0 si non fourni
+            if (!isset($evenement->cout)) {
+                $evenement->cout = 0;
+            }
+        });
+    }
+
     // =========================================================
     // RELATIONS EXISTANTES
     // =========================================================
@@ -72,6 +105,11 @@ class Evenement extends Model
     public function animal()
     {
         return $this->belongsTo(Animal::class);
+    }
+
+    public function male()
+    {
+        return $this->belongsTo(Animal::class, 'male_id');
     }
 
     public function type()
@@ -147,7 +185,9 @@ class Evenement extends Model
      */
     public function scopeSanitaires($query)
     {
-        return $query->where('categorie', 'SANITAIRE');
+        return $query->whereHas('type', function ($q) {
+            $q->where('categorie', 'SANITAIRE');
+        });
     }
 
     /**
@@ -155,7 +195,9 @@ class Evenement extends Model
      */
     public function scopeMouvements($query)
     {
-        return $query->where('categorie', 'MOUVEMENT');
+        return $query->whereHas('type', function ($q) {
+            $q->where('categorie', 'MOUVEMENT');
+        });
     }
 
     /**
@@ -163,7 +205,9 @@ class Evenement extends Model
      */
     public function scopeReproduction($query)
     {
-        return $query->where('categorie', 'REPRODUCTION');
+        return $query->whereHas('type', function ($q) {
+            $q->where('categorie', 'REPRODUCTION');
+        });
     }
 
     /**

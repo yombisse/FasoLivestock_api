@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Farm;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Farm>
@@ -26,6 +27,7 @@ class FarmFactory extends Factory
     public function definition(): array
     {
         return [
+            'id' => substr(Str::random(20), 0, 20),
             'name' => fake()->company(),
             'location' => fake()->city(),
             'description' => fake()->text(),

@@ -5,14 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Traits\HasFarmScope;
 
 class Animal extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes, HasFarmScope;
+    use HasFactory, SoftDeletes, HasFarmScope;
 
     protected $table = 'animals';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
         'farm_id',
@@ -29,7 +30,6 @@ class Animal extends Model
         'numero_identification',
         'photo',
         'naissance_id',
-        'etat_sante',
         'statut',
         'sync_status',
         'last_modified_by',
@@ -39,8 +39,15 @@ class Animal extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($animal) {
+            if (empty($animal->id)) {
+                $animal->id = substr(\Illuminate\Support\Str::random(20), 0, 20);
+            }
+            // Définir un statut par défaut si non fourni
+            if (empty($animal->statut)) {
+                $animal->statut = 'SAIN';
+            }
             // Si aucun numéro d'identification n'est fourni, en générer un
             if (empty($animal->numero_identification)) {
                 $animal->numero_identification = self::generateNumeroIdentification();
@@ -159,10 +166,10 @@ class Animal extends Model
         return $query
             ->where('farm_id', $farmId)
             ->where('sexe', 'femelle')
-            ->where('statut', 'ACTIF')
+            ->where('statut', 'SAIN')
             ->whereHas('evenements', function ($q) {
                 $q->whereHas('type', function ($tq) {
-                    $tq->where('nom_type', 'Gestation confirmée');
+                    $tq->where('nom_type', 'Gestation');
                 })
                 ->where('statut', 'EN_COURS');
             });

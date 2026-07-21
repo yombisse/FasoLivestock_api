@@ -12,6 +12,9 @@ class TwoFactorVerification extends Model
 
     protected $table = 'two_factor_verifications';
 
+    protected $keyType = 'string';
+    public $incrementing = false;
+
     protected $fillable = [
         'id',
         'user_id',
@@ -31,13 +34,11 @@ class TwoFactorVerification extends Model
         'attempts' => 'integer',
     ];
 
-    public $incrementing = false;
-
     protected static function booted(): void
     {
         static::creating(function (self $model) {
             if (empty($model->id)) {
-                $model->id = (string) \Illuminate\Support\Str::uuid();
+                $model->id = substr(\Illuminate\Support\Str::random(20), 0, 20);
             }
         });
     }

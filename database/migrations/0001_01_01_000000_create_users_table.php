@@ -13,7 +13,7 @@ return new class extends Migration
     {
         
         Schema::create('users', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->string('id', 20)->primary();
             $table->string('name');
             $table->string('email')->unique();
             $table->string('telephone')->nullable();
@@ -27,7 +27,7 @@ return new class extends Migration
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->string('id', 20)->primary();
             $table->string('identifier')->index();
             $table->string('token');
             $table->string('type')->default('email'); // email | phone
@@ -37,7 +37,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignUuid('user_id')->nullable()->index();
+            $table->string('user_id', 20)->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');

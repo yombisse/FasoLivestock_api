@@ -1,0 +1,211 @@
+/* Common Detail Pages Styles */
+.detail-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+.detail-page .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.detail-page .page-header-left h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary, #1e293b);
+    margin-bottom: 0.25rem;
+}
+
+.detail-page .page-header-left p {
+    color: var(--text-muted, #64748b);
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+.detail-page .card {
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.detail-page .card-body {
+    padding: 2rem;
+}
+
+.detail-page .field {
+    padding: 1rem;
+    background: var(--bg-light, #f8fafc);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-light, #e2e8f0);
+    transition: all 0.2s ease;
+}
+
+.detail-page .field:hover {
+    border-color: var(--primary, #16a34a);
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.1);
+}
+
+.detail-page .field .label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.detail-page .field .value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+    word-break: break-word;
+}
+
+.detail-page .badge {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+}
+
+.detail-page .section-divider {
+    display: flex;
+    align-items: center;
+    margin: 2rem 0 1.5rem 0;
+    color: var(--text-muted, #64748b);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.detail-page .section-divider::before,
+.detail-page .section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-color, #e2e8f0);
+    margin: 0 1rem;
+}
+
+.detail-page .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.detail-page .section-header h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+    margin-bottom: 0;
+}
+
+.detail-page .section-counter {
+    font-size: 0.85rem;
+    color: var(--text-muted, #64748b);
+    background: var(--bg-light, #f8fafc);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+}
+
+.detail-page .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted, #64748b);
+}
+
+.detail-page .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.detail-page .empty-state p {
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+/* Avatar styles */
+.detail-page .avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary, #16a34a), var(--primary-dark, #15803d));
+    color: white;
+    font-size: 2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem auto;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+}
+
+/* Stats grid */
+.detail-page .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.detail-page .stat-card {
+    background: var(--bg-light, #f8fafc);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    border: 1px solid var(--border-light, #e2e8f0);
+    transition: all 0.2s ease;
+}
+
+.detail-page .stat-card:hover {
+    border-color: var(--primary, #16a34a);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.1);
+}
+
+.detail-page .stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary, #16a34a);
+    margin-bottom: 0.25rem;
+}
+
+.detail-page .stat-card .stat-label {
+    font-size: 0.85rem;
+    color: var(--text-muted, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .detail-page .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .detail-page .page-header .d-flex {
+        width: 100%;
+    }
+
+    .detail-page .card-body {
+        padding: 1.5rem;
+    }
+
+    .detail-page .field {
+        padding: 0.75rem;
+    }
+
+    .detail-page .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

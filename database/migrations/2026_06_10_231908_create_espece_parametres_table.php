@@ -9,13 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('espece_parametres', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->string('id', 20)->primary();
 
             // Une espèce a exactement un jeu de paramètres
-            $table->foreignUuid('espece_id')
-                ->unique()
-                ->constrained('especes')
-                ->cascadeOnDelete();
+            $table->string('espece_id', 20)->unique();
+            $table->foreign('espece_id')->references('id')->on('especes')->cascadeOnDelete();
 
             // ─── Reproduction ─────────────────────────────────────────
             $table->integer('duree_gestation_jours')->nullable();  // bovin: 283, ovin: 150, caprin: 150

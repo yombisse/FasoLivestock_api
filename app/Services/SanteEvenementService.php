@@ -15,7 +15,7 @@ class SanteEvenementService
     /**
      * Obtenir la liste des événements sanitaires pour une ferme.
      */
-    public function index(string $farmId, array $filters = []): Collection
+    public function index(string $farmId, array $filters = []): array
     {
         $query = Evenement::where('farm_id', $farmId)
             ->sanitaires()
@@ -37,7 +37,31 @@ class SanteEvenementService
             $query->whereBetween('date_evenement', [$filters['date_debut'], $filters['date_fin']]);
         }
 
-        return $query->get();
+        // Filtre par recherche
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhereHas('animal', fn ($a) => $a->where('nom', 'like', "%{$search}%")
+                                                  ->orWhere('numero_identification', 'like', "%{$search}%"));
+            });
+        }
+
+        // Pagination
+        $perPage = $filters['per_page'] ?? 15;
+        $page = $filters['page'] ?? 1;
+
+        $evenements = $query->paginate($perPage, ['*'], 'page', $page);
+
+        return [
+            'evenements' => $evenements->items(),
+            'meta' => [
+                'current_page' => $evenements->currentPage(),
+                'last_page' => $evenements->lastPage(),
+                'per_page' => $evenements->perPage(),
+                'total' => $evenements->total(),
+            ],
+        ];
     }
 
     /**
@@ -57,6 +81,9 @@ class SanteEvenementService
                 ]
             );
 
+            $animal = Animal::find($data['animal_id']);
+            $statutAvant = $animal ? $animal->statut : null;
+            
             $evenement = Evenement::create([
                 'farm_id' => $farmId,
                 'type_evenement_id' => $typeEvenement->id,
@@ -67,7 +94,32 @@ class SanteEvenementService
                 'sync_status' => 'synced',
                 'last_modified_by' => auth()->id(),
                 'version' => 1,
+                'statut_avant' => $statutAvant,
+                'statut_apres' => $statutAvant, // Sera mis à jour ci-dessous si nécessaire
             ]);
+
+            // Mettre à jour automatiquement le statut de l'animal
+            if (strtoupper($data['type']) === 'MALADIE') {
+                if ($animal) {
+                    $animal->update([
+                        'statut' => 'MALADE',
+                        'last_modified_by' => auth()->id(),
+                        'version' => $animal->version + 1,
+                    ]);
+                    $evenement->update(['statut_apres' => 'MALADE']);
+                }
+            }
+
+            if (strtoupper($data['type']) === 'TRAITEMENT') {
+                if ($animal) {
+                    $animal->update([
+                        'statut' => 'EN_TRAITEMENT',
+                        'last_modified_by' => auth()->id(),
+                        'version' => $animal->version + 1,
+                    ]);
+                    $evenement->update(['statut_apres' => 'EN_TRAITEMENT']);
+                }
+            }
 
             // Créer une transaction financière via le service centralisé si le coût est > 0
             $cout = $data['cout'] ?? 0;
@@ -82,7 +134,8 @@ class SanteEvenementService
                 app(EvenementTransactionService::class)->creerTransactionDepuisEvenement(
                     $evenement,
                     (float) $cout,
-                    $categorie
+                    $categorie,
+                    auth()->id()
                 );
             }
 

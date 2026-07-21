@@ -4,7 +4,74 @@
 @section('page-title', 'Événements sanitaires')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/sante-evenements/index.css') }}">
+<style>
+    .sante-table {
+        font-size: 1rem;
+    }
+    .sante-table th {
+        font-size: 1.1rem;
+        font-weight: 600;
+        padding: 1rem;
+        background-color: #f8f9fa;
+    }
+    .sante-table td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    .sante-table .animal-info {
+        font-size: 1rem;
+    }
+    .sante-table .animal-number {
+        font-weight: 600;
+        color: #333;
+    }
+    .sante-table .animal-espece {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    .sante-table .badge {
+        font-size: 0.95rem;
+        padding: 0.5rem 1rem;
+    }
+    .sante-table .description {
+        font-size: 0.95rem;
+        color: #555;
+        max-width: 300px;
+    }
+    .sante-table .date {
+        font-weight: 500;
+        color: #333;
+    }
+    .sante-table .cost {
+        font-weight: 600;
+        color: #333;
+    }
+    .sante-table .actions {
+        font-size: 1rem;
+    }
+    .sante-table .btn-icon {
+        padding: 0.5rem;
+        font-size: 1.1rem;
+    }
+    .page-header h2 {
+        font-size: 1.8rem;
+    }
+    .page-header p {
+        font-size: 1rem;
+    }
+    .filters-bar input,
+    .filters-bar select {
+        font-size: 1rem;
+        padding: 0.6rem;
+    }
+    .filters-bar button {
+        font-size: 1rem;
+        padding: 0.6rem 1rem;
+    }
+    .filter-count {
+        font-size: 1rem;
+    }
+</style>
 @endpush
 
 @section('breadcrumb')
@@ -20,17 +87,38 @@
             <h2><i class="bi bi-heart-pulse me-2 text-danger"></i>Événements sanitaires</h2>
             <p>Suivez les vaccinations, traitements et consultations</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap align-items-center justify-content-between w-100">
             <a href="{{ route('admin.sante-evenements.statistiques') }}"
                class="btn btn-outline-info btn-sm">
                 <i class="bi bi-graph-up"></i>
                 Statistiques
             </a>
-            <a href="{{ route('admin.sante-evenements.create') }}"
-               class="btn btn-primary btn-sm">
-                <i class="bi bi-plus-lg"></i>
-                Nouvel événement
-            </a>
+            <ul class="nav nav-pills mb-0 gap-2">
+                <li class="nav-item">
+                    <a class="nav-link bg-primary text-white" href="{{ route('admin.sante-evenements.create') }}?type=VACCINATION">
+                        <i class="bi bi-syringe me-1"></i>
+                        Vacciner
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link bg-warning text-dark" href="{{ route('admin.sante-evenements.create') }}?type=TRAITEMENT">
+                        <i class="bi bi-capsule me-1"></i>
+                        Traiter
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link bg-danger text-white" href="{{ route('admin.sante-evenements.create') }}?type=MALADIE">
+                        <i class="bi bi-thermometer-high me-1"></i>
+                        Maladie
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link bg-info text-white" href="{{ route('admin.sante-evenements.create') }}?type=CONSULTATION">
+                        <i class="bi bi-clipboard2-pulse me-1"></i>
+                        Contrôler
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
 
@@ -98,13 +186,14 @@
     {{-- ── Table ──────────────────────────────────────────── --}}
     <div class="users-card">
         <div class="table-responsive">
-            <table class="table">
+            <table class="table sante-table">
                 <thead>
                     <tr>
                         <th>Date</th>
                         <th>Type</th>
                         <th>Animal</th>
                         <th>Coût</th>
+                        <th>Statut avant/après</th>
                         <th>Description</th>
                         <th class="text-end">Actions</th>
                     </tr>
@@ -113,7 +202,7 @@
                     @forelse($evenements as $evenement)
                     <tr>
                         {{-- Date --}}
-                        <td style="font-size:.85rem">
+                        <td class="date">
                             {{ \Carbon\Carbon::parse($evenement['date_evenement'])->format('d/m/Y') }}
                         </td>
 
@@ -127,16 +216,9 @@
                         {{-- Animal --}}
                         <td>
                             @if(isset($evenement['animal']))
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="user-avatar">
-                                        <i class="bi bi-box2-heart"></i>
-                                    </div>
-                                    <div>
-                                        <div class="user-name">{{ $evenement['animal']['numero_identification'] ?? '—' }}</div>
-                                        <div class="user-role" style="font-size:.75rem;color:var(--text-muted)">
-                                            {{ $evenement['animal']['espece']['nom_espece'] ?? '—' }}
-                                        </div>
-                                    </div>
+                                <div class="animal-info">
+                                    <div class="animal-number">{{ $evenement['animal']['numero_identification'] ?? '—' }}</div>
+                                    <div class="animal-espece">{{ $evenement['animal']['espece']['nom_espece'] ?? '—' }}</div>
                                 </div>
                             @else
                                 —
@@ -144,7 +226,7 @@
                         </td>
 
                         {{-- Coût --}}
-                        <td style="font-weight:600">
+                        <td class="cost">
                             @if(isset($evenement['cout']) && $evenement['cout'] > 0)
                                 {{ number_format($evenement['cout'], 0, ',', ' ') }} FCFA
                             @else
@@ -152,8 +234,24 @@
                             @endif
                         </td>
 
+                        {{-- Statut avant/après --}}
+                        <td>
+                            <div style="font-size: 0.9rem;">
+                                <div>
+                                    <span class="text-muted">Avant:</span> 
+                                    <span class="badge bg-secondary">{{ $evenement['statut_avant'] ?? '—' }}</span>
+                                </div>
+                                <div style="margin-top: 0.25rem;">
+                                    <span class="text-muted">Après:</span> 
+                                    <span class="badge bg-success">{{ $evenement['statut_apres'] ?? '—' }}</span>
+                                </div>
+                            </div>
+                        </td>
+
                         {{-- Description --}}
-                        <td>{{ \Illuminate\Support\Str::limit($evenement['description'] ?? '—', 30) }}</td>
+                        <td class="description">
+                            {{ \Illuminate\Support\Str::limit($evenement['description'] ?? '—', 50) }}
+                        </td>
 
                         {{-- Actions --}}
                         <td>
@@ -196,7 +294,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <div class="empty-state-icon">
                                     <i class="bi bi-heart-pulse"></i>

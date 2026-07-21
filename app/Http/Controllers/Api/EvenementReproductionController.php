@@ -89,22 +89,61 @@ class EvenementReproductionController extends Controller
         }
 
         // Validation selon le type d'événement
+        $validator = null;
         switch ($nomType) {
             case 'SAILLIE':
-                $validated = (new SaillieRequest($request))->validated();
+                $validator = validator($request->all(), [
+                    'animal_id' => 'required|string|min:16|max:20|exists:animals,id',
+                    'date_evenement' => 'required|date',
+                    'description' => 'nullable|string',
+                    'cout' => 'nullable|numeric|min:0',
+                    'male_id' => 'nullable|string|min:16|max:20|exists:animals,id',
+                    'metadonnees.male_id' => 'nullable|string|min:16|max:20|exists:animals,id',
+                    'metadonnees.male_nom' => 'nullable|string|max:255',
+                    'metadonnees.type_saillie' => 'nullable|in:naturelle,insemination_artificielle',
+                    'metadonnees.veterinaire' => 'nullable|string|max:255',
+                    'metadonnees.success' => 'nullable|boolean',
+                    'metadonnees.nombre_tentatives' => 'nullable|integer|min:1',
+                    'metadonnees.note' => 'nullable|string',
+                ]);
                 break;
             case 'CHALEUR':
-                $validated = (new ChaleurRequest($request))->validated();
+                $validator = validator($request->all(), [
+                    'animal_id' => 'required|string|min:16|max:20|exists:animals,id',
+                    'date_evenement' => 'required|date',
+                    'description' => 'nullable|string',
+                    'cout' => 'nullable|numeric|min:0',
+                ]);
                 break;
             case 'GESTATION CONFIRMÉE':
             case 'GESTATION CONFIRMEE':
-                $validated = (new GestationRequest($request))->validated();
+                $validator = validator($request->all(), [
+                    'animal_id' => 'required|string|min:16|max:20|exists:animals,id',
+                    'date_evenement' => 'required|date',
+                    'description' => 'nullable|string',
+                    'cout' => 'nullable|numeric|min:0',
+                ]);
                 break;
             default:
                 // Pour les autres types, utiliser le FormRequest générique
-                $validated = (new StoreEvenementReproductionRequest($request))->validated();
+                $validator = validator($request->all(), [
+                    'animal_id' => 'required|string|min:16|max:20|exists:animals,id',
+                    'date_evenement' => 'required|date',
+                    'description' => 'nullable|string',
+                    'cout' => 'nullable|numeric|min:0',
+                ]);
                 break;
         }
+
+        if ($validator && $validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Données invalides.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validated = $request->all();
 
         try {
             $evenement = $this->evenementReproductionService->store($validated, $userId);

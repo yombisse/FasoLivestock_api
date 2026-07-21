@@ -3,13 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class EspeceParametre extends Model
 {
-    use HasUuids;
-
     protected $table = 'espece_parametres';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
         'espece_id',
@@ -31,6 +30,17 @@ class EspeceParametre extends Model
         'poids_naissance_moyen_kg' => 'decimal:2',
         'poids_adulte_moyen_kg'    => 'decimal:2',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($parametre) {
+            if (empty($parametre->id)) {
+                $parametre->id = substr(\Illuminate\Support\Str::random(20), 0, 20);
+            }
+        });
+    }
 
     // =========================================================
     // RELATIONS

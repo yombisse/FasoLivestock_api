@@ -4,7 +4,7 @@
 @section('page-title', 'Nouvelle ferme')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/farms/create.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/form-create.css') }}">
 @endpush
 
 @section('breadcrumb')

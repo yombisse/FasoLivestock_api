@@ -4,14 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Traits\HasFarmScope;
 
 class Aliment extends Model
 {
-    use HasUuids, SoftDeletes, HasFarmScope;
+    use SoftDeletes, HasFarmScope;
 
     protected $table = 'aliments';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     const UNITE_KG    = 'KG';
     const UNITE_LITRE = 'LITRE';
@@ -35,6 +36,17 @@ class Aliment extends Model
         'stock_actuel'  => 'decimal:2',
         'sync_status'   => 'string',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($aliment) {
+            if (empty($aliment->id)) {
+                $aliment->id = substr(\Illuminate\Support\Str::random(20), 0, 20);
+            }
+        });
+    }
 
     // =========================================================
     // RELATIONS

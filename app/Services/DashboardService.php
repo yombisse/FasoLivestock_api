@@ -43,7 +43,7 @@ class DashboardService
             'total_users' => User::count(),
             'users_actifs' => User::where('is_active', true)->count(),
             'total_animaux' => Animal::count(),
-            'animaux_actifs' => Animal::where('statut', 'ACTIF')->count(),
+            'animaux_actifs' => Animal::where('statut', 'SAIN')->count(),
             'fermes' => Farm::select('id', 'name', 'location', 'type_elevage', 'owner_id')
                 ->orderBy('name')
                 ->get()
@@ -51,8 +51,8 @@ class DashboardService
                     'id' => $farm->id,
                     'nom' => $farm->name,
                     'localisation' => $farm->location,
-                    'statut' => 'ACTIF',
-                    'animaux' => Animal::where('farm_id', $farm->id)->where('statut', 'ACTIF')->count(),
+                    'statut' => 'SAIN',
+                    'animaux' => Animal::where('farm_id', $farm->id)->where('statut', 'SAIN')->count(),
                 ]),
         ];
     }
@@ -63,12 +63,12 @@ class DashboardService
     private function getCheptelStats(string $farmId): array
     {
         $totalAnimaux = Animal::where('farm_id', $farmId)->count();
-        $animauxActifs = Animal::where('farm_id', $farmId)->where('statut', 'ACTIF')->count();
-        $animauxInactifs = Animal::where('farm_id', $farmId)->where('statut', 'INACTIF')->count();
+        $animauxActifs = Animal::where('farm_id', $farmId)->where('statut', 'SAIN')->count();
+        $animauxInactifs = $totalAnimaux - $animauxActifs;
 
         // Par espèce
         $parEspece = Animal::where('farm_id', $farmId)
-            ->where('statut', 'ACTIF')
+            ->where('statut', 'SAIN')
             ->with('espece')
             ->get()
             ->groupBy('espece_id')
@@ -79,8 +79,8 @@ class DashboardService
             ->values();
 
         // Par sexe
-        $males = Animal::where('farm_id', $farmId)->where('statut', 'ACTIF')->where('sexe', 'male')->count();
-        $femelles = Animal::where('farm_id', $farmId)->where('statut', 'ACTIF')->where('sexe', 'femelle')->count();
+        $males = Animal::where('farm_id', $farmId)->where('statut', 'SAIN')->where('sexe', 'male')->count();
+        $femelles = Animal::where('farm_id', $farmId)->where('statut', 'SAIN')->where('sexe', 'femelle')->count();
 
         // Taux d'activité
         $tauxActivite = $totalAnimaux > 0 ? round(($animauxActifs / $totalAnimaux) * 100, 2) : 0;
@@ -134,7 +134,7 @@ class DashboardService
             ->count();
 
         // Taux de mortalité du mois
-        $totalAnimaux = Animal::where('farm_id', $farmId)->where('statut', 'ACTIF')->count();
+        $totalAnimaux = Animal::where('farm_id', $farmId)->where('statut', 'SAIN')->count();
         $tauxMortalite = $totalAnimaux > 0 ? round((($deces + $pertes) / $totalAnimaux) * 100, 2) : 0;
 
         return [
@@ -191,7 +191,7 @@ class DashboardService
         // Femelles actives
         $femellesActives = Animal::where('farm_id', $farmId)
             ->where('sexe', 'femelle')
-            ->where('statut', 'ACTIF')
+            ->where('statut', 'SAIN')
             ->count();
 
         // Naissances du mois

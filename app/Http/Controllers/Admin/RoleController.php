@@ -41,6 +41,22 @@ class RoleController extends Controller
     }
 
     /**
+     * Tous les rôles pour select
+     */
+    public function all(Request $request)
+    {
+        $response = $this->roleApi->getAll();
+
+        if (!$response->success) {
+            return response()->json(['success' => false, 'message' => $response->message], 500);
+        }
+
+        return response()->json([
+            'data' => $response->data['roles'] ?? []
+        ]);
+    }
+
+    /**
      * Enregistrer un rôle
      */
     public function store(Request $request)

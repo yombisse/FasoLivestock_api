@@ -5,13 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Farm extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'farms';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
         'name',
@@ -31,6 +32,17 @@ class Farm extends Model
         'version' => 'integer',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($farm) {
+            if (empty($farm->id)) {
+                $farm->id = substr(\Illuminate\Support\Str::random(20), 0, 20);
+            }
+        });
+    }
+
     public function owner()
     {
         return $this->belongsTo(User::class, 'owner_id');
@@ -40,7 +52,7 @@ class Farm extends Model
     {
         return $this->belongsToMany(User::class, 'farm_user')
             ->using(FarmUser::class)
-            ->withPivot('role')
+            ->withPivot('role_id')
             ->withTimestamps();
     }
 

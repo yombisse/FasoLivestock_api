@@ -23,10 +23,6 @@ class ActivityLogController extends Controller
     {
         $farmId = $request->header('X-Farm-ID');
         
-        if (!$farmId) {
-            return ApiResponse::error('X-Farm-ID header is required', 400);
-        }
-
         $filters = [
             'action' => $request->action,
             'model_type' => $request->model_type,
@@ -34,6 +30,7 @@ class ActivityLogController extends Controller
             'date_debut' => $request->date_debut,
             'date_fin' => $request->date_fin,
             'per_page' => $request->per_page,
+            'include_global' => $request->include_global ?? true,
         ];
 
         $logs = $this->activityLogService->getForFarm($farmId, $filters);
@@ -49,7 +46,7 @@ class ActivityLogController extends Controller
                     'old_values' => $log->old_values,
                     'new_values' => $log->new_values,
                     'ip_address' => $log->ip_address,
-                    'created_at' => $log->created_at->format('Y-m-d H:i:s'),
+                    'created_at' => is_string($log->created_at) ? $log->created_at : $log->created_at->format('Y-m-d H:i:s'),
                     'user' => $log->user ? [
                         'id' => $log->user->id,
                         'name' => $log->user->name,
@@ -102,7 +99,7 @@ class ActivityLogController extends Controller
                     'old_values' => $log->old_values,
                     'new_values' => $log->new_values,
                     'ip_address' => $log->ip_address,
-                    'created_at' => $log->created_at->format('Y-m-d H:i:s'),
+                    'created_at' => is_string($log->created_at) ? $log->created_at : $log->created_at->format('Y-m-d H:i:s'),
                     'user' => $log->user ? [
                         'id' => $log->user->id,
                         'name' => $log->user->name,

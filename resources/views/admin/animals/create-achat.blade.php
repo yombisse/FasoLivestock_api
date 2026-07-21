@@ -4,7 +4,7 @@
 @section('page-title', 'Achat d\'un animal')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/users/create.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/form-create.css') }}">
     <style>
         .mode-badge {
             display: inline-flex;
@@ -65,7 +65,7 @@
                                     <option value="">Sélectionner une ferme</option>
                                     @foreach($farms as $farm)
                                     <option value="{{ $farm['id'] }}"
-                                            {{ old('farm_id') === $farm['id'] ? 'selected' : '' }}>
+                                            {{ (old('farm_id') ?? ($farm_id ?? null)) === $farm['id'] ? 'selected' : '' }}>
                                         {{ $farm['name'] }}
                                     </option>
                                     @endforeach
@@ -79,14 +79,12 @@
                     {{-- Nom --}}
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label" for="nom">
-                                Nom <span class="text-danger">*</span>
-                            </label>
+                            <label class="form-label" for="nom">Nom</label>
                             <div class="input-with-icon">
                                 <input type="text" id="nom" name="nom"
                                        class="form-control @error('nom') is-invalid @enderror"
                                        placeholder="Ex: Bétel"
-                                       value="{{ old('nom') }}" required>
+                                       value="{{ old('nom') }}">
                                 <i class="bi bi-tag field-icon"></i>
                             </div>
                             @error('nom') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
@@ -111,13 +109,10 @@
                     {{-- Sexe --}}
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label" for="sexe">
-                                Sexe <span class="text-danger">*</span>
-                            </label>
+                            <label class="form-label" for="sexe">Sexe</label>
                             <div class="input-with-icon">
                                 <select id="sexe" name="sexe"
-                                        class="form-select @error('sexe') is-invalid @enderror"
-                                        required>
+                                        class="form-select @error('sexe') is-invalid @enderror">
                                     <option value="">Sélectionner</option>
                                     <option value="male"    {{ old('sexe') === 'male'    ? 'selected' : '' }}>Mâle</option>
                                     <option value="femelle" {{ old('sexe') === 'femelle' ? 'selected' : '' }}>Femelle</option>
@@ -131,10 +126,13 @@
                     {{-- Espèce --}}
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label" for="espece_id">Espèce</label>
+                            <label class="form-label" for="espece_id">
+                                Espèce <span class="text-danger">*</span>
+                            </label>
                             <div class="input-with-icon">
                                 <select id="espece_id" name="espece_id"
-                                        class="form-select @error('espece_id') is-invalid @enderror">
+                                        class="form-select @error('espece_id') is-invalid @enderror"
+                                        required>
                                     <option value="">Sélectionner</option>
                                     @foreach($especes as $espece)
                                     <option value="{{ $espece['id'] }}"
@@ -212,21 +210,24 @@
                         </div>
                     </div>
 
-                    {{-- État de santé --}}
+                    {{-- Statut --}}
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label" for="etat_sante">État de santé</label>
+                            <label class="form-label" for="statut">Statut</label>
                             <div class="input-with-icon">
-                                <select id="etat_sante" name="etat_sante"
-                                        class="form-select @error('etat_sante') is-invalid @enderror">
+                                <select id="statut" name="statut"
+                                        class="form-select @error('statut') is-invalid @enderror">
                                     <option value="">Sélectionner</option>
-                                    <option value="SAIN"         {{ old('etat_sante') === 'SAIN'         ? 'selected' : '' }}>Sain</option>
-                                    <option value="MALADE"       {{ old('etat_sante') === 'MALADE'       ? 'selected' : '' }}>Malade</option>
-                                    <option value="QUARANTAINE"  {{ old('etat_sante') === 'QUARANTAINE'  ? 'selected' : '' }}>Quarantaine</option>
+                                    <option value="SAIN"           {{ old('statut') === 'SAIN'           ? 'selected' : '' }}>Sain</option>
+                                    <option value="MALADE"         {{ old('statut') === 'MALADE'         ? 'selected' : '' }}>Malade</option>
+                                    <option value="EN_TRAITEMENT"  {{ old('statut') === 'EN_TRAITEMENT'  ? 'selected' : '' }}>En traitement</option>
+                                    <option value="VENDU"          {{ old('statut') === 'VENDU'          ? 'selected' : '' }}>Vendu</option>
+                                    <option value="MORT"           {{ old('statut') === 'MORT'           ? 'selected' : '' }}>Mort</option>
+                                    <option value="PERDU"          {{ old('statut') === 'PERDU'          ? 'selected' : '' }}>Perdu</option>
                                 </select>
                                 <i class="bi bi-heart-pulse field-icon"></i>
                             </div>
-                            @error('etat_sante') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            @error('statut') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
                     </div>
 

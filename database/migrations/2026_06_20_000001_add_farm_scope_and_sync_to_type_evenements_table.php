@@ -16,22 +16,20 @@ return new class extends Migration
             $table->dropUnique('type_evenements_nom_type_unique');
 
             // Ajouter farm_id pour le scope farm
-            $table->foreignUuid('farm_id')
+            $table->string('farm_id', 20)
                 ->nullable()
-                ->constrained('farms')
-                ->nullOnDelete()
                 ->after('id');
+            $table->foreign('farm_id')->references('id')->on('farms')->nullOnDelete();
 
             // Remettre les champs de synchronisation
             $table->enum('sync_status', ['pending', 'synced', 'conflict'])
                 ->default('synced')
                 ->after('description');
             
-            $table->foreignUuid('last_modified_by')
+            $table->string('last_modified_by', 20)
                 ->nullable()
-                ->constrained('users')
-                ->nullOnDelete()
                 ->after('sync_status');
+            $table->foreign('last_modified_by')->references('id')->on('users')->nullOnDelete();
 
             // Ajouter les index
             $table->index('farm_id');

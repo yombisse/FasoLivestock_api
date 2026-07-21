@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('animals', function (Blueprint $table) {
-            $table->foreignUuid('farm_source_id')->nullable()->constrained('farms')->nullOnDelete();
+            $table->string('farm_source_id', 20)->nullable();
+            $table->foreign('farm_source_id')->references('id')->on('farms')->nullOnDelete();
             $table->index('farm_source_id');
         });
     }

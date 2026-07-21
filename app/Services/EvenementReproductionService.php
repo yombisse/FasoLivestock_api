@@ -7,6 +7,7 @@ use App\Models\Animal;
 use App\Models\TypeEvenement;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class EvenementReproductionService
 {
@@ -17,6 +18,9 @@ class EvenementReproductionService
     {
         $query = Evenement::query()
             ->with(['animal', 'type', 'farm', 'farmDestination', 'transaction'])
+            ->whereHas('type', fn ($q) =>
+                $q->where('categorie', 'REPRODUCTION')
+            )
             ->when(isset($filters['animal_id']), fn ($q) =>
                 $q->where('animal_id', $filters['animal_id'])
             )
@@ -36,48 +40,59 @@ class EvenementReproductionService
     /**
      * Créer un événement de reproduction.
      */
-    public function store(array $data, string $userId): Evenement
+    public function store(array $data, string $userId, bool $skipValidation = false): Evenement
     {
-        $data['sync_status'] = 'synced';
-        $data['last_modified_by'] = $userId;
-        $data['version'] = 1;
+        return DB::transaction(function () use ($data, $userId, $skipValidation) {
+            // Charger l'animal avec ses paramètres d'espèce pour validation
+            $animal = Animal::with('espece.parametre')->findOrFail($data['animal_id']);
 
-        $evenement = Evenement::create($data);
+            // Récupérer le type d'événement pour validation
+            $typeEvenement = TypeEvenement::findOrFail($data['type_evenement_id']);
+            $typeNom = $typeEvenement->nom_type;
+            $dateEvenement = $data['date_evenement'];
 
-        // Créer une transaction financière via le service centralisé si le coût est > 0
-        $cout = $data['cout'] ?? 0;
-        if ($cout > 0) {
-            app(EvenementTransactionService::class)->creerTransactionDepuisEvenement(
-                $evenement,
-                (float) $cout,
-                'FRAIS_REPRODUCTION'
-            );
-        }
+            // Validation métier AVANT création selon le type (sauf si skipValidation = true pour sync)
+            if (!$skipValidation) {
+                $ruleService = app(ReproductionRuleService::class);
 
-        // Logique métier après création
-        $typeNom = $evenement->type?->nom_type;
-
-        // Si type = GESTATION_CONFIRMEE : mettre statut = EN_COURS
-        if ($typeNom === 'Gestation confirmée') {
-            $evenement->update(['statut' => Evenement::STATUT_EN_COURS]);
-        }
-
-        // Si type = MISE_BAS : vérifier qu'il existe une GESTATION_CONFIRMEE EN_COURS
-        if ($typeNom === 'Mise bas') {
-            $gestationEnCours = Evenement::where('animal_id', $evenement->animal_id)
-                ->whereHas('type', fn($q) => $q->where('nom_type', 'Gestation confirmée'))
-                ->where('statut', Evenement::STATUT_EN_COURS)
-                ->latest('date_evenement')
-                ->first();
-
-            if (!$gestationEnCours) {
-                throw ValidationException::withMessages([
-                    'type_evenement_id' => 'Impossible de créer un événement MISE_BAS : aucune gestation confirmée en cours pour cet animal.'
-                ]);
+                switch ($typeNom) {
+                    case 'Saillie':
+                        $ruleService->validerSaillie($animal, $dateEvenement, $data['male_id'] ?? null);
+                        break;
+                    case 'Gestation':
+                        $ruleService->validerGestationConfirmee($animal, $dateEvenement);
+                        break;
+                    case 'Mise bas':
+                        $ruleService->validerMiseBas($animal, $dateEvenement);
+                        break;
+                }
             }
-        }
 
-        return $evenement->fresh();
+            // Création de l'événement
+            $data['sync_status'] = 'synced';
+            $data['last_modified_by'] = $userId;
+            $data['version'] = 1;
+
+            // Vérifier que l'utilisateur existe pour éviter l'erreur de foreign key
+            if ($userId && !\App\Models\User::find($userId)) {
+                throw new \Exception('Utilisateur non trouvé pour last_modified_by');
+            }
+
+            $evenement = Evenement::create($data);
+
+            // Créer une transaction financière via le service centralisé si le coût est > 0
+            $cout = $data['cout'] ?? 0;
+            if ($cout > 0) {
+                app(EvenementTransactionService::class)->creerTransactionDepuisEvenement(
+                    $evenement,
+                    (float) $cout,
+                    'FRAIS_REPRODUCTION',
+                    $userId
+                );
+            }
+
+            return $evenement->fresh();
+        });
     }
 
     /**

@@ -31,7 +31,7 @@ class SanteEvenementController extends Controller
      */
     public function index(Request $request)
     {
-        $farmId = $request->input('current_farm_id');
+        $farmId = $request->input('current_farm_id') ?? $request->input('farm_id');
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
@@ -55,7 +55,7 @@ class SanteEvenementController extends Controller
      */
     public function store(Request $request)
     {
-        $farmId = $request->input('current_farm_id');
+        $farmId = $request->input('current_farm_id') ?? $request->input('farm_id');
 
         if (!$farmId) {
             return ApiResponse::error(null, 'Aucune ferme courante définie.', 400);
@@ -70,20 +70,25 @@ class SanteEvenementController extends Controller
         ]);
 
         // Validation selon le type d'événement
-        $type = $request->type;
-        
+        $type = strtolower($request->type);
+
         switch ($type) {
             case 'vaccination':
-                $validated = (new VaccinationRequest($request))->validated();
+                $request->validate((new VaccinationRequest())->rules());
+                $validated = $request->all();
                 break;
             case 'traitement':
-                $validated = (new TraitementRequest($request))->validated();
+                $request->validate((new TraitementRequest())->rules());
+                $validated = $request->all();
                 break;
             case 'maladie':
-                $validated = (new MaladieRequest($request))->validated();
+                $request->validate((new MaladieRequest())->rules());
+                $validated = $request->all();
                 break;
             case 'controle':
-                $validated = (new ControleRequest($request))->validated();
+            case 'consultation':
+                $request->validate((new ControleRequest())->rules());
+                $validated = $request->all();
                 break;
             default:
                 return ApiResponse::error(null, 'Type d\'événement invalide.', 400);

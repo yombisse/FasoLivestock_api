@@ -19,7 +19,7 @@
                     </thead>
                     <tbody>
                         @forelse($farm['users'] ?? [] as $member)
-                        <tr x-data="memberRow(@js($member['id']), @js($member['pivot']['role'] ?? 'worker'))">
+                        <tr x-data="memberRow(@js($member['id']), @js($member['pivot']['role_id'] ?? null), $root.availableRoles)">
                             {{-- Avatar + Nom + Email --}}
                             <td>
                                 <div class="d-flex align-items-center gap-2">
@@ -35,21 +35,16 @@
 
                             {{-- Rôle --}}
                             <td>
-                                @if(($member['pivot']['role'] ?? 'worker') === 'owner')
+                                @if($member['id'] === ($farm['owner_id'] ?? null))
                                     <span class="badge bg-dark">Propriétaire</span>
                                 @else
                                     <div class="role-select-wrapper">
                                         <select class="form-select form-select-sm role-select"
-                                                :class="{
-                                                    'bg-primary text-white': currentRole === 'manager',
-                                                    'bg-info text-white': currentRole === 'vet',
-                                                    'bg-secondary text-white': currentRole === 'worker'
-                                                }"
                                                 x-model="currentRole"
                                                 @change="updateRole(@js($member['id']))">
-                                            <option value="manager">Gestionnaire</option>
-                                            <option value="vet">Vétérinaire</option>
-                                            <option value="worker">Ouvrier</option>
+                                            <template x-for="role in availableRoles" :key="role.id">
+                                                <option :value="role.id" x-text="role.name"></option>
+                                            </template>
                                         </select>
                                     </div>
                                 @endif
@@ -89,42 +84,21 @@
         </div>
         <div class="card-body">
             
-            {{-- Recherche utilisateur --}}
-            <div class="member-search-wrapper">
-                <label class="form-label">Rechercher un utilisateur</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input type="text"
-                           class="form-control"
-                           placeholder="Nom, email..."
-                           x-model="searchQuery"
-                           @keyup.debounce.400ms="searchUsers"
-                           x-ref="searchInput">
-                </div>
-                
-                {{-- Résultats dropdown --}}
-                <div x-show="searchResults.length > 0 && searchQuery.length >= 2"
-                     x-transition:enter="transition ease-out duration-200"
-                     x-transition:enter-start="opacity-0 transform -translate-y-2"
-                     x-transition:enter-end="opacity-100 transform translate-y-0"
-                     x-transition:leave="transition ease-in duration-150"
-                     x-transition:leave-start="opacity-100 transform translate-y-0"
-                     x-transition:leave-end="opacity-0 transform -translate-y-2"
-                     class="search-results-dropdown">
-                    <template x-for="user in searchResults" :key="user.id">
-                        <div class="search-result-item"
-                             @click="addToPending(user)">
-                            <div class="search-result-avatar">
-                                <span x-text="user.name.charAt(0).toUpperCase()"></span>
-                            </div>
-                            <div class="search-result-info">
-                                <div class="search-result-name" x-text="user.name"></div>
-                                <div class="search-result-email" x-text="user.email ?? user.telephone"></div>
-                            </div>
-                            <i class="bi bi-plus-circle text-success"></i>
-                        </div>
+            {{-- Sélection utilisateur avec recherche --}}
+            <div class="member-select-wrapper">
+                <label class="form-label">Sélectionner un utilisateur</label>
+                <select class="form-select"
+                        x-model="selectedUserId"
+                        @change="addUserFromSelect">
+                    <option value="">-- Choisir un utilisateur --</option>
+                    <template x-for="user in getAvailableUsers()" :key="user.id">
+                        <option :value="user.id" x-text="user.name + (user.email ? ' (' + user.email + ')' : '')"></option>
                     </template>
-                </div>
+                </select>
+                <p class="form-hint mt-2" x-show="getAvailableUsers().length === 0">
+                    <i class="bi bi-info-circle"></i>
+                    Tous les utilisateurs sont déjà membres de cette ferme.
+                </p>
             </div>
 
             {{-- Liste utilisateurs à ajouter --}}
@@ -141,10 +115,10 @@
                                 <div class="pending-user-email" x-text="user.email ?? user.telephone"></div>
                             </div>
                             <select class="form-select form-select-sm pending-role-select"
-                                    x-model="user.role">
-                                <option value="manager">Gestionnaire</option>
-                                <option value="vet">Vétérinaire</option>
-                                <option value="worker">Ouvrier</option>
+                                    x-model="user.role_id">
+                                <template x-for="role in availableRoles" :key="role.id">
+                                    <option :value="role.id" x-text="role.name"></option>
+                                </template>
                             </select>
                             <button type="button"
                                     class="btn btn-icon btn-outline-danger btn-sm"

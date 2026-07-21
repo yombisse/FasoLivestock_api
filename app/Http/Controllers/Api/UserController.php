@@ -7,12 +7,19 @@ use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Helpers\ApiResponse;
 use App\Models\User;
+use App\Services\ActivityLogService;
 use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    private ActivityLogService $activityLogService;
+
+    public function __construct(ActivityLogService $activityLogService)
+    {
+        $this->activityLogService = $activityLogService;
+    }
     // =========================================================
     // MÉTHODES PUBLIQUES
     // =========================================================
@@ -72,6 +79,8 @@ class UserController extends Controller
 
         $user->assignRole($this->resolveRoles($request->roles));
 
+        $this->activityLogService->log('created', $user);
+
         return ApiResponse::success(
             $this->formatUser($user->loadCount('farms')->load('roles.permissions')),
             'Utilisateur créé avec succès.',
@@ -99,6 +108,7 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
 
+        $oldValues = $user->toArray();
         $data = $request->only(['name', 'email', 'telephone', 'photo', 'is_active']);
 
         if ($request->has('password')) {
@@ -110,6 +120,8 @@ class UserController extends Controller
         if ($request->has('roles')) {
             $user->syncRoles($this->resolveRoles($request->roles));
         }
+
+        $this->activityLogService->log('updated', $user, $oldValues, $user->toArray());
 
         return ApiResponse::success(
             $this->formatUser($user->loadCount('farms')->load('roles.permissions')),
@@ -124,8 +136,11 @@ class UserController extends Controller
     {
         $this->authorize('toggleActive', $user);
 
+        $oldValues = ['is_active' => $user->is_active];
         $user->update(['is_active' => !$user->is_active]);
         $status = $user->is_active ? 'activé' : 'désactivé';
+
+        $this->activityLogService->log('updated', $user, $oldValues, ['is_active' => $user->is_active]);
 
         return ApiResponse::success(
             $this->formatUser($user->load('roles')),
@@ -140,8 +155,11 @@ class UserController extends Controller
     {
         $this->authorize('delete', $user);
 
+        $oldValues = $user->toArray();
         $user->update(['is_active' => false]);
         $user->delete();
+
+        $this->activityLogService->log('deleted', $user, $oldValues);
 
         return ApiResponse::success(null, 'Utilisateur archivé avec succès.');
     }
@@ -183,8 +201,11 @@ class UserController extends Controller
         // donc on garde string $id ici
         $user = User::onlyTrashed()->findOrFail($id);
 
+        $oldValues = ['is_active' => false, 'deleted_at' => $user->deleted_at];
         $user->restore();
         $user->update(['is_active' => true]);
+
+        $this->activityLogService->log('restored', $user, $oldValues, ['is_active' => true]);
 
         return ApiResponse::success(
             $this->formatUser($user->loadCount('farms')->load('roles.permissions')),

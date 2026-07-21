@@ -4,7 +4,7 @@
 @section('page-title', 'Animaux')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/users/index.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/table-list.css') }}">
     <style>
         [x-cloak] { display: none !important; }
 
@@ -21,7 +21,7 @@
             align-items: center;
             gap: .75rem;
             padding: 1.25rem 1rem;
-            border: 1.5px solid var(--bs-border-color);
+            border: 1.5px solid var(--border, #e2e8f0);
             border-radius: 12px;
             background: #fff;
             cursor: pointer;
@@ -31,8 +31,8 @@
         }
 
         .origin-card:hover {
-            border-color: var(--bs-primary);
-            box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), .12);
+            border-color: var(--primary, #3B82F6);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
             text-decoration: none;
             color: inherit;
             transform: translateY(-2px);
@@ -65,7 +65,6 @@
         .oc-buy    .oc-icon { background: #e3f2fd; color: #1565c0; }
         .oc-reg    .oc-icon { background: #fafafa; color: #555; border: 1px solid #e0e0e0; }
 
-        /* Modal overlay – Alpine-only, pas de Bootstrap JS */
         .origin-backdrop {
             position: fixed; inset: 0; z-index: 1050;
             background: rgba(15,23,42,.45);
@@ -145,30 +144,31 @@
                 <i class="bi bi-search search-icon"></i>
                 <input type="text"
                        name="search"
-                       class="form-control"
                        placeholder="Rechercher par nom, race, numéro..."
                        value="{{ request('search') }}"
                        x-ref="searchInput">
             </div>
 
-            <select name="statut"
-                    class="form-select filter-select"
-                    @change="autoSubmit()">
-                <option value="">Tous les statuts</option>
-                <option value="actif"    {{ request('statut') === 'actif'    ? 'selected' : '' }}>Actif</option>
-                <option value="malade"   {{ request('statut') === 'malade'   ? 'selected' : '' }}>Malade</option>
-                <option value="mort"     {{ request('statut') === 'mort'     ? 'selected' : '' }}>Mort</option>
-                <option value="vendu"    {{ request('statut') === 'vendu'    ? 'selected' : '' }}>Vendu</option>
-            </select>
+            <div class="filter-select">
+                <select name="statut"
+                        @change="autoSubmit()">
+                    <option value="">Tous les statuts</option>
+                    <option value="actif"    {{ request('statut') === 'actif'    ? 'selected' : '' }}>Actif</option>
+                    <option value="malade"   {{ request('statut') === 'malade'   ? 'selected' : '' }}>Malade</option>
+                    <option value="mort"     {{ request('statut') === 'mort'     ? 'selected' : '' }}>Mort</option>
+                    <option value="vendu"    {{ request('statut') === 'vendu'    ? 'selected' : '' }}>Vendu</option>
+                </select>
+            </div>
 
-            <select name="etat_sante"
-                    class="form-select filter-select"
+            <div class="filter-select">
+                <select name="etat_sante"
                     @change="autoSubmit()">
                 <option value="">Tous les états de santé</option>
                 <option value="SAIN"         {{ request('etat_sante') === 'SAIN'         ? 'selected' : '' }}>Sain</option>
                 <option value="MALADE"       {{ request('etat_sante') === 'MALADE'       ? 'selected' : '' }}>Malade</option>
                 <option value="QUARANTAINE"  {{ request('etat_sante') === 'QUARANTAINE'  ? 'selected' : '' }}>Quarantaine</option>
             </select>
+            </div>
 
             <button type="submit" class="btn btn-primary btn-sm">
                 <i class="bi bi-search"></i>
@@ -188,9 +188,9 @@
     </form>
 
     {{-- ── Table ──────────────────────────────────────────── --}}
-    <div class="users-card">
+    <div class="table-list-card">
         <div class="table-responsive">
-            <table class="table">
+            <table class="table-list">
                 <thead>
                     <tr>
                         <th>Animal</th>
@@ -209,10 +209,12 @@
                     @forelse($animals as $animal)
                     <tr>
                         <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="user-avatar"><i class="bi bi-cow"></i></div>
-                                <div class="user-info">
-                                    <div class="user-name">{{ $animal['nom'] ?? '—' }}</div>
+                            <div class="table-avatar">
+                                <div class="table-avatar-icon animal">
+                                    <i class="bi bi-cow"></i>
+                                </div>
+                                <div class="table-avatar-info">
+                                    <div class="table-avatar-name">{{ $animal['nom'] ?? '—' }}</div>
                                 </div>
                             </div>
                         </td>
@@ -220,50 +222,54 @@
                         <td>{{ $animal['espece']['nom'] ?? '—' }}</td>
                         <td>{{ $animal['race'] ?? '—' }}</td>
                         <td>
-                            <span class="badge {{ $animal['sexe'] === 'male' ? 'bg-primary' : 'bg-pink' }}">
-                                {{ $animal['sexe'] === 'male' ? 'Mâle' : 'Femelle' }}
-                            </span>
+                            @if($animal['sexe'] === 'male')
+                                <span class="table-badge table-badge-primary">Mâle</span>
+                            @else
+                                <span class="table-badge table-badge-warning">Femelle</span>
+                            @endif
                         </td>
                         <td>{{ $animal['farm']['name'] ?? '—' }}</td>
 
-                        {{-- Colonne Origine (basée sur les mouvements ou naissance_id) --}}
+                        {{-- Colonne Origine --}}
                         <td>
                             @if($animal['naissance_id'])
-                                <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-weight:500">
+                                <span class="table-badge table-badge-success">
                                     <i class="bi bi-stars me-1"></i>Naissance
                                 </span>
                             @elseif(isset($animal['origine']) && $animal['origine'] === 'achat')
-                                <span class="badge" style="background:#e3f2fd;color:#1565c0;font-weight:500">
+                                <span class="table-badge table-badge-info">
                                     <i class="bi bi-cart me-1"></i>Achat
                                 </span>
                             @else
-                                <span class="badge" style="background:#f5f5f5;color:#555;font-weight:500">
+                                <span class="table-badge table-badge-secondary">
                                     <i class="bi bi-box-arrow-in-down me-1"></i>Import
                                 </span>
                             @endif
                         </td>
 
                         <td>
-                            <span class="status-badge {{ $animal['statut'] === 'actif' ? 'active' : 'inactive' }}">
-                                <span class="status-dot {{ $animal['statut'] === 'actif' ? 'active' : 'inactive' }}"></span>
+                            <div class="table-status {{ $animal['statut'] === 'actif' ? 'table-status-active' : 'table-status-inactive' }}">
+                                <span class="table-status-dot {{ $animal['statut'] === 'actif' ? '' : 'table-status-inactive' }}"></span>
                                 {{ ucfirst($animal['statut'] ?? 'Inconnu') }}
-                            </span>
+                            </div>
                         </td>
                         <td style="font-size:.78rem;color:var(--text-muted)">
                             {{ \Carbon\Carbon::parse($animal['created_at'])->format('d/m/Y') }}
                         </td>
                         <td>
-                            <div class="actions-cell justify-content-end">
+                            <div class="table-actions">
                                 <a href="{{ route('admin.animals.show', $animal['id']) }}"
-                                   class="btn btn-icon btn-outline-secondary" title="Voir">
+                                   class="btn-icon"
+                                   title="Voir">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 <a href="{{ route('admin.animals.edit', $animal['id']) }}"
-                                   class="btn btn-icon btn-outline-primary" title="Modifier">
+                                   class="btn-icon"
+                                   title="Modifier">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <button type="button"
-                                        class="btn btn-icon btn-outline-danger"
+                                        class="btn-icon btn-outline-danger"
                                         title="Archiver"
                                         @click="deleteAnimal(@js($animal['id']), @js($animal['nom']))">
                                     <i class="bi bi-archive"></i>
@@ -280,8 +286,8 @@
                     @empty
                     <tr>
                         <td colspan="10">
-                            <div class="empty-state">
-                                <div class="empty-state-icon"><i class="bi bi-cow"></i></div>
+                            <div class="table-empty-state">
+                                <div class="table-empty-state-icon"><i class="bi bi-cow"></i></div>
                                 <p>Aucun animal trouvé</p>
                                 @if(request()->hasAny(['search', 'statut']))
                                     <a href="{{ route('admin.animals.index') }}"
@@ -299,7 +305,7 @@
 
         {{-- Pagination --}}
         @if(isset($meta['last_page']) && $meta['last_page'] > 1)
-        <div class="pagination-bar">
+        <div class="table-pagination">
             <span>Page {{ $meta['current_page'] }} sur {{ $meta['last_page'] }} — {{ $meta['total'] }} résultat(s)</span>
             <nav>
                 <ul class="pagination">

@@ -46,6 +46,11 @@ class AnimalApiService extends AdminApiService
         return $this->post('/animals/purchase', $data);
     }
 
+    public function sell(string $animalId, array $data): ApiResult
+    {
+        return $this->post("/animals/{$animalId}/sell", $data);
+    }
+
     public function birth(array $data): ApiResult
     {
         return $this->post('/animals/birth', $data);

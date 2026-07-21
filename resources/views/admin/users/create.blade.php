@@ -4,7 +4,7 @@
 @section('page-title', 'Nouvel utilisateur')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/users/create.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/form-create.css') }}">
 @endpush
 
 @section('breadcrumb')

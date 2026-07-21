@@ -8,6 +8,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class SuperAdminSeeder extends Seeder
 {
@@ -32,6 +33,7 @@ class SuperAdminSeeder extends Seeder
         $user = User::firstOrCreate(
             ['email' => 'superadmin@fasolivestock.bf'],
             [
+                'id'           => substr(Str::random(20), 0, 20),
                 'name'         => 'Super Administrateur',
                 'password'     => Hash::make('SuperAdmin@2026!'),
                 'telephone'    => '+22600000000',

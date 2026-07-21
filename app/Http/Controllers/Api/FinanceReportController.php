@@ -25,7 +25,7 @@ class FinanceReportController extends Controller
      */
     public function bilan(Request $request)
     {
-        $this->authorize('view', \App\Models\Transaction::class);
+        $this->authorize('viewAny', \App\Models\Transaction::class);
 
         $bilan = $this->financeTransactionService->bilan(
             $request->date_debut,
@@ -40,7 +40,7 @@ class FinanceReportController extends Controller
      */
     public function bilanParPeriode(Request $request)
     {
-        $this->authorize('view', \App\Models\Transaction::class);
+        $this->authorize('viewAny', \App\Models\Transaction::class);
 
         $request->validate([
             'date_debut' => 'required|date',
@@ -60,7 +60,7 @@ class FinanceReportController extends Controller
      */
     public function bilanParFerme(Request $request, string $farmId)
     {
-        $this->authorize('view', \App\Models\Transaction::class);
+        $this->authorize('viewAny', \App\Models\Transaction::class);
 
         $bilan = $this->financeTransactionService->bilanParFerme(
             $farmId,
@@ -76,7 +76,7 @@ class FinanceReportController extends Controller
      */
     public function statistiquesGlobales(Request $request)
     {
-        $this->authorize('view', \App\Models\Transaction::class);
+        $this->authorize('viewAny', \App\Models\Transaction::class);
 
         $statistiques = $this->financeTransactionService->statistiquesGlobales(
             $request->date_debut,

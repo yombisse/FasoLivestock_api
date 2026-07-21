@@ -15,9 +15,9 @@ class ImportAnimalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'farm_id'                         => ['required', 'uuid', 'exists:farms,id'],
+            'farm_id'                         => ['required', 'string', 'min:16', 'max:20', 'exists:farms,id'],
             'animaux'                          => ['required', 'array', 'min:1', 'max:500'],
-            'animaux.*.espece_id'             => ['required', 'uuid', 'exists:especes,id'],
+            'animaux.*.espece_id'             => ['required', 'string', 'min:16', 'max:20', 'exists:especes,id'],
             'animaux.*.sexe'                  => ['required', Rule::in(['M', 'F'])],
             'animaux.*.nom'                   => ['nullable', 'string', 'max:100'],
             'animaux.*.race'                  => ['nullable', 'string', 'max:100'],

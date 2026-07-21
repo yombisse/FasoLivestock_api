@@ -421,10 +421,9 @@ class FinanceTransactionService
         return [
             'date_debut' => $dateDebut,
             'date_fin' => $dateFin,
-            'revenus' => $bilan['revenus'],
-            'charges' => $bilan['charges'],
-            'benefice' => $bilan['benefice'],
-            'marge_beneficiaire' => $bilan['revenus'] > 0 ? round(($bilan['benefice'] / $bilan['revenus']) * 100, 2) : 0,
+            'total_entrees' => $bilan['revenus'],
+            'total_sorties' => $bilan['charges'],
+            'solde' => $bilan['benefice'],
         ];
     }
 
@@ -433,7 +432,7 @@ class FinanceTransactionService
      */
     public function bilanParFerme(string $farmId, ?string $dateDebut = null, ?string $dateFin = null): array
     {
-        $query = Transaction::where('farm_id', $farmId);
+        $query = Transaction::withoutGlobalScope('farm')->where('farm_id', $farmId);
 
         if ($dateDebut && $dateFin) {
             $query->whereBetween('date_transaction', [$dateDebut, $dateFin]);
@@ -445,10 +444,9 @@ class FinanceTransactionService
             'farm_id' => $farmId,
             'date_debut' => $dateDebut,
             'date_fin' => $dateFin,
-            'revenus' => $bilan['revenus'],
-            'charges' => $bilan['charges'],
-            'benefice' => $bilan['benefice'],
-            'marge_beneficiaire' => $bilan['revenus'] > 0 ? round(($bilan['benefice'] / $bilan['revenus']) * 100, 2) : 0,
+            'total_entrees' => $bilan['revenus'],
+            'total_sorties' => $bilan['charges'],
+            'solde' => $bilan['benefice'],
         ];
     }
 

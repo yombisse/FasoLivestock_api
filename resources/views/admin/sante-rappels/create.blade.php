@@ -4,7 +4,7 @@
 @section('page-title', 'Nouveau rappel sanitaire')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/sante-rappels/create.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/form-create.css') }}">
 @endpush
 
 @section('breadcrumb')

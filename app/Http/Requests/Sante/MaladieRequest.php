@@ -17,7 +17,7 @@ class MaladieRequest extends FormRequest
     {
         return [
             // Champs communs
-            'animal_id' => 'required|uuid|exists:animals,id',
+            'animal_id' => 'required|string|min:16|max:20|exists:animals,id',
             'date_evenement' => 'required|date',
             'description' => 'nullable|string',
             'cout' => 'nullable|numeric|min:0',
@@ -34,7 +34,7 @@ class MaladieRequest extends FormRequest
     {
         return [
             'animal_id.required' => 'L\'animal est obligatoire.',
-            'animal_id.uuid' => 'L\'ID de l\'animal doit être un UUID valide.',
+            'animal_id.string' => 'L\'ID de l\'animal doit être une chaîne de caractères.',
             'animal_id.exists' => 'L\'animal spécifié n\'existe pas.',
             'date_evenement.required' => 'La date de l\'événement est obligatoire.',
             'date_evenement.date' => 'La date de l\'événement doit être une date valide.',

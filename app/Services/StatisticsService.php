@@ -145,7 +145,7 @@ class StatisticsService
     public function herdBySpecies(string $farmId): array
     {
         $animals = Animal::where('farm_id', $farmId)
-            ->where('statut', 'ACTIF')
+            ->where('statut', 'SAIN')
             ->with('espece')
             ->get();
 
@@ -178,12 +178,12 @@ class StatisticsService
     public function herdBySex(string $farmId): array
     {
         $males = Animal::where('farm_id', $farmId)
-            ->where('statut', 'ACTIF')
+            ->where('statut', 'SAIN')
             ->where('sexe', 'male')
             ->count();
 
         $femelles = Animal::where('farm_id', $farmId)
-            ->where('statut', 'ACTIF')
+            ->where('statut', 'SAIN')
             ->where('sexe', 'femelle')
             ->count();
 

@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('two_factor_verifications', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('user_id')->index();
+            $table->string('id', 20)->primary();
+            $table->string('user_id', 20)->index();
 
             // email | phone
             $table->string('channel', 20)->index();

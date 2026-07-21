@@ -17,19 +17,19 @@ class StoreMouvementRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'animal_id'            => 'required|uuid|exists:animals,id',
-            'type_evenement_id'    => 'required|uuid|exists:type_evenements,id',
+            'animal_id'            => 'required|string|min:16|max:20|exists:animals,id',
+            'type_evenement_id'    => 'required|string|min:16|max:20|exists:type_evenements,id',
             'date_evenement'       => 'required|date',
             'description'          => 'nullable|string',
             'cout'                 => 'nullable|numeric|min:0',
-            'farm_destination_id'  => 'nullable|uuid|exists:farms,id',
-            'transaction_id'       => 'nullable|uuid|exists:transactions,id',
+            'farm_destination_id'  => 'nullable|string|min:16|max:20|exists:farms,id',
+            'transaction_id'       => 'nullable|string|min:16|max:20|exists:transactions,id',
         ];
 
         // Validation conditionnelle pour TRANSFERT
         $typeEvenement = TypeEvenement::find($this->type_evenement_id);
         if ($typeEvenement && strtoupper($typeEvenement->nom_type) === 'TRANSFERT') {
-            $rules['farm_destination_id'] = 'required|uuid|exists:farms,id';
+            $rules['farm_destination_id'] = 'required|string|min:16|max:20|exists:farms,id';
         }
 
         return $rules;

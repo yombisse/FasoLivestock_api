@@ -83,23 +83,23 @@ Route::middleware(['auth:sanctum', 'farm.context'])->group(function () {
 
     // Liste des événements sanitaires
     Route::get('sante/evenements', [SanteEvenementController::class, 'index'])
-        ->middleware('permission:sante.view');
+        ->middleware('permission:evenements.view');
 
     // Créer un événement sanitaire
     Route::post('sante/evenements', [SanteEvenementController::class, 'store'])
-        ->middleware('permission:sante.create');
+        ->middleware('permission:evenements.create');
 
     // Détail d'un événement sanitaire
     Route::get('sante/evenements/{evenement}', [SanteEvenementController::class, 'show'])
-        ->middleware('permission:sante.view');
+        ->middleware('permission:evenements.view');
 
     // Modifier un événement sanitaire
     Route::put('sante/evenements/{evenement}', [SanteEvenementController::class, 'update'])
-        ->middleware('permission:sante.update');
+        ->middleware('permission:evenements.update');
 
     // Supprimer un événement sanitaire
     Route::delete('sante/evenements/{evenement}', [SanteEvenementController::class, 'destroy'])
-        ->middleware('permission:sante.delete');
+        ->middleware('permission:evenements.delete');
 
     // =========================================================
     // ÉVÉNEMENTS PAR TYPE (PAR ANIMAL)

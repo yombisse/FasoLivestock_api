@@ -9,8 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('aliments', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('farm_id')->constrained('farms')->cascadeOnDelete();
+            $table->string('id', 20)->primary();
+            $table->string('farm_id', 20);
+            $table->foreign('farm_id')->references('id')->on('farms')->cascadeOnDelete();
             $table->string('nom');
             $table->enum('unite', ['KG', 'LITRE', 'SAC', 'BOTTE'])->default('KG');
             $table->decimal('prix_unitaire', 10, 2)->nullable();
@@ -18,10 +19,8 @@ return new class extends Migration
             $table->text('description')->nullable();
 
             $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
-            $table->foreignUuid('last_modified_by')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
+            $table->string('last_modified_by', 20)->nullable();
+            $table->foreign('last_modified_by')->references('id')->on('users')->nullOnDelete();
 
             $table->timestamps();
             $table->softDeletes();

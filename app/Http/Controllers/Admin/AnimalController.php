@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\Admin\AnimalApiService;
+use App\Services\AnimalService;
+use App\Services\ActivityLogService;
+use App\Services\Admin\FarmApiService;
 use Illuminate\Http\Request;
 use App\Services\Admin\LotApiService;
-use App\Services\Admin\FarmApiService;
 use App\Services\Admin\EspeceApiService;
 use App\Services\Admin\TransactionApiService;
 
@@ -14,7 +16,10 @@ use App\Services\Admin\TransactionApiService;
 class AnimalController extends Controller
 {
     public function __construct(
-        private AnimalApiService $animalApi
+        private AnimalApiService $animalApi,
+        private AnimalService $animalService,
+        private ActivityLogService $activityLogService,
+        private FarmApiService $farmApiService
     ) {}
 
     // =========================================================
@@ -57,13 +62,14 @@ class AnimalController extends Controller
             'farms'   => $farmsResponse->success  ? ($farmsResponse->data['farms']     ?? []) : [],
             'especes' => $especesResponse->success ? ($especesResponse->data['especes'] ?? []) : [],
             'lots'    => [], // chargés dynamiquement via AJAX selon la ferme choisie
+            'farm_id' => request('farm_id'), // Pré-remplir si passé en paramètre
         ]);
     }
 
     /**
      * Formulaire création par achat
      */
-    public function createAchat()
+    public function createAchat(Request $request)
     {
         $farmsResponse   = app(FarmApiService::class)->getAll();
         $especesResponse  = app(EspeceApiService::class)->getAll();
@@ -76,13 +82,14 @@ class AnimalController extends Controller
             'especes'    => $especesResponse->success ? ($especesResponse->data['especes'] ?? []) : [],
             'categories' => $categories,
             'lots'       => [], // chargés dynamiquement via AJAX selon la ferme choisie
+            'farm_id'    => $request->query('farm_id'), // Pré-remplir si passé en paramètre
         ]);
     }
 
     /**
      * Formulaire création par naissance
      */
-    public function createNaissance()
+    public function createNaissance(Request $request)
     {
         $farmsResponse   = app(FarmApiService::class)->getAll();
         $especesResponse = app(EspeceApiService::class)->getAll();
@@ -91,6 +98,7 @@ class AnimalController extends Controller
             'farms'   => $farmsResponse->success  ? ($farmsResponse->data['farms']     ?? []) : [],
             'especes' => $especesResponse->success ? ($especesResponse->data['especes'] ?? []) : [],
             'lots'    => [], // chargés dynamiquement via AJAX selon la ferme choisie
+            'farm_id' => $request->query('farm_id'), // Pré-remplir si passé en paramètre
         ]);
     }
 
@@ -144,6 +152,14 @@ class AnimalController extends Controller
 
         $animal = $response->data['animal'] ?? $response->data ?? [];
 
+        // Log activity
+        $this->activityLogService->log(
+            'created',
+            \App\Models\Animal::find($animal['id']),
+            null,
+            $animal
+        );
+
         return redirect()
             ->route('admin.animals.show', $animal['id'] ?? '')
             ->with('success', 'Animal acheté et enregistré avec succès.');
@@ -165,9 +181,59 @@ class AnimalController extends Controller
 
         $animal = $response->data['animal'] ?? $response->data ?? [];
 
+        // Log activity
+        $this->activityLogService->log(
+            'created',
+            \App\Models\Animal::find($animal['id']),
+            null,
+            $animal
+        );
+
         return redirect()
             ->route('admin.animals.show', $animal['id'] ?? '')
             ->with('success', 'Animal créé par naissance avec succès.');
+    }
+
+    /**
+     * Formulaire de vente d'un animal
+     */
+    public function createSale()
+    {
+        $farmsResponse = $this->farmApiService->getAll();
+        $animalsResponse = $this->animalApi->getAll(['per_page' => 1000]);
+
+        return view('admin.animals.create-sale', [
+            'farms' => $farmsResponse->success ? ($farmsResponse->data['farms'] ?? []) : [],
+            'animals' => $animalsResponse->success ? ($animalsResponse->data['animals'] ?? []) : [],
+        ]);
+    }
+
+    /**
+     * Vente d'un animal — crée Transaction ENTREE + Evenement VENTE
+     */
+    public function sell(Request $request)
+    {
+        $animalId = $request->input('animal_id');
+        
+        if (!$animalId) {
+            return back()
+                ->with('error', 'Veuillez sélectionner un animal.')
+                ->withInput();
+        }
+
+        $data = $request->except(['animal_id', '_token']);
+        $response = $this->animalApi->sell($animalId, $data);
+
+        if (!$response->success) {
+            return back()
+                ->withErrors($response->data['errors'] ?? [])
+                ->with('error', $response->message ?? "Erreur lors de la vente.")
+                ->withInput();
+        }
+
+        return redirect()
+            ->route('admin.finance.index')
+            ->with('success', 'Animal vendu avec succès.');
     }
 
     /**
@@ -210,6 +276,90 @@ class AnimalController extends Controller
             'farms'   => $farmsResponse->success   ? ($farmsResponse->data['farms']     ?? []) : [],
             'especes' => $especesResponse->success  ? ($especesResponse->data['especes'] ?? []) : [],
             'lots'    => $lotsResponse->success     ? ($lotsResponse->data['lots']       ?? []) : [],
+        ]);
+    }
+
+    /**
+     * Obtenir les animaux éligibles aux événements sanitaires
+     */
+    public function getEligibleForSanitaire(Request $request)
+    {
+        $farmId = $request->query('farm_id');
+        $typeEvenement = $request->query('type_evenement');
+
+        if (!$farmId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'farm_id parameter is required'
+            ], 400);
+        }
+
+        $animals = $this->animalService->getEligiblesForSanitaire($farmId, $typeEvenement);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'animals' => $animals,
+                'total' => $animals->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Obtenir les animaux éligibles aux événements de reproduction
+     */
+    public function getEligibleForReproduction(Request $request)
+    {
+        $farmId = $request->query('farm_id');
+        $typeReproduction = $request->query('type_reproduction');
+
+        if (!$farmId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'farm_id parameter is required'
+            ], 400);
+        }
+
+        if (!$typeReproduction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'type_reproduction parameter is required'
+            ], 400);
+        }
+
+        $animals = $this->animalService->getEligiblesForReproduction($farmId, $typeReproduction);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'animals' => $animals,
+                'total' => $animals->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Obtenir les mâles éligibles pour saillie
+     */
+    public function getEligibleMales(Request $request)
+    {
+        $farmId = $request->query('farm_id');
+
+        if (!$farmId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'farm_id parameter is required'
+            ], 400);
+        }
+
+        $males = $this->animalService->getEligibleMales($farmId);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'animals' => $males,
+                'total' => $males->count(),
+            ]
         ]);
     }
 
@@ -356,7 +506,7 @@ class AnimalController extends Controller
     public function importStore(Request $request)
     {
         $request->validate([
-            'farm_id' => 'required|uuid|exists:farms,id',
+            'farm_id' => 'required|string|min:16|max:20|exists:farms,id',
             'animaux' => 'required|array|min:1|max:500',
         ]);
 

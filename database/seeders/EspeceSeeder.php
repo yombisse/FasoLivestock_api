@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Espece;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class EspeceSeeder extends Seeder
 {
@@ -49,15 +50,28 @@ class EspeceSeeder extends Seeder
                 'nom' => 'Lapin',
                 'description' => 'Lapins d\'élevage',
             ],
+            [
+                'nom' => 'Canidé',
+                'description' => 'Chiens et autres canidés',
+            ],
         ];
 
         foreach ($especes as $espece) {
-            Espece::updateOrCreate(
-                ['nom' => $espece['nom']],
-                [
+            $existing = Espece::where('nom', $espece['nom'])->first();
+
+            if ($existing) {
+                // Ne pas modifier l'ID si l'espèce existe déjà
+                $existing->update([
                     'description' => $espece['description'],
-                ]
-            );
+                ]);
+            } else {
+                // Créer avec un nouvel ID seulement si c'est une nouvelle espèce
+                Espece::create([
+                    'id' => substr(Str::random(20), 0, 20),
+                    'nom' => $espece['nom'],
+                    'description' => $espece['description'],
+                ]);
+            }
         }
 
         $this->command->info('✅ Espèces préremplies avec succès.');

@@ -9,9 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sante_rappels', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('farm_id')->constrained('farms')->cascadeOnDelete();
-            $table->foreignUuid('animal_id')->constrained('animals')->cascadeOnDelete();
+            $table->string('id', 20)->primary();
+            $table->string('farm_id', 20);
+            $table->foreign('farm_id')->references('id')->on('farms')->cascadeOnDelete();
+            $table->string('animal_id', 20);
+            $table->foreign('animal_id')->references('id')->on('animals')->cascadeOnDelete();
             $table->enum('type_rappel', [
                 'VACCINATION',
                 'TRAITEMENT',
@@ -27,16 +29,12 @@ return new class extends Migration
             $table->text('note')->nullable();
 
             // Lien vers l'événement quand le rappel est réalisé
-            $table->foreignUuid('evenement_id')
-                ->nullable()
-                ->constrained('evenements')
-                ->nullOnDelete();
+            $table->string('evenement_id', 20)->nullable();
+            $table->foreign('evenement_id')->references('id')->on('evenements')->nullOnDelete();
 
             $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
-            $table->foreignUuid('last_modified_by')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
+            $table->string('last_modified_by', 20)->nullable();
+            $table->foreign('last_modified_by')->references('id')->on('users')->nullOnDelete();
 
             $table->timestamps();
             $table->softDeletes();

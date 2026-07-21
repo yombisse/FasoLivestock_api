@@ -91,6 +91,9 @@ function farmMembers(farmId) {
         searchResults: [],
         pendingUsers: [],
         existingMemberIds: [],
+        availableRoles: [],
+        allUsers: [],
+        selectedUserId: null,
         removeModal: {
             show: false,
             userId: null,
@@ -98,6 +101,12 @@ function farmMembers(farmId) {
         },
 
         init() {
+            // Load available roles from API
+            this.loadRoles();
+            
+            // Load all users from API
+            this.loadAllUsers();
+            
             // Collect existing member IDs to avoid duplicates
             const memberRows = document.querySelectorAll('[x-data^="memberRow"]');
             memberRows.forEach(row => {
@@ -106,6 +115,82 @@ function farmMembers(farmId) {
                     this.existingMemberIds.push(match[1]);
                 }
             });
+        },
+
+        async loadRoles() {
+            console.log('Chargement des rôles depuis /admin/roles/all...');
+            try {
+                const response = await fetch('/admin/roles/all', {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const roles = await response.json();
+                    console.log('Rôles reçus:', roles);
+                    this.availableRoles = roles.data || roles;
+                    console.log('availableRoles après chargement:', this.availableRoles);
+                } else {
+                    console.error('Erreur response non OK:', response.status);
+                    this.availableRoles = [
+                        { id: 'manager', name: 'Gestionnaire' },
+                        { id: 'vet', name: 'Vétérinaire' },
+                        { id: 'worker', name: 'Ouvrier' }
+                    ];
+                }
+            } catch (error) {
+                console.error('Error loading roles:', error);
+                this.availableRoles = [
+                    { id: 'manager', name: 'Gestionnaire' },
+                    { id: 'vet', name: 'Vétérinaire' },
+                    { id: 'worker', name: 'Ouvrier' }
+                ];
+            }
+        },
+
+        async loadAllUsers() {
+            try {
+                const response = await fetch('/admin/users/all', {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const users = await response.json();
+                    this.allUsers = users.data || users;
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                this.allUsers = [];
+            }
+        },
+
+        getAvailableUsers() {
+            return this.allUsers.filter(user => 
+                !this.existingMemberIds.includes(user.id) &&
+                !this.pendingUsers.some(p => p.id === user.id)
+            );
+        },
+
+        addUserFromSelect() {
+            console.log('addUserFromSelect appelé, selectedUserId:', this.selectedUserId);
+            if (this.selectedUserId) {
+                const user = this.allUsers.find(u => u.id === this.selectedUserId);
+                console.log('utilisateur trouvé:', user);
+                if (user) {
+                    console.log('Ajout de l utilisateur à pending:', user);
+                    this.addToPending(user);
+                    this.selectedUserId = null;
+                } else {
+                    console.log('Utilisateur non trouvé pour ID:', this.selectedUserId);
+                }
+            }
         },
 
         async searchUsers() {
@@ -136,13 +221,17 @@ function farmMembers(farmId) {
         },
 
         addToPending(user) {
+            console.log('addToPending appelé avec utilisateur:', user);
             this.pendingUsers.push({
                 id: user.id,
                 name: user.name,
                 email: user.email,
                 telephone: user.telephone,
-                role: 'manager'
+                role_id: this.availableRoles[0]?.id || null
             });
+            console.log('pendingUsers après ajout:', this.pendingUsers);
+            console.log('pendingUsers.length:', this.pendingUsers.length);
+            console.log('La section utilisateurs à ajouter devrait s\'afficher');
             this.searchQuery = '';
             this.searchResults = [];
         },
@@ -192,10 +281,11 @@ function farmMembers(farmId) {
 }
 
 // ─── Alpine.js: Member Row Component ──────────────────────────
-function memberRow(userId, initialRole) {
+function memberRow(userId, initialRole, availableRoles) {
     return {
         userId: userId,
         currentRole: initialRole,
+        availableRoles: availableRoles || [],
 
         async updateRole(userId) {
             try {
@@ -208,7 +298,7 @@ function memberRow(userId, initialRole) {
                     },
                     body: JSON.stringify({
                         user_id: this.userId,
-                        role: this.currentRole
+                        role_id: this.currentRole
                     })
                 });
 

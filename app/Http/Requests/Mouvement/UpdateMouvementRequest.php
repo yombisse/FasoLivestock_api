@@ -18,20 +18,20 @@ class UpdateMouvementRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'animal_id'            => 'sometimes|uuid|exists:animals,id',
-            'type_evenement_id'    => 'sometimes|uuid|exists:type_evenements,id',
+            'animal_id'            => 'sometimes|string|min:16|max:20|exists:animals,id',
+            'type_evenement_id'    => 'sometimes|string|min:16|max:20|exists:type_evenements,id',
             'date_evenement'       => 'sometimes|date',
             'description'          => 'sometimes|nullable|string',
             'cout'                 => 'sometimes|nullable|numeric|min:0',
-            'farm_destination_id'  => 'sometimes|nullable|uuid|exists:farms,id',
-            'transaction_id'       => 'sometimes|nullable|uuid|exists:transactions,id',
+            'farm_destination_id'  => 'sometimes|nullable|string|min:16|max:20|exists:farms,id',
+            'transaction_id'       => 'sometimes|nullable|string|min:16|max:20|exists:transactions,id',
         ];
 
         // Validation conditionnelle pour TRANSFERT
         if ($this->type_evenement_id) {
             $typeEvenement = TypeEvenement::find($this->type_evenement_id);
             if ($typeEvenement && strtoupper($typeEvenement->nom_type) === 'TRANSFERT') {
-                $rules['farm_destination_id'] = 'required|uuid|exists:farms,id';
+                $rules['farm_destination_id'] = 'required|string|min:16|max:20|exists:farms,id';
             }
         }
 

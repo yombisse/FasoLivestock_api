@@ -16,9 +16,9 @@ class UpdateRationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'aliment_id' => 'sometimes|uuid|exists:aliments,id',
-            'animal_id' => 'sometimes|nullable|uuid|exists:animals,id',
-            'lot_id' => 'sometimes|nullable|uuid|exists:lots,id',
+            'aliment_id' => 'sometimes|string|min:16|max:20|exists:aliments,id',
+            'animal_id' => 'sometimes|nullable|string|min:16|max:20|exists:animals,id',
+            'lot_id' => 'sometimes|nullable|string|min:16|max:20|exists:lots,id',
             'quantite' => 'sometimes|numeric|min:0',
             'date_distribution' => 'sometimes|date',
             'heure_distribution' => 'sometimes|nullable|date_format:H:i',
@@ -30,11 +30,11 @@ class UpdateRationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'aliment_id.uuid' => 'L\'ID de l\'aliment doit être un UUID valide.',
+            'aliment_id.string' => 'L\'ID de l\'aliment doit être une chaîne de caractères.',
             'aliment_id.exists' => 'L\'aliment spécifié n\'existe pas.',
-            'animal_id.uuid' => 'L\'ID de l\'animal doit être un UUID valide.',
+            'animal_id.string' => 'L\'ID de l\'animal doit être une chaîne de caractères.',
             'animal_id.exists' => 'L\'animal spécifié n\'existe pas.',
-            'lot_id.uuid' => 'L\'ID du lot doit être un UUID valide.',
+            'lot_id.string' => 'L\'ID du lot doit être une chaîne de caractères.',
             'lot_id.exists' => 'Le lot spécifié n\'existe pas.',
             'quantite.numeric' => 'La quantité doit être un nombre.',
             'quantite.min' => 'La quantité ne peut pas être négative.',

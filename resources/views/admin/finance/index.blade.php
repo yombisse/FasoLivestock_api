@@ -4,7 +4,7 @@
 @section('page-title', 'Gestion des transactions')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/finance/index.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/table-list.css') }}">
 @endpush
 
 @section('breadcrumb')
@@ -26,8 +26,18 @@
                 <i class="bi bi-graph-up"></i>
                 Bilan
             </a>
-            <a href="{{ route('admin.finance.create') }}"
+            <a href="{{ route('admin.animals.purchase') }}"
                class="btn btn-primary btn-sm">
+                <i class="bi bi-cart-plus"></i>
+                Acheter animal
+            </a>
+            <a href="{{ route('admin.animals.create-sale') }}"
+               class="btn btn-danger btn-sm">
+                <i class="bi bi-cart-x"></i>
+                Vendre animal
+            </a>
+            <a href="{{ route('admin.finance.create') }}"
+               class="btn btn-outline-primary btn-sm">
                 <i class="bi bi-plus-lg"></i>
                 Nouvelle transaction
             </a>
@@ -35,7 +45,6 @@
     </div>
 
     {{-- ── Bilan rapide ───────────────────────────────────── --}}
-    @if(isset($bilan))
     <div class="bilan-card mb-4">
         <div class="row g-3">
             <div class="col-md-4">
@@ -60,7 +69,6 @@
             </div>
         </div>
     </div>
-    @endif
 
     {{-- ── Filtres ────────────────────────────────────────── --}}
     <form id="filter-form"
@@ -73,31 +81,32 @@
                 <i class="bi bi-search search-icon"></i>
                 <input type="text"
                        name="search"
-                       class="form-control"
                        placeholder="Rechercher..."
                        value="{{ request('search') }}"
                        x-ref="searchInput">
             </div>
 
-            {{-- Type transaction --}}
-            <select name="type_transaction" class="form-select form-select-sm">
-                <option value="">Tous les types</option>
-                <option value="ENTREE" {{ request('type_transaction') === 'ENTREE' ? 'selected' : '' }}>Entrées</option>
-                <option value="SORTIE" {{ request('type_transaction') === 'SORTIE' ? 'selected' : '' }}>Sorties</option>
-            </select>
+            <div class="filter-select">
+                <select name="type_transaction">
+                    <option value="">Tous les types</option>
+                    <option value="ENTREE" {{ request('type_transaction') === 'ENTREE' ? 'selected' : '' }}>Entrées</option>
+                    <option value="SORTIE" {{ request('type_transaction') === 'SORTIE' ? 'selected' : '' }}>Sorties</option>
+                </select>
+            </div>
 
-            {{-- Période --}}
-            <input type="date"
-                   name="date_debut"
-                   class="form-control form-control-sm"
-                   value="{{ request('date_debut') }}"
-                   placeholder="Date début">
+            <div class="filter-date">
+                <input type="date"
+                       name="date_debut"
+                       value="{{ request('date_debut') }}"
+                       placeholder="Date début">
+            </div>
 
-            <input type="date"
-                   name="date_fin"
-                   class="form-control form-control-sm"
-                   value="{{ request('date_fin') }}"
-                   placeholder="Date fin">
+            <div class="filter-date">
+                <input type="date"
+                       name="date_fin"
+                       value="{{ request('date_fin') }}"
+                       placeholder="Date fin">
+            </div>
 
             {{-- Bouton recherche --}}
             <button type="submit" class="btn btn-primary btn-sm">
@@ -122,9 +131,9 @@
     </form>
 
     {{-- ── Table ──────────────────────────────────────────── --}}
-    <div class="users-card">
+    <div class="table-list-card">
         <div class="table-responsive">
-            <table class="table">
+            <table class="table-list">
                 <thead>
                     <tr>
                         <th>Date</th>
@@ -147,9 +156,9 @@
                         {{-- Type --}}
                         <td>
                             @if($transaction['type_transaction'] === 'ENTREE')
-                                <span class="badge bg-success">Entrée</span>
+                                <span class="table-badge table-badge-success">Entrée</span>
                             @else
-                                <span class="badge bg-danger">Sortie</span>
+                                <span class="table-badge table-badge-danger">Sortie</span>
                             @endif
                         </td>
 
@@ -169,24 +178,24 @@
 
                         {{-- Actions --}}
                         <td>
-                            <div class="actions-cell justify-content-end">
+                            <div class="table-actions">
                                 {{-- Voir --}}
                                 <a href="{{ route('admin.finance.show', $transaction['id']) }}"
-                                   class="btn btn-icon btn-outline-primary"
+                                   class="btn-icon"
                                    title="Voir">
                                     <i class="bi bi-eye"></i>
                                 </a>
 
                                 {{-- Modifier --}}
                                 <a href="{{ route('admin.finance.edit', $transaction['id']) }}"
-                                   class="btn btn-icon btn-outline-warning"
+                                   class="btn-icon"
                                    title="Modifier">
                                     <i class="bi bi-pencil"></i>
                                 </a>
 
                                 {{-- Archiver --}}
                                 <button type="button"
-                                        class="btn btn-icon btn-outline-danger"
+                                        class="btn-icon btn-outline-danger"
                                         title="Archiver"
                                         @click="deleteTransaction(
                                             @js($transaction['id']),
@@ -209,8 +218,8 @@
                     @empty
                     <tr>
                         <td colspan="7">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">
+                            <div class="table-empty-state">
+                                <div class="table-empty-state-icon">
                                     <i class="bi bi-currency-dollar"></i>
                                 </div>
                                 <p>Aucune transaction trouvée</p>
@@ -230,7 +239,7 @@
 
         {{-- ── Pagination ───────────────────────────────── --}}
         @if(isset($meta['last_page']) && $meta['last_page'] > 1)
-        <div class="pagination-bar">
+        <div class="table-pagination">
             <span>
                 Page {{ $meta['current_page'] }} sur {{ $meta['last_page'] }}
                 — {{ $meta['total'] }} résultat(s)

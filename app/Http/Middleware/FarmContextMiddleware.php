@@ -19,7 +19,7 @@ class FarmContextMiddleware
     public function handle(Request $request, Closure $next)
     {
         $user = Auth::user();
-        $farmId = $request->header('X-Farm-ID') ?? $request->input('farm_id');
+        $farmId = $request->header('X-Farm-ID') ?? $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$user) {
             return response()->json(['error' => 'Non authentifié'], 401);
@@ -31,7 +31,11 @@ class FarmContextMiddleware
                 // Si un farm_id est fourni, vérifier l'accès
                 $farm = Farm::where('id', $farmId)->first();
                 if (!$farm) {
-                    return response()->json(['error' => 'Ferme introuvable'], 404);
+                    return response()->json([
+                        'error' => 'Ferme introuvable',
+                        'message' => 'La ferme avec cet ID n\'existe pas. Veuillez appeler /sync/initial pour récupérer les fermes correctes.',
+                        'suggestion' => 'GET /api/sync/initial'
+                    ], 404);
                 }
                 $request->merge(['current_farm_id' => $farmId]);
             }
@@ -53,7 +57,11 @@ class FarmContextMiddleware
             ->first();
 
         if (!$farm) {
-            return response()->json(['error' => 'Accès non autorisé à cette ferme'], 403);
+            return response()->json([
+                'error' => 'Accès non autorisé à cette ferme',
+                'message' => 'La ferme avec cet ID n\'existe pas ou vous n\'y avez pas accès. Veuillez appeler /sync/initial pour récupérer les fermes correctes.',
+                'suggestion' => 'GET /api/sync/initial'
+            ], 403);
         }
 
         // Store farm context in request for later use

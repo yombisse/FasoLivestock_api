@@ -52,4 +52,28 @@ class DashboardController extends Controller
 
         return ApiResponse::success($global, 'Statistiques globales récupérées avec succès.');
     }
+
+    /**
+     * Obtenir les stats simplifiées pour le dashboard admin (4 cartes essentielles)
+     */
+    public function adminStats(Request $request)
+    {
+        $farmId = $request->input('farm_id') ?? $request->input('current_farm_id');
+
+        if (!$farmId) {
+            return ApiResponse::error(null, 'Aucune ferme spécifiée.', 400);
+        }
+
+        $dashboard = $this->dashboardService->getDashboard($farmId);
+
+        // Extraire seulement les 4 stats essentielles
+        $stats = [
+            'animaux_actifs' => $dashboard['cheptel']['animaux_actifs'] ?? 0,
+            'revenus_ce_mois' => $dashboard['finance']['revenus_ce_mois'] ?? 0,
+            'alertes' => $dashboard['alertes']['total_alertes'] ?? 0,
+            'evenements_sante' => $dashboard['sante']['evenements_sanitaires_ce_mois'] ?? 0,
+        ];
+
+        return ApiResponse::success($stats, 'Stats admin récupérées avec succès.');
+    }
 }

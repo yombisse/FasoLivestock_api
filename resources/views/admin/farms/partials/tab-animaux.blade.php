@@ -1,12 +1,22 @@
 <div class="farm-animals">
     
-    {{-- En-tête avec bouton ajouter --}}
+    {{-- En-tête avec boutons ajouter --}}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">Animaux de cette ferme</h5>
-        <a href="{{ route('admin.animals.create') }}?farm_id={{ $farm['id'] }}"
-           class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-lg"></i> Ajouter un animal
-        </a>
+        <div class="btn-group">
+            <a href="{{ route('admin.animals.create') }}?mode=achat&farm_id={{ $farm['id'] }}"
+               class="btn btn-primary btn-sm">
+                <i class="bi bi-cart-plus"></i> Achat
+            </a>
+            <a href="{{ route('admin.animals.create') }}?mode=naissance&farm_id={{ $farm['id'] }}"
+               class="btn btn-success btn-sm">
+                <i class="bi bi-heart"></i> Naissance
+            </a>
+            <a href="{{ route('admin.animals.create') }}?mode=import&farm_id={{ $farm['id'] }}"
+               class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-box-arrow-in-down"></i> Import
+            </a>
+        </div>
     </div>
 
     {{-- Filtres --}}

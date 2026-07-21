@@ -10,12 +10,11 @@ return new class extends Migration
     {
         Schema::table('notifications', function (Blueprint $table) {
             if (!Schema::hasColumn('notifications', 'sante_rappel_id')) {
-                $table->foreignUuid('sante_rappel_id')
+                $table->string('sante_rappel_id', 20)
                     ->nullable()
-                    ->constrained('sante_rappels')
-                    ->nullOnDelete()
                     ->after('evenement_id');
 
+                $table->foreign('sante_rappel_id')->references('id')->on('sante_rappels')->nullOnDelete();
                 $table->index('sante_rappel_id');
             }
         });

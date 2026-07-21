@@ -12,36 +12,31 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('transactions', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('farm_id')->constrained('farms')->cascadeOnDelete();
+            $table->string('id', 20)->primary();
+            $table->string('farm_id', 20);
+            $table->foreign('farm_id')->references('id')->on('farms')->cascadeOnDelete();
             $table->enum('type_transaction', ['ENTREE', 'SORTIE', 'TRANSFERT', 'AJUSTEMENT'])->default('ENTREE');
             $table->decimal('montant', 12, 2)->unsigned();
             $table->date('date_transaction');
-            $table->foreignUuid('user_id')
-                ->constrained('users')
-                ->cascadeOnDelete();
-            $table->foreignUuid('animal_id')
-                ->nullable()
-                ->constrained('animals')
-                ->nullOnDelete();
-            $table->foreignUuid('categorie_id')
-                ->constrained('categories')
-                ->cascadeOnDelete();
+            $table->string('user_id', 20);
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->string('animal_id', 20)->nullable();
+            $table->foreign('animal_id')->references('id')->on('animals')->nullOnDelete();
+            $table->string('categorie_id', 20);
+            $table->foreign('categorie_id')->references('id')->on('categories')->cascadeOnDelete();
             $table->string('description')->nullable();
 
             // ─── Nouveau champ ────────────────────────────────────────
             // Lien vers l'événement déclencheur (vente, achat...)
             // nullable car toutes les transactions ne viennent pas
             // d'un événement (ex: achat d'aliments, frais vétérinaires)
-            $table->foreignUuid('evenement_id')
-                ->nullable()
-                ->constrained('evenements')
-                ->nullOnDelete()
-                ->after('description');
+            $table->string('evenement_id', 20)->nullable()->after('description');
+            $table->foreign('evenement_id')->references('id')->on('evenements')->nullOnDelete();
             // ─────────────────────────────────────────────────────────
 
             $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
-            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('last_modified_by', 20)->nullable();
+            $table->foreign('last_modified_by')->references('id')->on('users')->nullOnDelete();
 
             $table->timestamps();
             $table->softDeletes();
@@ -57,6 +52,12 @@ return new class extends Migration
 
             // ─── Nouvel indice ────────────────────────────────────────
             $table->index('evenement_id');
+            // ─────────────────────────────────────────────────────────
+
+            // ─── Business key pour déduplication sync ─────────────────
+            // Permet de détecter les doublons lors du sync offline
+            $table->index(['animal_id', 'evenement_id', 'date_transaction', 'type_transaction'], 
+                          'transactions_business_key_idx');
             // ─────────────────────────────────────────────────────────
         });
     }

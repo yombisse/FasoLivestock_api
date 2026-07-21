@@ -16,13 +16,13 @@ class AnimalNaissanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'farm_id'         => 'required|uuid|exists:farms,id',
+            'farm_id'         => 'required|string|min:16|max:20|exists:farms,id',
             'nom'             => 'nullable|string|max:255',
             'sexe'            => 'required|in:male,femelle',
-            'espece_id'       => 'nullable|uuid|exists:especes,id',
+            'espece_id'       => 'nullable|string|min:16|max:20|exists:especes,id',
             'race'            => 'nullable|string|max:255',
             'date_naissance'  => 'required|date',
-            'mother_id'       => 'nullable|uuid|exists:animals,id',
+            'mother_id'       => 'nullable|string|min:16|max:20|exists:animals,id',
             'poids'           => 'nullable|numeric|min:0',
         ];
     }

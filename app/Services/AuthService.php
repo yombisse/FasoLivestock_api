@@ -29,7 +29,7 @@ class AuthService
     public function register(array $data): array
     {
         $user = User::create([
-            'id'           => (string) Str::uuid(),
+            'id'           => substr(Str::random(20), 0, 20),
             'name'         => $data['name'],
             'email'        => $data['email'] ?? null,
             'telephone'    => $data['telephone'] ?? null,

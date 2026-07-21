@@ -12,12 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('activity_logs', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignUuid('farm_id')->nullable()->constrained('farms')->nullOnDelete();
+            $table->string('id', 20)->primary();
+            $table->string('user_id', 20)->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
+            $table->string('farm_id', 20)->nullable();
+            $table->foreign('farm_id')->references('id')->on('farms')->nullOnDelete();
             $table->string('action'); // created, updated, deleted, restored
             $table->string('model_type'); // Animal, Transaction, Naissance, etc.
-            $table->uuid('model_id')->nullable();
+            $table->string('model_id', 20)->nullable();
             $table->string('description');
             $table->json('old_values')->nullable();
             $table->json('new_values')->nullable();

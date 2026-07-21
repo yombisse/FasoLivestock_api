@@ -86,9 +86,9 @@ class FinanceTransactionApiService extends AdminApiService
         return $this->get('/finance/bilan/par-periode', $params);
     }
 
-    public function bilanParFerme(string $farmId): ApiResult
+    public function bilanParFerme(string $farmId, array $params = []): ApiResult
     {
-        return $this->get("/finance/bilan/par-ferme/{$farmId}");
+        return $this->get("/finance/bilan/par-ferme/{$farmId}", $params);
     }
 
     public function statistiquesGlobales(array $params = []): ApiResult

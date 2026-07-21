@@ -17,7 +17,7 @@ class AssignAnimalsToLotRequest extends FormRequest
     {
         return [
             'animal_ids' => 'required|array|min:1',
-            'animal_ids.*' => 'required|uuid|exists:animals,id',
+            'animal_ids.*' => 'required|string|min:16|max:20|exists:animals,id',
         ];
     }
 
@@ -28,7 +28,9 @@ class AssignAnimalsToLotRequest extends FormRequest
             'animal_ids.array' => 'La liste des animaux doit être un tableau.',
             'animal_ids.min' => 'Au moins un animal doit être fourni.',
             'animal_ids.*.required' => 'Chaque ID d\'animal est obligatoire.',
-            'animal_ids.*.uuid' => 'Chaque ID d\'animal doit être un UUID valide.',
+            'animal_ids.*.string' => 'Chaque ID d\'animal doit être une chaîne de caractères.',
+            'animal_ids.*.min' => 'Chaque ID d\'animal doit faire au moins 16 caractères.',
+            'animal_ids.*.max' => 'Chaque ID d\'animal ne peut pas dépasser 20 caractères.',
             'animal_ids.*.exists' => 'Un ou plusieurs animaux n\'existent pas.',
         ];
     }

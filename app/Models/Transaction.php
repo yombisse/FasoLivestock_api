@@ -4,14 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Traits\HasFarmScope;
 
 class Transaction extends Model
 {
-    use HasUuids, SoftDeletes, HasFarmScope;
+    use SoftDeletes, HasFarmScope;
 
     protected $table = 'transactions';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     // ─── Constantes de type ───────────────────────────────────────
     const TYPE_ENTREE     = 'ENTREE';
@@ -53,31 +54,30 @@ class Transaction extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($transaction) {
-            if (empty($transaction->numero_transaction)) {
-                $transaction->numero_transaction = self::generateNumero();
+            if (empty($transaction->id)) {
+                $transaction->id = substr(\Illuminate\Support\Str::random(20), 0, 20);
             }
+            // NE PAS générer automatiquement le numéro ici
+            // Il doit être fourni explicitement par le service appelant
+            // pour garantir que la génération se fait dans la bonne transaction DB
         });
     }
 
     /**
      * Générer un numéro de transaction unique
      * Format: TRX-YYYY-XXXXXX (ex: TRX-2026-000001)
+     * Utilise une séquence PostgreSQL pour garantir l'unicité
      */
     public static function generateNumero(): string
     {
         $year = date('Y');
         $prefix = "TRX-{$year}-";
-        
-        $lastNumero = self::where('numero_transaction', 'like', "{$prefix}%")
-            ->orderBy('numero_transaction', 'desc')
-            ->value('numero_transaction');
-        
-        $sequence = $lastNumero 
-            ? (int) substr($lastNumero, -6) + 1 
-            : 1;
-        
+
+        // Utiliser la séquence PostgreSQL pour garantir l'unicité
+        $sequence = \Illuminate\Support\Facades\DB::selectOne("SELECT nextval('transaction_numero_seq') as seq")->seq;
+
         return sprintf("{$prefix}%06d", $sequence);
     }
 

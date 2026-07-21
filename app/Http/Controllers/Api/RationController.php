@@ -168,8 +168,8 @@ class RationController extends Controller
         $this->authorize('create', Ration::class);
 
         $request->validate([
-            'lot_id' => 'required|uuid|exists:lots,id',
-            'aliment_id' => 'required|uuid|exists:aliments,id',
+            'lot_id' => 'required|string|min:16|max:20|exists:lots,id',
+            'aliment_id' => 'required|string|min:16|max:20|exists:aliments,id',
             'quantite_par_animal' => 'required|numeric|min:0',
             'date_distribution' => 'nullable|date',
             'heure_distribution' => 'nullable|date_format:H:i',
@@ -202,8 +202,8 @@ class RationController extends Controller
 
         $request->validate([
             'animal_ids' => 'required|array',
-            'animal_ids.*' => 'uuid|exists:animals,id',
-            'aliment_id' => 'required|uuid|exists:aliments,id',
+            'animal_ids.*' => 'string|min:16|max:20|exists:animals,id',
+            'aliment_id' => 'required|string|min:16|max:20|exists:aliments,id',
             'quantite_par_animal' => 'required|numeric|min:0',
             'date_distribution' => 'nullable|date',
             'heure_distribution' => 'nullable|date_format:H:i',

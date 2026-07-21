@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Categorie extends Model
 {
-    use HasUuids, SoftDeletes;
+    use SoftDeletes;
 
     protected $table = 'categories';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
         'nom_categorie',
@@ -26,6 +27,17 @@ class Categorie extends Model
         'sync_status' => 'string',
         'type' => 'string',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($categorie) {
+            if (empty($categorie->id)) {
+                $categorie->id = substr(\Illuminate\Support\Str::random(20), 0, 20);
+            }
+        });
+    }
 
     public function transactions()
     {

@@ -4,7 +4,7 @@
 @section('page-title', 'Gestion des lots')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/lots/index.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/table-list.css') }}">
 @endpush
 
 @section('breadcrumb')
@@ -45,7 +45,6 @@
                 <i class="bi bi-search search-icon"></i>
                 <input type="text"
                        name="search"
-                       class="form-control"
                        placeholder="Rechercher par nom, description..."
                        value="{{ request('search') }}"
                        x-ref="searchInput">
@@ -74,9 +73,9 @@
     </form>
 
     {{-- ── Table ──────────────────────────────────────────── --}}
-    <div class="users-card">
+    <div class="table-list-card">
         <div class="table-responsive">
-            <table class="table">
+            <table class="table-list">
                 <thead>
                     <tr>
                         <th>Nom</th>
@@ -92,12 +91,12 @@
                     <tr>
                         {{-- Nom --}}
                         <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="user-avatar">
+                            <div class="table-avatar">
+                                <div class="table-avatar-icon">
                                     <i class="bi bi-grid"></i>
                                 </div>
-                                <div class="user-info">
-                                    <div class="user-name">{{ $lot['nom_lot'] ?? '—' }}</div>
+                                <div class="table-avatar-info">
+                                    <div class="table-avatar-name">{{ $lot['nom_lot'] ?? '—' }}</div>
                                 </div>
                             </div>
                         </td>
@@ -107,7 +106,7 @@
 
                         {{-- Nb animaux --}}
                         <td>
-                            <span class="badge bg-info">
+                            <span class="table-badge table-badge-info">
                                 {{ $lot['animals_count'] ?? 0 }}
                             </span>
                         </td>
@@ -122,32 +121,31 @@
 
                         {{-- Actions --}}
                         <td>
-                            <div class="actions-cell justify-content-end">
-
+                            <div class="table-actions">
                                 {{-- Voir --}}
                                 <a href="{{ route('admin.lots.show', $lot['id']) }}"
-                                   class="btn btn-icon btn-outline-primary"
+                                   class="btn-icon"
                                    title="Voir">
                                     <i class="bi bi-eye"></i>
                                 </a>
 
                                 {{-- Modifier --}}
                                 <a href="{{ route('admin.lots.edit', $lot['id']) }}"
-                                   class="btn btn-icon btn-outline-warning"
+                                   class="btn-icon"
                                    title="Modifier">
                                     <i class="bi bi-pencil"></i>
                                 </a>
 
                                 {{-- Affecter animaux --}}
                                 <a href="{{ route('admin.lots.assign', $lot['id']) }}"
-                                   class="btn btn-icon btn-outline-info"
+                                   class="btn-icon btn-outline-info"
                                    title="Affecter animaux">
                                     <i class="bi bi-box2-heart"></i>
                                 </a>
 
                                 {{-- Archiver --}}
                                 <button type="button"
-                                        class="btn btn-icon btn-outline-danger"
+                                        class="btn-icon btn-outline-danger"
                                         title="Archiver"
                                         @click="deleteLot(
                                             @js($lot['id']),
@@ -170,8 +168,8 @@
                     @empty
                     <tr>
                         <td colspan="6">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">
+                            <div class="table-empty-state">
+                                <div class="table-empty-state-icon">
                                     <i class="bi bi-grid"></i>
                                 </div>
                                 <p>Aucun lot trouvé</p>
@@ -191,7 +189,7 @@
 
         {{-- ── Pagination ───────────────────────────────── --}}
         @if(isset($meta['last_page']) && $meta['last_page'] > 1)
-        <div class="pagination-bar">
+        <div class="table-pagination">
             <span>
                 Page {{ $meta['current_page'] }} sur {{ $meta['last_page'] }}
                 — {{ $meta['total'] }} résultat(s)

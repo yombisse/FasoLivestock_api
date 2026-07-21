@@ -15,12 +15,14 @@ return new class extends Migration
             // Vérifier si sync_status existe déjà (de la migration originale)
             if (!Schema::hasColumn('categories', 'sync_status')) {
                 $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced')->after('type');
-                $table->foreignUuid('last_modified_by')->nullable()->after('sync_status')->constrained('users')->nullOnDelete();
+                $table->string('last_modified_by', 20)->nullable()->after('sync_status');
+                $table->foreign('last_modified_by')->references('id')->on('users')->nullOnDelete();
                 $table->index('sync_status');
             }
             
             $table->text('description')->nullable()->after('type');
-            $table->foreignUuid('farm_id')->nullable()->after('description')->constrained('farms')->nullOnDelete();
+            $table->string('farm_id', 20)->nullable()->after('description');
+            $table->foreign('farm_id')->references('id')->on('farms')->nullOnDelete();
             $table->integer('version')->default(1)->after('last_modified_by');
             $table->index('farm_id');
         });

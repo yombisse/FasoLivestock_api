@@ -246,9 +246,9 @@ class FarmController extends Controller
         $this->authorize('manageMembers', $farm);
 
         $request->validate([
-            'users'        => 'required|array',
-            'users.*.id'   => 'required|uuid|exists:users,id',
-            'users.*.role' => 'required|string|in:owner,manager,vet,worker',
+            'users'         => 'required|array',
+            'users.*.id'    => 'required|string|min:16|max:20|exists:users,id',
+            'users.*.role_id' => 'required|string|exists:roles,id',
         ]);
 
         $this->syncFarmUsers($farm, $request->users, excludeId: $farm->owner_id);

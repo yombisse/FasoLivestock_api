@@ -375,6 +375,92 @@ class AnimalController extends Controller
     }
 
     // =========================================================
+    // ANIMAUX ÉLIGIBLES AUX ÉVÉNEMENTS
+    // =========================================================
+
+    /**
+     * Animaux éligibles aux événements sanitaires
+     */
+    public function eligibleForSanitaire(Request $request)
+    {
+        $farmId = $request->query('farm_id') ?? $request->header('X-Farm-ID');
+        
+        if (!$farmId) {
+            return ApiResponse::error('farm_id parameter or X-Farm-ID header is required', 400);
+        }
+
+        $typeEvenement = $request->query('type_evenement');
+        $animals = $this->animalService->getEligiblesForSanitaire($farmId, $typeEvenement);
+
+        return ApiResponse::success([
+            'animals' => $animals,
+            'meta' => [
+                'total' => $animals->count(),
+                'farm_id' => $farmId,
+                'type_evenement' => $typeEvenement,
+            ],
+        ], 'Animaux éligibles aux événements sanitaires récupérés avec succès.');
+    }
+
+    /**
+     * Animaux éligibles aux événements de mouvement
+     */
+    public function eligibleForMouvement(Request $request)
+    {
+        $farmId = $request->query('farm_id') ?? $request->header('X-Farm-ID');
+        
+        if (!$farmId) {
+            return ApiResponse::error('farm_id parameter or X-Farm-ID header is required', 400);
+        }
+
+        $typeMouvement = $request->query('type_mouvement');
+        
+        if (!$typeMouvement) {
+            return ApiResponse::error('type_mouvement parameter is required (vente, transfert, deces, perte, abattage)', 400);
+        }
+
+        $animals = $this->animalService->getEligiblesForMouvement($farmId, $typeMouvement);
+
+        return ApiResponse::success([
+            'animals' => $animals,
+            'meta' => [
+                'total' => $animals->count(),
+                'farm_id' => $farmId,
+                'type_mouvement' => $typeMouvement,
+            ],
+        ], 'Animaux éligibles aux événements de mouvement récupérés avec succès.');
+    }
+
+    /**
+     * Animaux éligibles aux événements de reproduction
+     */
+    public function eligibleForReproduction(Request $request)
+    {
+        $farmId = $request->query('farm_id') ?? $request->header('X-Farm-ID');
+        
+        if (!$farmId) {
+            return ApiResponse::error('farm_id parameter or X-Farm-ID header is required', 400);
+        }
+
+        $typeReproduction = $request->query('type_reproduction');
+        
+        if (!$typeReproduction) {
+            return ApiResponse::error('type_reproduction parameter is required (saillie, gestation, mise_bas)', 400);
+        }
+
+        $animals = $this->animalService->getEligiblesForReproduction($farmId, $typeReproduction);
+
+        return ApiResponse::success([
+            'animals' => $animals,
+            'meta' => [
+                'total' => $animals->count(),
+                'farm_id' => $farmId,
+                'type_reproduction' => $typeReproduction,
+            ],
+        ], 'Animaux éligibles aux événements de reproduction récupérés avec succès.');
+    }
+
+    // =========================================================
     // IMPORT BATCH
     // =========================================================
 

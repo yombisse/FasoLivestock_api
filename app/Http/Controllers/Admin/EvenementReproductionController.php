@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\Admin\EvenementReproductionApiService;
+use App\Services\Admin\FarmApiService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 
 class EvenementReproductionController extends Controller
 {
     public function __construct(
-        private EvenementReproductionApiService $evenementReproductionApi
+        private EvenementReproductionApiService $evenementReproductionApi,
+        private FarmApiService $farmApiService,
+        private ActivityLogService $activityLogService
     ) {}
 
     /**
@@ -38,9 +42,13 @@ class EvenementReproductionController extends Controller
     /**
      * Formulaire création
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('admin.evenements-reproduction.create');
+        $farmsResponse = $this->farmApiService->getAll();
+
+        return view('admin.evenements-reproduction.create', [
+            'farms' => $farmsResponse->success ? ($farmsResponse->data['farms'] ?? []) : [],
+        ]);
     }
 
     /**
@@ -48,13 +56,47 @@ class EvenementReproductionController extends Controller
      */
     public function store(Request $request)
     {
-        $response = $this->evenementReproductionApi->create($request->all());
+        // Convertir le type en type_evenement_id
+        $data = $request->all();
+        $type = $data['type'] ?? \App\Models\Evenement::TYPE_SAILLIE;
+        
+        // Convertir en titre (première lettre majuscule) pour correspondre à la base de données
+        $type = ucfirst(strtolower($type));
+        
+        // Trouver le type_evenement_id correspondant en utilisant la méthode du modèle
+        $typeEvenementId = \App\Models\Evenement::getTypeIdByNom($type);
+        
+        if (!$typeEvenementId) {
+            return back()
+                ->with('error', 'Type d\'événement introuvable: ' . $type)
+                ->withInput();
+        }
+        
+        $data['type_evenement_id'] = $typeEvenementId;
+        $data['current_farm_id'] = $request->input('farm_id');
+        
+        // Supprimer le champ type qui n'est pas utilisé par l'API
+        unset($data['type']);
+
+        $response = $this->evenementReproductionApi->create($data);
 
         if (!$response->success) {
             return back()
                 ->withErrors($response->data['errors'] ?? [])
                 ->with('error', $response->message ?? 'Erreur.')
                 ->withInput();
+        }
+
+        $evenement = $response->data ?? [];
+
+        // Log activity
+        if (isset($evenement['id'])) {
+            $this->activityLogService->log(
+                'created',
+                \App\Models\Evenement::find($evenement['id']),
+                null,
+                $evenement
+            );
         }
 
         return redirect()

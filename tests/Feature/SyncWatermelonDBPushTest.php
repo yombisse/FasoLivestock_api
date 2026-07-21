@@ -32,10 +32,10 @@ test('push handles animal + evenement + transaction in wrong order with dependen
     $typeEvenement = TypeEvenement::factory()->create(['nom_type' => 'Achat']);
     $categorie = Categorie::factory()->create();
     
-    // Generate UUIDs
-    $animalId = Str::uuid();
-    $evenementId = Str::uuid();
-    $transactionId = Str::uuid();
+    // Generate string IDs
+    $animalId = substr(Str::random(20), 0, 20);
+    $evenementId = substr(Str::random(20), 0, 20);
+    $transactionId = substr(Str::random(20), 0, 20);
     
     // Create chunk in WRONG order (transaction before evenement before animal)
     $chunk = [
@@ -127,8 +127,8 @@ test('push handles event referencing non-existent animal with isolated error', f
     
     $typeEvenement = TypeEvenement::factory()->create(['nom_type' => 'Achat']);
     
-    $nonExistentAnimalId = Str::uuid();
-    $evenementId = Str::uuid();
+    $nonExistentAnimalId = substr(Str::random(20), 0, 20);
+    $evenementId = substr(Str::random(20), 0, 20);
     
     // Create a valid animal first
     $validAnimal = Animal::factory()->create([
@@ -208,7 +208,7 @@ test('push same chunk twice (network retry) does not create duplicates', functio
     
     $espece = Espece::factory()->create();
     
-    $animalId = Str::uuid();
+    $animalId = substr(Str::random(20), 0, 20);
     
     $chunk = [
         'animals' => [
@@ -289,7 +289,7 @@ test('push with client transaction on event that already has server transaction 
         'montant' => 15000,
     ]);
     
-    $clientTransactionId = Str::uuid();
+    $clientTransactionId = substr(Str::random(20), 0, 20);
     
     // Client tries to push its own transaction for the same event
     $chunk = [
@@ -343,8 +343,8 @@ test('push uses sync_request_id for idempotence', function () {
     
     $espece = Espece::factory()->create();
     
-    $animalId = Str::uuid();
-    $syncRequestId = Str::uuid();
+    $animalId = substr(Str::random(20), 0, 20);
+    $syncRequestId = substr(Str::random(20), 0, 20);
     
     $chunk = [
         'animals' => [

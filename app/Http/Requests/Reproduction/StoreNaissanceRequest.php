@@ -19,7 +19,9 @@ class StoreNaissanceRequest extends FormRequest
         return [
             'mother_id' => [
                 'required',
-                'uuid',
+                'string',
+                'min:16',
+                'max:20',
                 'exists:animals,id',
                 function ($attribute, $value, $fail) {
                     $animal = Animal::find($value);
@@ -45,7 +47,7 @@ class StoreNaissanceRequest extends FormRequest
             'observation' => 'nullable|string',
             'date_saillie' => 'nullable|date',
             'date_mise_bas_prevue' => 'nullable|date',
-            'evenement_id' => 'nullable|uuid|exists:evenements,id',
+            'evenement_id' => 'nullable|string|min:16|max:20|exists:evenements,id',
             'creer_petits' => 'sometimes|boolean',
             'version' => 'nullable|integer|min:1',
         ];
@@ -55,7 +57,7 @@ class StoreNaissanceRequest extends FormRequest
     {
         return [
             'mother_id.required' => 'La mère est obligatoire.',
-            'mother_id.uuid' => 'L\'ID de la mère doit être un UUID valide.',
+            'mother_id.string' => 'L\'ID de la mère doit être une chaîne de caractères.',
             'mother_id.exists' => 'La mère spécifiée n\'existe pas.',
             'date_naissance.required' => 'La date de naissance est obligatoire.',
             'date_naissance.date' => 'La date de naissance doit être une date valide.',
@@ -66,7 +68,7 @@ class StoreNaissanceRequest extends FormRequest
             'poids_naissance.min' => 'Le poids de naissance ne peut pas être négatif.',
             'date_saillie.date' => 'La date de saillie doit être une date valide.',
             'date_mise_bas_prevue.date' => 'La date de mise bas prévue doit être une date valide.',
-            'evenement_id.uuid' => 'L\'ID de l\'événement doit être un UUID valide.',
+            'evenement_id.string' => 'L\'ID de l\'événement doit être une chaîne de caractères.',
             'evenement_id.exists' => 'L\'événement spécifié n\'existe pas.',
             'creer_petits.boolean' => 'Le champ créer_petits doit être un booléen.',
             'version.integer' => 'La version doit être un entier.',

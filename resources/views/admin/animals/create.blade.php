@@ -19,7 +19,7 @@
 @section('page-title', $pageTitle)
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/users/create.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/form-create.css') }}">
     <style>
         .mode-badge {
             display: inline-flex;
@@ -69,7 +69,7 @@
     <form id="animal-create-form"
           method="POST"
           enctype="multipart/form-data"
-          action="{{ $isAchat ? route('animals.purchase') : ($isNaissance ? route('animals.naissance') : route('animals.store')) }}">
+          action="{{ $isAchat ? route('admin.animals.purchase') : ($isNaissance ? route('admin.animals.naissance') : route('admin.animals.store')) }}">
         @csrf
         <input type="hidden" name="mode" value="{{ $mode }}">
 
@@ -91,17 +91,16 @@
                             <div class="input-with-icon">
                                 <select id="farm_id" name="farm_id"
                                         class="form-select @error('farm_id') is-invalid @enderror"
-                                        @change="loadLots($event.target.value)"
                                         required>
                                     <option value="">Sélectionner une ferme</option>
                                     @foreach($farms as $farm)
                                     <option value="{{ $farm['id'] }}"
-                                            {{ old('farm_id') === $farm['id'] ? 'selected' : '' }}>
+                                            {{ (old('farm_id') ?? ($farm_id ?? null)) === $farm['id'] ? 'selected' : '' }}>
                                         {{ $farm['name'] }}
                                     </option>
                                     @endforeach
                                 </select>
-                                <i class="bi bi-house field-icon"></i>
+                                <i class="bi bi-house-door field-icon"></i>
                             </div>
                             @error('farm_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
@@ -236,12 +235,14 @@
                             <label class="form-label" for="lot_id">Lot</label>
                             <div class="input-with-icon">
                                 <select id="lot_id" name="lot_id"
-                                        class="form-select @error('lot_id') is-invalid @enderror"
-                                        x-model="selectedLot">
+                                        class="form-select @error('lot_id') is-invalid @enderror">
                                     <option value="">Sélectionner</option>
-                                    <template x-for="lot in lots" :key="lot.id">
-                                        <option :value="lot.id" x-text="lot.nom"></option>
-                                    </template>
+                                    @foreach($lots as $lot)
+                                    <option value="{{ $lot['id'] }}"
+                                            {{ old('lot_id') === $lot['id'] ? 'selected' : '' }}>
+                                        {{ $lot['nom'] }}
+                                    </option>
+                                    @endforeach
                                 </select>
                                 <i class="bi bi-grid field-icon"></i>
                             </div>
@@ -434,6 +435,5 @@
         window.farmsData = @js($farms);
         window.lotsData = @js($lots);
         window.modeData = '{{ $mode }}';
-        window.lotsByFarmUrl = '{{ route('animals.lots-by-farm') }}';
     </script>
 @endpush

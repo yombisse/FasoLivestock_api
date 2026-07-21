@@ -4,7 +4,7 @@
 @section('page-title', 'Fermes')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/farms/index.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/table-list.css') }}">
 @endpush
 
 @section('breadcrumb')
@@ -63,107 +63,163 @@
         </div>
     </form>
 
-    {{-- ── Grille fermes ───────────────────────────────────── --}}
+    {{-- ── Table des fermes ──────────────────────────────────── --}}
     @forelse($farms as $farm)
+        <div class="table-list-card">
+            <div class="table-responsive">
+                <table class="table-list">
+                    <thead>
+                        <tr>
+                            <th>Ferme</th>
+                            <th>Localisation</th>
+                            <th>Animaux</th>
+                            <th>Membres</th>
+                            <th>Propriétaire</th>
+                            <th>Créé le</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            {{-- Ferme --}}
+                            <td>
+                                <div class="table-avatar">
+                                    <div class="table-avatar-icon farm">
+                                        <i class="bi bi-house-door"></i>
+                                    </div>
+                                    <div class="table-avatar-info">
+                                        <div class="table-avatar-name">{{ $farm['name'] }}</div>
+                                        @if(!empty($farm['description']))
+                                        <div class="table-avatar-sub">{{ Str::limit($farm['description'], 40) }}</div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </td>
 
-        @if($loop->first)
-        <div class="farms-grid">
-        @endif
+                            {{-- Localisation --}}
+                            <td>
+                                <span class="text-muted" style="font-size:.85rem">
+                                    <i class="bi bi-geo-alt me-1"></i>
+                                    {{ $farm['location'] ?? '—' }}
+                                </span>
+                            </td>
 
-        <div class="farm-card">
+                            {{-- Animaux --}}
+                            <td>
+                                <span class="table-badge table-badge-success">
+                                    {{ $farm['animals_count'] ?? 0 }}
+                                </span>
+                            </td>
 
-            {{-- Header --}}
-            <div class="farm-card-header">
-                <div class="farm-icon">
-                    <i class="bi bi-house-door"></i>
-                </div>
-                <div class="farm-header-info">
-                    <div class="farm-name">{{ $farm['name'] }}</div>
-                    <div class="farm-location">
-                        <i class="bi bi-geo-alt"></i>
-                        {{ $farm['location'] ?? '—' }}
-                    </div>
-                </div>
-                <div class="farm-actions-top">
-                    <a href="{{ route('admin.farms.show', $farm['id']) }}"
-                       class="btn btn-icon btn-outline-secondary"
-                       title="Voir">
-                        <i class="bi bi-eye"></i>
-                    </a>
-                    <a href="{{ route('admin.farms.edit', $farm['id']) }}"
-                       class="btn btn-icon btn-outline-primary"
-                       title="Modifier">
-                        <i class="bi bi-pencil"></i>
-                    </a>
-                    <a href="{{ route('admin.farms.manage', $farm['id']) }}"
-                       class="btn btn-icon btn-outline-success"
-                       title="Administrer">
-                        <i class="bi bi-gear"></i>
-                    </a>
-                    <button type="button"
-                            class="btn btn-icon btn-outline-danger"
-                            title="Archiver"
-                            @click="deleteFarm(
-                                @js($farm['id']),
-                                @js($farm['name'])
-                            )">
-                        <i class="bi bi-archive"></i>
-                    </button>
-                </div>
+                            {{-- Membres --}}
+                            <td>
+                                <span class="table-badge table-badge-primary">
+                                    {{ $farm['users_count'] ?? 0 }}
+                                </span>
+                            </td>
+
+                            {{-- Propriétaire --}}
+                            <td>
+                                <div class="table-avatar">
+                                    <div class="table-avatar-icon">
+                                        {{ strtoupper(substr($farm['owner']['name'] ?? '?', 0, 1)) }}
+                                    </div>
+                                    <div class="table-avatar-info">
+                                        <div class="table-avatar-name">{{ $farm['owner']['name'] ?? '—' }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            {{-- Créé le --}}
+                            <td style="font-size:.85rem;color:var(--text-muted)">
+                                {{ \Carbon\Carbon::parse($farm['created_at'])->format('d/m/Y') }}
+                            </td>
+
+                            {{-- Actions --}}
+                            <td>
+                                <div class="table-actions">
+                                    <a href="{{ route('admin.farms.show', $farm['id']) }}"
+                                       class="btn-icon"
+                                       title="Voir">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ route('admin.farms.edit', $farm['id']) }}"
+                                       class="btn-icon"
+                                       title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{{ route('admin.farms.manage', $farm['id']) }}"
+                                       class="btn-icon btn-outline-info"
+                                       title="Administrer">
+                                        <i class="bi bi-gear"></i>
+                                    </a>
+                                    <button type="button"
+                                            class="btn-icon btn-outline-danger"
+                                            title="Archiver"
+                                            @click="deleteFarm(
+                                                @js($farm['id']),
+                                                @js($farm['name'])
+                                            )">
+                                        <i class="bi bi-archive"></i>
+                                    </button>
+                                    <form id="form-delete-{{ $farm['id'] }}"
+                                          method="POST"
+                                          action="{{ route('admin.farms.destroy', $farm['id']) }}"
+                                          style="display:none">
+                                        @csrf @method('DELETE')
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
-            {{-- Description --}}
-            @if(!empty($farm['description']))
-            <div class="farm-description">
-                {{ Str::limit($farm['description'], 80) }}
+            {{-- ── Pagination ──────────────────────────────────────── --}}
+            @if(isset($meta['last_page']) && $meta['last_page'] > 1)
+            <div class="table-pagination">
+                <span>
+                    Page {{ $meta['current_page'] }} sur {{ $meta['last_page'] }}
+                    — {{ $meta['total'] }} résultat(s)
+                </span>
+                <nav>
+                    <ul class="pagination">
+                        <li class="page-item {{ $meta['current_page'] <= 1 ? 'disabled' : '' }}">
+                            <a class="page-link"
+                               href="{{ request()->fullUrlWithQuery(['page' => $meta['current_page'] - 1]) }}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+
+                        @for($i = 1; $i <= $meta['last_page']; $i++)
+                            @if($i == 1 || $i == $meta['last_page'] || abs($i - $meta['current_page']) <= 1)
+                            <li class="page-item {{ $i == $meta['current_page'] ? 'active' : '' }}">
+                                <a class="page-link"
+                                   href="{{ request()->fullUrlWithQuery(['page' => $i]) }}">
+                                    {{ $i }}
+                                </a>
+                            </li>
+                            @elseif(abs($i - $meta['current_page']) == 2)
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                            @endif
+                        @endfor
+
+                        <li class="page-item {{ $meta['current_page'] >= $meta['last_page'] ? 'disabled' : '' }}">
+                            <a class="page-link"
+                               href="{{ request()->fullUrlWithQuery(['page' => $meta['current_page'] + 1]) }}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
             @endif
-
-            {{-- Stats --}}
-            <div class="farm-stats">
-                <div class="farm-stat">
-                    <div class="farm-stat-value">{{ $farm['animals_count'] ?? 0 }}</div>
-                    <div class="farm-stat-label">Animaux</div>
-                </div>
-                <div class="farm-stat">
-                    <div class="farm-stat-value">{{ $farm['users_count'] ?? 0 }}</div>
-                    <div class="farm-stat-label">Membres</div>
-                </div>
-            </div>
-
-            {{-- Footer owner --}}
-            <div class="farm-card-footer">
-                <div class="farm-owner">
-                    <div class="farm-owner-avatar">
-                        {{ strtoupper(substr($farm['owner']['name'] ?? '?', 0, 1)) }}
-                    </div>
-                    <div class="farm-owner-info">
-                        <div class="farm-owner-label">Propriétaire</div>
-                        <div class="farm-owner-name">{{ $farm['owner']['name'] ?? '—' }}</div>
-                    </div>
-                </div>
-                <div class="farm-date">
-                    {{ \Carbon\Carbon::parse($farm['created_at'])->format('d/m/Y') }}
-                </div>
-            </div>
-
-            {{-- Formulaire caché archivage --}}
-            <form id="form-delete-{{ $farm['id'] }}"
-                  method="POST"
-                  action="{{ route('admin.farms.destroy', $farm['id']) }}"
-                  style="display:none">
-                @csrf @method('DELETE')
-            </form>
-
         </div>
-
-        @if($loop->last)
-        </div>
-        @endif
-
     @empty
-        <div class="empty-state">
-            <div class="empty-state-icon">
+        <div class="table-empty-state">
+            <div class="table-empty-state-icon">
                 <i class="bi bi-house-door"></i>
             </div>
             <p>Aucune ferme trouvée</p>

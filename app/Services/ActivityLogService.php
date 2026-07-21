@@ -23,7 +23,9 @@ class ActivityLogService
     {
         try {
             $userId = Auth::id();
-            $farmId = Request::header('X-Farm-ID');
+            
+            // Essayer de récupérer farm_id depuis plusieurs sources
+            $farmId = $this->resolveFarmId($model);
             
             $modelType = class_basename($model);
             $modelId = $model->getKey();
@@ -46,6 +48,33 @@ class ActivityLogService
             // Optionally log to Laravel's log file for debugging
             \Log::error('Activity log failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Resolve farm_id from multiple sources
+     * Priority: Model > Header > Session > null
+     */
+    private function resolveFarmId(Model $model): ?string
+    {
+        // 1. Essayer depuis le modèle (si le modèle a une propriété farm_id)
+        if (isset($model->farm_id) && !empty($model->farm_id)) {
+            return (string) $model->farm_id;
+        }
+
+        // 2. Essayer depuis le header X-Farm-ID
+        $headerFarmId = Request::header('X-Farm-ID');
+        if ($headerFarmId && !empty($headerFarmId)) {
+            return $headerFarmId;
+        }
+
+        // 3. Essayer depuis la session (pour admin)
+        $sessionFarmId = session('current_farm_id');
+        if ($sessionFarmId && !empty($sessionFarmId)) {
+            return $sessionFarmId;
+        }
+
+        // 4. Retourner null pour les activités globales (création ferme, utilisateur, etc.)
+        return null;
     }
 
     /**
@@ -88,14 +117,34 @@ class ActivityLogService
 
     /**
      * Get activity logs for a farm with optional filters
+     * Includes global logs (farm_id = null) if requested
      *
-     * @param string $farmId
-     * @param array $filters action, model_type, user_id, date_debut, date_fin, per_page
+     * @param string|null $farmId
+     * @param array $filters action, model_type, user_id, date_debut, date_fin, per_page, include_global
      * @return LengthAwarePaginator
      */
-    public function getForFarm(string $farmId, array $filters = []): LengthAwarePaginator
+    public function getForFarm(?string $farmId, array $filters = []): LengthAwarePaginator
     {
-        $query = ActivityLog::query()->parFerme($farmId);
+        $query = ActivityLog::query();
+        
+        // Si farm_id est fourni, filtrer par ferme
+        if ($farmId) {
+            $query->where('farm_id', $farmId);
+        }
+        
+        // Inclure les logs globaux si demandé
+        if (!empty($filters['include_global'])) {
+            if ($farmId) {
+                // Si on a un farm_id, inclure aussi les logs globaux
+                $query->where(function($q) use ($farmId) {
+                    $q->where('farm_id', $farmId)
+                      ->orWhereNull('farm_id');
+                });
+            } else {
+                // Si pas de farm_id, ne montrer que les logs globaux
+                $query->whereNull('farm_id');
+            }
+        }
         
         // Apply filters
         if (!empty($filters['action'])) {
@@ -120,5 +169,17 @@ class ActivityLogService
         $perPage = $filters['per_page'] ?? 15;
         
         return $query->paginate($perPage);
+    }
+
+    /**
+     * Get global activity logs (not associated with a specific farm)
+     *
+     * @param array $filters action, model_type, user_id, date_debut, date_fin, per_page
+     * @return LengthAwarePaginator
+     */
+    public function getGlobal(array $filters = []): LengthAwarePaginator
+    {
+        $filters['include_global'] = true;
+        return $this->getForFarm(null, $filters);
     }
 }

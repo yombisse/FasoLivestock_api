@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Farm;
+use Spatie\Permission\Models\Role;
 
 /**
  * Service de gestion des membres d'une ferme.
@@ -18,7 +19,7 @@ class FarmMembershipService
         $syncData = collect($users)
             ->reject(fn ($u) => $excludeId !== null && $u['id'] === $excludeId)
             ->mapWithKeys(fn ($u) => [
-                $u['id'] => ['role' => $u['role']]
+                $u['id'] => ['role_id' => $u['role_id']]
             ])
             ->toArray();
 
@@ -29,5 +30,19 @@ class FarmMembershipService
     public function removeMembers(Farm $farm, array $userIds): void
     {
         $farm->users()->detach($userIds);
+    }
+
+    /**
+     * Obtenir les rôles disponibles pour les fermes (rôles Spatie avec guard_name='api')
+     */
+    public function getAvailableRoles(): array
+    {
+        return Role::where('guard_name', 'api')
+            ->get()
+            ->map(fn ($role) => [
+                'id' => $role->id,
+                'name' => $role->name,
+            ])
+            ->toArray();
     }
 }

@@ -83,41 +83,22 @@
             </div>
         </div>
 
-        {{-- Santé & Élevage avec sous-menu --}}
-        <div x-data="navSubmenu({{ request()->routeIs('admin.evenements.*', 'admin.sante.*', 'admin.naissances.*', 'admin.alimentation.*') ? 'true' : 'false' }})">
-            <button class="nav-link {{ request()->routeIs('admin.evenements.*', 'admin.sante.*', 'admin.naissances.*', 'admin.alimentation.*') ? 'active' : '' }}"
-                    @click="toggle()">
-                <i class="bi bi-heart-pulse nav-icon"></i>
-                Santé & Élevage
-                <i class="bi bi-chevron-down nav-chevron" :class="{ rotated: open }"></i>
-            </button>
-            <div class="nav-submenu" x-show="open" x-transition x-cloak>
-                <a href="{{ route('admin.sante-evenements.index') }}" class="nav-link {{ request()->routeIs('admin.sante-evenements.*') ? 'active' : '' }}">
-                    <i class="bi bi-heart-pulse nav-icon"></i>
-                    Événements sanitaires
-                </a>
-                <a href="{{ route('admin.evenements-reproduction.index') }}" class="nav-link {{ request()->routeIs('admin.evenements-reproduction.*') ? 'active' : '' }}">
-                    <i class="bi bi-calendar-event nav-icon"></i>
-                    Reproduction
-                </a>
-                <a href="{{ route('admin.sante-rappels.index') }}" class="nav-link {{ request()->routeIs('admin.sante-rappels.*') ? 'active' : '' }}">
-                    <i class="bi bi-shield-plus nav-icon"></i>
-                    Rappels sanitaires
-                </a>
-                <a href="{{ route('admin.naissances.index') }}" class="nav-link {{ request()->routeIs('admin.naissances.*') ? 'active' : '' }}">
-                    <i class="bi bi-stars nav-icon"></i>
-                    Naissances
-                </a>
-                <a href="{{ route('admin.aliments.index') }}" class="nav-link {{ request()->routeIs('admin.aliments.*') ? 'active' : '' }}">
-                    <i class="bi bi-basket nav-icon"></i>
-                    Aliments
-                </a>
-                <a href="{{ route('admin.rations.index') }}" class="nav-link {{ request()->routeIs('admin.rations.*') ? 'active' : '' }}">
-                    <i class="bi bi-egg-fried nav-icon"></i>
-                    Rations
-                </a>
-            </div>
-        </div>
+        {{-- ── Opérations ─────────────────────────────── --}}
+        <div class="nav-section-label">Opérations</div>
+
+        {{-- Santé --}}
+        <a href="{{ route('admin.sante-evenements.index') }}"
+           class="nav-link {{ request()->routeIs('admin.sante-evenements.*', 'admin.sante-rappels.*') ? 'active' : '' }}">
+            <i class="bi bi-heart-pulse nav-icon"></i>
+            Santé
+        </a>
+
+        {{-- Reproduction --}}
+        <a href="{{ route('admin.evenements-reproduction.index') }}"
+           class="nav-link {{ request()->routeIs('admin.evenements-reproduction.*', 'admin.naissances.*') ? 'active' : '' }}">
+            <i class="bi bi-calendar-event nav-icon"></i>
+            Reproduction
+        </a>
 
         {{-- Finances --}}
         <a href="{{ route('admin.finance.index') }}"
@@ -126,13 +107,26 @@
             Finances
         </a>
 
-        
-
         {{-- Mouvements --}}
         <a href="{{ route('admin.mouvements.index') }}"
            class="nav-link {{ request()->routeIs('admin.mouvements.*') ? 'active' : '' }}">
             <i class="bi bi-arrow-left-right nav-icon"></i>
             Mouvements
+        </a>
+
+        {{-- ── Système ─────────────────────────────────── --}}
+        <div class="nav-section-label">Système</div>
+
+        {{-- Rapports --}}
+        <a href="{{ route('admin.rapports.index') }}" class="nav-link {{ request()->routeIs('admin.rapports.*') ? 'active' : '' }}">
+            <i class="bi bi-file-earmark-bar-graph nav-icon"></i>
+            Rapports
+        </a>
+
+        {{-- Logs --}}
+        <a href="{{ route('admin.logs.index') }}" class="nav-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
+            <i class="bi bi-journal-text nav-icon"></i>
+            Logs d'audit
         </a>
 
     </nav>

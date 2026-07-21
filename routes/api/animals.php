@@ -62,4 +62,17 @@ Route::middleware(['auth:sanctum', 'farm.context'])->group(function () {
 
     Route::post('animals/lots/{lot}/sell', [AnimalController::class, 'sellLot'])
         ->middleware('permission:animals.update');
+
+    // =========================================================
+    // ANIMAUX ÉLIGIBLES AUX ÉVÉNEMENTS
+    // =========================================================
+
+    Route::get('animals/eligible/sanitaire', [AnimalController::class, 'eligibleForSanitaire'])
+        ->middleware('permission:animals.view');
+
+    Route::get('animals/eligible/mouvement', [AnimalController::class, 'eligibleForMouvement'])
+        ->middleware('permission:animals.view');
+
+    Route::get('animals/eligible/reproduction', [AnimalController::class, 'eligibleForReproduction'])
+        ->middleware('permission:animals.view');
 });

@@ -18,7 +18,7 @@
 @section('page-title', 'Nouveau mouvement')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/mouvements/create.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/form-create.css') }}">
 @endpush
 
 @section('breadcrumb')

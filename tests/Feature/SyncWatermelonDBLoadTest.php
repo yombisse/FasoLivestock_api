@@ -35,7 +35,7 @@ test('load test: push 200 items with mixed dependencies', function () {
     $animals = [];
     for ($i = 0; $i < 100; $i++) {
         $animals[] = [
-            'id' => Str::uuid(),
+            'id' => substr(Str::random(20), 0, 20),
             'numero_identification' => 'TEST' . str_pad($i, 3, '0', STR_PAD_LEFT),
             'sexe' => $i % 2 === 0 ? 'MALE' : 'FEMELLE',
             'statut' => 'ACTIF',
@@ -51,7 +51,7 @@ test('load test: push 200 items with mixed dependencies', function () {
     $evenements = [];
     for ($i = 0; $i < 50; $i++) {
         $evenements[] = [
-            'id' => Str::uuid(),
+            'id' => substr(Str::random(20), 0, 20),
             'date_evenement' => Carbon::now()->subDays(rand(1, 30))->toIso8601String(),
             'statut' => 'TERMINE',
             'farm_id' => $farm->id,
@@ -66,7 +66,7 @@ test('load test: push 200 items with mixed dependencies', function () {
     $transactions = [];
     for ($i = 0; $i < 50; $i++) {
         $transactions[] = [
-            'id' => Str::uuid(),
+            'id' => substr(Str::random(20), 0, 20),
             'type_transaction' => $i % 2 === 0 ? 'SORTIE' : 'ENTREE',
             'montant' => rand(1000, 50000),
             'date_transaction' => Carbon::now()->subDays(rand(1, 30))->toIso8601String(),
@@ -152,7 +152,7 @@ test('chunk size limit validation', function () {
     $animals = [];
     for ($i = 0; $i < 201; $i++) {
         $animals[] = [
-            'id' => Str::uuid(),
+            'id' => substr(Str::random(20), 0, 20),
             'numero_identification' => 'TEST' . str_pad($i, 3, '0', STR_PAD_LEFT),
             'sexe' => 'MALE',
             'statut' => 'ACTIF',
@@ -196,7 +196,7 @@ test('chunk size exactly at limit (200 items) should succeed', function () {
     $animals = [];
     for ($i = 0; $i < 200; $i++) {
         $animals[] = [
-            'id' => Str::uuid(),
+            'id' => substr(Str::random(20), 0, 20),
             'numero_identification' => 'TEST' . str_pad($i, 3, '0', STR_PAD_LEFT),
             'sexe' => 'MALE',
             'statut' => 'ACTIF',

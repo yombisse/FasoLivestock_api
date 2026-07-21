@@ -22,7 +22,7 @@ class UpdateFarmRequest extends FormRequest
             'type_elevage' => 'sometimes|nullable|in:bovin,ovin,caprin,porcin,volaille,cunicole,autre',
             'photo'        => 'sometimes|nullable|string|max:500',
             'users'        => 'sometimes|nullable|array',
-            'users.*.id'   => 'required|uuid|exists:users,id',
+            'users.*.id'   => 'required|string|min:16|max:20|exists:users,id',
             'users.*.role' => 'required|string|in:owner,manager,vet,worker',
         ];
     }

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\TypeEvenement;
+use App\Enums\TypeEvenementSysteme;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -16,113 +17,61 @@ class TypeEvenementSeeder extends Seeder
     public function run(): void
     {
         $types = [
-            [
-                'nom_type' => 'Chaleur',
-                'description' => 'Détection de chaleur chez l\'animal femelle',
-                'categorie' => 'REPRODUCTION',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Saillie',
-                'description' => 'Accouplement ou insémination de l\'animal',
-                'categorie' => 'REPRODUCTION',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Gestation confirmée',
-                'description' => 'Confirmation de la gestation par examen vétérinaire',
-                'categorie' => 'REPRODUCTION',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Mise bas',
-                'description' => 'Naissance des petits',
-                'categorie' => 'REPRODUCTION',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'NAISSANCE',
-                'description' => 'Naissance d\'un animal',
-                'categorie' => 'REPRODUCTION',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Vaccination',
-                'description' => 'Vaccination préventive ou curative',
-                'categorie' => 'SANITAIRE',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Traitement',
-                'description' => 'Traitement médical ou vétérinaire',
-                'categorie' => 'SANITAIRE',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Vente',
-                'description' => 'Vente d\'un animal',
-                'categorie' => 'MOUVEMENT',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Achat',
-                'description' => 'Achat d\'un animal',
-                'categorie' => 'MOUVEMENT',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Transfert',
-                'description' => 'Transfert d\'un animal vers une autre ferme',
-                'categorie' => 'MOUVEMENT',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Décès',
-                'description' => 'Décès d\'un animal',
-                'categorie' => 'MOUVEMENT',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Perte',
-                'description' => 'Perte ou disparition d\'un animal',
-                'categorie' => 'MOUVEMENT',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Abattage',
-                'description' => 'Abattage d\'un animal',
-                'categorie' => 'MOUVEMENT',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Contrôle',
-                'description' => 'Contrôle sanitaire régulier',
-                'categorie' => 'SANITAIRE',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Pesée',
-                'description' => 'Pesée de l\'animal',
-                'categorie' => 'SANITAIRE',
-                'is_system' => true,
-            ],
-            [
-                'nom_type' => 'Autre',
-                'description' => 'Autre type d\'événement',
-                'categorie' => 'SANITAIRE',
-                'is_system' => true,
-            ],
+            TypeEvenementSysteme::CHALEUR,
+            TypeEvenementSysteme::SAILLIE,
+            TypeEvenementSysteme::GESTATION,
+            TypeEvenementSysteme::MISE_BAS,
+            TypeEvenementSysteme::NAISSANCE,
+            TypeEvenementSysteme::VACCINATION,
+            TypeEvenementSysteme::TRAITEMENT,
+            TypeEvenementSysteme::MALADIE,
+            TypeEvenementSysteme::VENTE,
+            TypeEvenementSysteme::ACHAT,
+            TypeEvenementSysteme::TRANSFERT,
+            TypeEvenementSysteme::DECES,
+            TypeEvenementSysteme::PERTE,
+            TypeEvenementSysteme::ABATTAGE,
+            TypeEvenementSysteme::CONTROLE,
+            TypeEvenementSysteme::PESSEE,
+            TypeEvenementSysteme::AUTRE,
         ];
 
-        foreach ($types as $type) {
+        foreach ($types as $typeEnum) {
             TypeEvenement::firstOrCreate(
-                ['nom_type' => $type['nom_type']],
+                ['id' => $typeEnum->value],
                 [
-                    'description' => $type['description'],
-                    'categorie' => $type['categorie'],
-                    'is_system' => $type['is_system'],
+                    'nom_type' => $typeEnum->getNom(),
+                    'description' => $this->getDescription($typeEnum),
+                    'categorie' => $typeEnum->getCategorie(),
+                    'is_system' => true,
                 ]
             );
         }
+    }
+
+    /**
+     * Obtenir la description pour un type d'événement
+     */
+    private function getDescription(TypeEvenementSysteme $type): string
+    {
+        return match($type) {
+            TypeEvenementSysteme::CHALEUR => 'Détection de chaleur chez l\'animal femelle',
+            TypeEvenementSysteme::SAILLIE => 'Accouplement ou insémination de l\'animal',
+            TypeEvenementSysteme::GESTATION => 'Gestation de l\'animal femelle',
+            TypeEvenementSysteme::MISE_BAS => 'Naissance des petits',
+            TypeEvenementSysteme::NAISSANCE => 'Naissance d\'un animal',
+            TypeEvenementSysteme::VACCINATION => 'Vaccination préventive ou curative',
+            TypeEvenementSysteme::TRAITEMENT => 'Traitement médical ou vétérinaire',
+            TypeEvenementSysteme::MALADIE => 'Déclaration de maladie chez l\'animal',
+            TypeEvenementSysteme::VENTE => 'Vente d\'un animal',
+            TypeEvenementSysteme::ACHAT => 'Achat d\'un animal',
+            TypeEvenementSysteme::TRANSFERT => 'Transfert d\'un animal vers une autre ferme',
+            TypeEvenementSysteme::DECES => 'Décès d\'un animal',
+            TypeEvenementSysteme::PERTE => 'Perte ou disparition d\'un animal',
+            TypeEvenementSysteme::ABATTAGE => 'Abattage d\'un animal',
+            TypeEvenementSysteme::CONTROLE => 'Contrôle sanitaire régulier',
+            TypeEvenementSysteme::PESSEE => 'Pesée de l\'animal',
+            TypeEvenementSysteme::AUTRE => 'Autre type d\'événement',
+        };
     }
 }

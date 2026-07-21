@@ -23,13 +23,8 @@ class DatabaseSeeder extends Seeder
             SuperAdminSeeder::class,
             TypeEvenementSeeder::class,
             EspeceSeeder::class,
+            EspeceParametreSeeder::class,
             CategorieSeeder::class,
-        ]);
-
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
         ]);
     }
 }

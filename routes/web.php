@@ -19,6 +19,8 @@ use App\Http\Controllers\Admin\NaissanceController;
 use App\Http\Controllers\Admin\MouvementController;
 use App\Http\Controllers\Admin\FinanceTransactionController;
 use App\Http\Controllers\Admin\SanteEvenementController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\ActivityLogController;
 
 Route::prefix('admin')->name('admin.')->group(function () {
 
@@ -60,6 +62,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('users.toggle-active');
         Route::get('/users/search', [UserController::class, 'search'])
             ->name('users.search');
+        Route::get('/users/all', [UserController::class, 'all'])
+            ->name('users.all');
         Route::resource('users', UserController::class);
 
         // ─── Rôles ────────────────────────────────────────────
@@ -67,6 +71,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('roles.trashed');
         Route::patch('/roles/{id}/restore', [RoleController::class, 'restore'])
             ->name('roles.restore');
+        Route::get('/roles/all', [RoleController::class, 'all'])
+            ->name('roles.all');
         Route::resource('roles', RoleController::class);
 
         // ─── Role ↔ Users (AJAX) ──────────────────────────────
@@ -111,17 +117,29 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('animals.lots-by-farm');
         Route::get('/animals/mothers', [AnimalController::class, 'getMothers'])
             ->name('animals.mothers');
+        // Routes pour animaux éligibles aux événements
+        Route::get('/animals/eligible/sanitaire', [AnimalController::class, 'getEligibleForSanitaire'])
+            ->name('animals.eligible.sanitaire');
+        Route::get('/animals/eligible/reproduction', [AnimalController::class, 'getEligibleForReproduction'])
+            ->name('animals.eligible.reproduction');
+        Route::get('/animals/eligible/male', [AnimalController::class, 'getEligibleMales'])
+            ->name('animals.eligible.male');
         // Routes dédiées aux formulaires de création
         Route::get('/animals/create-achat', [AnimalController::class, 'createAchat'])
             ->name('animals.create-achat');
         Route::get('/animals/create-naissance', [AnimalController::class, 'createNaissance'])
             ->name('animals.create-naissance');
+        Route::get('/animals/create-sale', [AnimalController::class, 'createSale'])
+            ->name('animals.create-sale');
         // Route dédiée à l'achat (POST sans {animal}) — doit précéder resource()
         Route::post('/animals/purchase', [AnimalController::class, 'purchase'])
             ->name('animals.purchase');
         // Route dédiée à la naissance (POST sans {animal}) — doit précéder resource()
         Route::post('/animals/naissance', [AnimalController::class, 'naissance'])
             ->name('animals.naissance');
+        // Route dédiée à la vente (POST sans {animal}) — doit précéder resource()
+        Route::post('/animals/sell', [AnimalController::class, 'sell'])
+            ->name('animals.sell');
         // Routes dédiées à l'import cheptel
         Route::get('/animals/import', [AnimalController::class, 'importWizard'])
             ->name('animals.import');
@@ -248,6 +266,30 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/finance/statistiques-globales', [FinanceTransactionController::class, 'statistiquesGlobales'])
             ->name('finance.statistiques-globales');
         Route::resource('finance', FinanceTransactionController::class);
+
+        // ─── Rapports ────────────────────────────────────────
+        Route::get('/rapports', [ReportController::class, 'index'])
+            ->name('rapports.index');
+        Route::get('/rapports/export/animaux', [ReportController::class, 'exportAnimaux'])
+            ->name('rapports.export.animaux');
+        Route::get('/rapports/export/transactions', [ReportController::class, 'exportTransactions'])
+            ->name('rapports.export.transactions');
+        Route::get('/rapports/export/sante-rappels', [ReportController::class, 'exportSanteRappels'])
+            ->name('rapports.export.sante-rappels');
+        Route::get('/rapports/export/naissances', [ReportController::class, 'exportNaissances'])
+            ->name('rapports.export.naissances');
+        Route::get('/rapports/pdf/cheptel', [ReportController::class, 'pdfCheptel'])
+            ->name('rapports.pdf.cheptel');
+        Route::get('/rapports/pdf/sanitaire', [ReportController::class, 'pdfSanitaire'])
+            ->name('rapports.pdf.sanitaire');
+        Route::get('/rapports/pdf/financier', [ReportController::class, 'pdfFinancier'])
+            ->name('rapports.pdf.financier');
+
+        // ─── Logs d'audit ────────────────────────────────────
+        Route::get('/logs', [ActivityLogController::class, 'index'])
+            ->name('logs.index');
+        Route::get('/logs/{modelType}', [ActivityLogController::class, 'parModele'])
+            ->name('logs.par-modele');
     });
 });
 

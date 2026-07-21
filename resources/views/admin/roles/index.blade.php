@@ -4,7 +4,7 @@
 @section('page-title', 'Rôles & Permissions')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('admin/css/roles/index.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/css/shared/table-list.css') }}">
 @endpush
 
 @section('breadcrumb')
@@ -35,124 +35,123 @@
         </div>
     </div>
 
-    {{-- ── Grille des rôles ───────────────────────────────── --}}
+    {{-- ── Table des rôles ──────────────────────────────────── --}}
     @if(!empty($roles) && count($roles) > 0)
 
-        <div class="roles-grid">
-            @foreach($roles as $role)
+        <div class="table-list-card">
+            <div class="table-responsive">
+                <table class="table-list">
+                    <thead>
+                        <tr>
+                            <th>Rôle</th>
+                            <th>Permissions</th>
+                            <th>Utilisateurs</th>
+                            <th>Type</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($roles as $role)
+                            @php
+                                $permissions = $role['permissions'] ?? [];
+                            @endphp
+                            <tr>
+                                {{-- Rôle --}}
+                                <td>
+                                    <div class="table-avatar">
+                                        <div class="table-avatar-icon role">
+                                            <i class="bi bi-shield{{ $role['is_system'] ? '-fill' : '' }}"></i>
+                                        </div>
+                                        <div class="table-avatar-info">
+                                            <div class="table-avatar-name">{{ ucfirst($role['name']) }}</div>
+                                        </div>
+                                    </div>
+                                </td>
 
-                @php
-                    $permissions = $role['permissions'] ?? [];
-                @endphp
-
-                <div class="role-card {{ $role['is_system'] ? 'system' : '' }}">
-
-                    {{-- Header --}}
-                    <div class="role-card-header">
-                        <div class="d-flex align-items-center gap-2">
-
-                            <div class="role-icon {{ $role['is_system'] ? 'system' : '' }}">
-                                <i class="bi bi-shield{{ $role['is_system'] ? '-fill' : '' }}"></i>
-                            </div>
-
-                            <div>
-                                <h3 class="role-name">{{ ucfirst($role['name']) }}</h3>
-
-                                <div class="role-meta">
-                                    <span>{{ count($permissions) }} permission(s)</span>
-
-                                    @if($role['is_system'])
-                                        <span class="system-badge">
-                                            <i class="bi bi-lock-fill"></i> Système
-                                        </span>
+                                {{-- Permissions --}}
+                                <td>
+                                    @if(count($permissions) > 0)
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach(array_slice($permissions, 0, 3) as $perm)
+                                                <span class="table-badge table-badge-info">{{ $perm }}</span>
+                                            @endforeach
+                                            @if(count($permissions) > 3)
+                                                <span class="table-badge table-badge-secondary">+{{ count($permissions) - 3 }}</span>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="text-muted" style="font-size:.78rem">Aucune</span>
                                     @endif
-                                </div>
-                            </div>
+                                </td>
 
-                        </div>
-                    </div>
+                                {{-- Utilisateurs --}}
+                                <td>
+                                    <span class="table-badge table-badge-primary">
+                                        {{ $role['users_count'] }} utilisateur(s)
+                                    </span>
+                                </td>
 
-                    {{-- Permissions preview --}}
-                    <div class="permissions-preview">
-                        <div class="permissions-preview-title">Permissions</div>
+                                {{-- Type --}}
+                                <td>
+                                    @if($role['is_system'])
+                                        <span class="table-badge table-badge-warning">
+                                            <i class="bi bi-lock-fill me-1"></i> Système
+                                        </span>
+                                    @else
+                                        <span class="table-badge table-badge-success">Personnalisé</span>
+                                    @endif
+                                </td>
 
-                        <div class="permissions-tags">
+                                {{-- Actions --}}
+                                <td>
+                                    <div class="table-actions">
+                                        {{-- Voir --}}
+                                        <a href="{{ route('admin.roles.show', $role['id']) }}"
+                                           class="btn-icon"
+                                           title="Voir les détails">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
 
-                            @forelse(array_slice($permissions, 0, 6) as $perm)
-                                <span class="permission-tag">{{ $perm }}</span>
-                            @empty
-                                <span class="text-muted" style="font-size:.78rem">
-                                    Aucune permission
-                                </span>
-                            @endforelse
+                                        @if(!$role['is_system'])
+                                            {{-- Modifier --}}
+                                            <a href="{{ route('admin.roles.edit', $role['id']) }}"
+                                               class="btn-icon"
+                                               title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
 
-                            @if(count($permissions) > 6)
-                                <span class="permission-tag more">
-                                    +{{ count($permissions) - 6 }} autres
-                                </span>
-                            @endif
+                                            {{-- Archiver --}}
+                                            <button type="button"
+                                                    class="btn-icon btn-outline-danger"
+                                                    title="Archiver"
+                                                    @click="deleteRole(
+                                                        '{{ $role['id'] }}',
+                                                        '{{ addslashes($role['name']) }}'
+                                                    )">
+                                                <i class="bi bi-archive"></i>
+                                            </button>
 
-                        </div>
-                    </div>
-
-                    {{-- Footer --}}
-                    <div class="role-card-footer">
-
-                        <div class="role-users-count">
-                            <i class="bi bi-people"></i>
-                            {{ $role['users_count'] }} utilisateur(s)
-                        </div>
-
-                        <div class="role-actions">
-
-                            {{-- Voir --}}
-                            <a href="{{ route('admin.roles.show', $role['id']) }}"
-                               class="btn btn-icon btn-outline-secondary"
-                               title="Voir les détails">
-                                <i class="bi bi-eye"></i>
-                            </a>
-
-                            @if(!$role['is_system'])
-
-                                {{-- Modifier --}}
-                                <a href="{{ route('admin.roles.edit', $role['id']) }}"
-                                   class="btn btn-icon btn-outline-primary"
-                                   title="Modifier">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-
-                                {{-- Archiver --}}
-                                <button type="button"
-                                        class="btn btn-icon btn-outline-danger"
-                                        title="Archiver"
-                                        @click="deleteRole(
-                                            '{{ $role['id'] }}',
-                                            '{{ addslashes($role['name']) }}'
-                                        )">
-                                    <i class="bi bi-archive"></i>
-                                </button>
-
-                                <form id="form-delete-{{ $role['id'] }}"
-                                      method="POST"
-                                      action="{{ route('admin.roles.destroy', $role['id']) }}"
-                                      style="display:none">
-                                    @csrf
-                                    @method('DELETE')
-                                </form>
-
-                            @endif
-
-                        </div>
-                    </div>
-
-                </div>
-            @endforeach
+                                            <form id="form-delete-{{ $role['id'] }}"
+                                                  method="POST"
+                                                  action="{{ route('admin.roles.destroy', $role['id']) }}"
+                                                  style="display:none">
+                                                @csrf
+                                                @method('DELETE')
+                                            </form>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
 
     @else
 
-        <div class="empty-state">
-            <div class="empty-state-icon">
+        <div class="table-empty-state">
+            <div class="table-empty-state-icon">
                 <i class="bi bi-shield"></i>
             </div>
 

@@ -18,6 +18,9 @@ return new class extends Migration
             
             // Ajouter le champ date_fin pour les événements reproductifs
             $table->date('date_fin')->nullable()->after('statut');
+            
+            // Index composite pour les requêtes de validation reproductives
+            $table->index(['animal_id', 'type_evenement_id', 'statut']);
         });
 
         // Ajouter la contrainte check pour le statut (PostgreSQL)

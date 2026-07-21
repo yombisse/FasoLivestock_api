@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recevoir', function (Blueprint $table) {
-            $table->uuid('notification_id');
-            $table->uuid('user_id');
+            $table->string('notification_id', 20);
+            $table->string('user_id', 20);
             $table->boolean('is_read')->default(false);
             $table->timestamp('read_at')->nullable();
             $table->timestamps();

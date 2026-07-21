@@ -5,53 +5,75 @@ namespace App\Services;
 use App\Models\Evenement;
 use App\Models\Transaction;
 use App\Models\Categorie;
+use App\Services\Sync\TransactionDeduplicationService;
 use Illuminate\Support\Facades\DB;
 
 class EvenementTransactionService
 {
+    protected TransactionDeduplicationService $dedupService;
+
+    public function __construct(TransactionDeduplicationService $dedupService)
+    {
+        $this->dedupService = $dedupService;
+    }
+
     /**
      * Crée automatiquement une Transaction SORTIE liée à un Evenement 
-     * ayant un coût, si ce coût est strictement positif. Idempotent : 
-     * ne crée pas de doublon si une Transaction existe déjà pour cet 
-     * evenement_id.
+     * ayant un coût. Idempotent : ne crée pas de doublon si une Transaction 
+     * existe déjà pour cet evenement_id. Le coût peut être 0.
      */
-    public function creerTransactionDepuisEvenement(Evenement $evenement, float $cout, string $libelleCategorieDefaut): ?Transaction
+    public function creerTransactionDepuisEvenement(Evenement $evenement, float $cout, string $libelleCategorieDefaut, ?string $userId = null): ?Transaction
     {
-        if ($cout <= 0) {
-            return null;
-        }
+        // Créer la transaction même si le coût est 0
 
-        // Idempotence : vérifier qu'aucune transaction n'existe déjà pour cet évènement
-        $existante = Transaction::where('evenement_id', $evenement->id)->first();
+        // Idempotence améliorée : vérifier via business key (animal_id + evenement_id + date + type)
+        $transactionData = [
+            'animal_id' => $evenement->animal_id,
+            'evenement_id' => $evenement->id,
+            'date_transaction' => $evenement->date_evenement,
+            'type_transaction' => 'SORTIE',
+        ];
+
+        $existante = $this->dedupService->findDuplicate($transactionData);
         if ($existante) {
-            return $existante;
+            // Transaction existe déjà (probablement créée par mobile), fusionner avec priorité backend
+            return $this->dedupService->merge($existante, array_merge($transactionData, [
+                'montant' => $cout,
+                'version' => $existante->version,
+            ]));
         }
 
         $categorie = Categorie::firstOrCreate(
             ['nom_categorie' => $libelleCategorieDefaut, 'farm_id' => null],
             [
-                'type' => 'charge',
+                'type' => 'DEPENSE',
                 'description' => "Frais liés aux événements de type {$libelleCategorieDefaut}",
                 'sync_status' => 'synced',
                 'version' => 1,
             ]
         );
 
-        return DB::transaction(function () use ($evenement, $cout, $categorie) {
-            return Transaction::create([
-                'farm_id' => $evenement->farm_id,
-                'animal_id' => $evenement->animal_id,
-                'evenement_id' => $evenement->id,
-                'type_transaction' => 'SORTIE',
-                'montant' => $cout,
-                'categorie_id' => $categorie->id,
-                'date_transaction' => $evenement->date_evenement,
-                'description' => "Frais généré automatiquement : {$categorie->nom_categorie}",
-                'user_id' => auth()->id(),
-                'sync_status' => 'synced',
-                'version' => 1,
-            ]);
-        });
+        // NE PAS créer de transaction ici car cette méthode est déjà appelée
+        // depuis une transaction dans SanteEvenementService::store()
+        // La génération du numéro utilise lockForUpdate() qui fonctionne dans la transaction parente
+
+        // Générer le numéro de transaction
+        $numeroTransaction = Transaction::generateNumero();
+
+        return Transaction::create([
+            'farm_id' => $evenement->farm_id,
+            'animal_id' => $evenement->animal_id,
+            'evenement_id' => $evenement->id,
+            'type_transaction' => 'SORTIE',
+            'montant' => $cout,
+            'categorie_id' => $categorie->id,
+            'date_transaction' => $evenement->date_evenement,
+            'description' => "Frais généré automatiquement : {$categorie->nom_categorie}",
+            'user_id' => $userId ?? auth()->id(),
+            'sync_status' => 'synced',
+            'version' => 1,
+            'numero_transaction' => $numeroTransaction,
+        ]);
     }
 
     /**

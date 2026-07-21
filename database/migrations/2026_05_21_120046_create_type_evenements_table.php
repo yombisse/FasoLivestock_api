@@ -12,12 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('type_evenements', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->string('id', 20)->primary();
             $table->string('nom_type')->unique();
             $table->string('description')->nullable();
 
             $table->enum('sync_status', ['pending', 'synced', 'conflict'])->default('synced');
-            $table->foreignUuid('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('last_modified_by', 20)->nullable();
+            $table->foreign('last_modified_by')->references('id')->on('users')->nullOnDelete();
 
             $table->timestamps();
             $table->softDeletes();

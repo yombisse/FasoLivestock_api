@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\Admin\FinanceTransactionApiService;
+use App\Services\Admin\FarmApiService;
 use Illuminate\Http\Request;
 
 class FinanceTransactionController extends Controller
 {
     public function __construct(
-        private FinanceTransactionApiService $financeTransactionApi
+        private FinanceTransactionApiService $financeTransactionApi,
+        private FarmApiService $farmApi
     ) {}
 
     /**
@@ -32,8 +34,12 @@ class FinanceTransactionController extends Controller
             return $this->handleApiError($response);
         }
 
-        // Récupérer le bilan pour affichage en en-tête
-        $bilanResponse = $this->financeTransactionApi->bilan();
+        // Récupérer le bilan pour affichage en en-tête (avec les mêmes filtres)
+        $bilanParams = array_filter([
+            'date_debut' => $request->date_debut,
+            'date_fin' => $request->date_fin,
+        ]);
+        $bilanResponse = $this->financeTransactionApi->bilan($bilanParams);
         $bilan = $bilanResponse->success ? ($bilanResponse->data ?? []) : [];
 
         return view('admin.finance.index', [
@@ -185,16 +191,46 @@ class FinanceTransactionController extends Controller
     /**
      * Bilan financier
      */
-    public function bilan()
+    public function bilan(Request $request)
     {
-        $response = $this->financeTransactionApi->bilan();
+        $bilanParams = array_filter([
+            'date_debut' => $request->date_debut,
+            'date_fin' => $request->date_fin,
+        ]);
+        
+        // Si une ferme est sélectionnée, utiliser l'endpoint par ferme
+        if ($request->farm_id) {
+            $response = $this->financeTransactionApi->bilanParFerme($request->farm_id, $bilanParams);
+            $stats = []; // Pas de stats globales quand on filtre par ferme
+        } else {
+            $response = $this->financeTransactionApi->bilan($bilanParams);
+            
+            // Récupérer les statistiques globales pour plus de détails (seulement si pas de filtre ferme)
+            $statsParams = array_filter([
+                'date_debut' => $request->date_debut,
+                'date_fin' => $request->date_fin,
+            ]);
+            $statsResponse = $this->financeTransactionApi->statistiquesGlobales($statsParams);
+            $stats = $statsResponse->success ? ($statsResponse->data ?? []) : [];
+        }
 
         if (!$response->success) {
             return $this->handleApiError($response);
         }
 
+        // Récupérer les fermes de l'utilisateur pour le filtre
+        $farmsResponse = $this->farmApi->getAll();
+        $farms = $farmsResponse->success ? ($farmsResponse->data['farms'] ?? []) : [];
+
         return view('admin.finance.bilan', [
             'bilan' => $response->data ?? [],
+            'stats' => $stats,
+            'farms' => $farms,
+            'selectedFarm' => $request->farm_id,
+            'filters' => [
+                'date_debut' => $request->date_debut,
+                'date_fin' => $request->date_fin,
+            ],
         ]);
     }
 

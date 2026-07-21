@@ -16,13 +16,13 @@ class AnimalAchatRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'farm_id'               => 'required|uuid|exists:farms,id',
-            'farm_source_id'        => 'nullable|uuid|exists:farms,id',
+            'farm_id'               => 'required|string|min:16|max:20|exists:farms,id',
+            'farm_source_id'        => 'nullable|string|min:16|max:20|exists:farms,id',
             'nom'                   => 'nullable|string|max:255',
             'race'                  => 'nullable|string|max:255',
             'sexe'                  => 'required|in:male,femelle',
-            'espece_id'             => 'nullable|uuid|exists:especes,id',
-            'lot_id'                => 'nullable|uuid|exists:lots,id',
+            'espece_id'             => 'nullable|string|min:16|max:20|exists:especes,id',
+            'lot_id'                => 'nullable|string|min:16|max:20|exists:lots,id',
             'numero_identification' => 'required|string|max:255|unique:animals,numero_identification',
             'poids'                 => 'nullable|numeric|min:0',
             'provenance'            => 'nullable|string|max:255|required_without:farm_source_id',

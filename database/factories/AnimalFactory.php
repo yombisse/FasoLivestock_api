@@ -6,6 +6,7 @@ use App\Models\Animal;
 use App\Models\Farm;
 use App\Models\Espece;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Animal>
@@ -27,13 +28,14 @@ class AnimalFactory extends Factory
     public function definition(): array
     {
         return [
+            'id' => substr(Str::random(20), 0, 20),
             'farm_id' => Farm::factory(),
             'espece_id' => Espece::factory(),
             'nom' => fake()->name(),
             'numero_identification' => 'ANI-' . fake()->unique()->randomNumber(8),
             'sexe' => fake()->randomElement(['male', 'femelle']),
             'date_naissance' => fake()->date(),
-            'statut' => fake()->randomElement(['ACTIF', 'VENDU', 'MORT', 'PERDU']),
+            'statut' => fake()->randomElement(['SAIN', 'VENDU', 'MORT', 'PERDU']),
             'photo' => null,
             'mother_id' => null,
             'naissance_id' => null,

@@ -88,11 +88,25 @@ class UserController extends Controller
         if (!$response->success) {
             return redirect()
                 ->route('admin.users.index')
-                ->with('error', 'Utilisateur introuvable.');
+                ->with('error', 'Utilisateur introuvable: ' . ($response->message ?? 'Erreur inconnue'));
+        }
+
+        $user = $response->data ?? [];
+        
+        // Charger les rôles si non présents
+        if (empty($user['roles'])) {
+            $rolesResponse = $this->roleApi->getAll();
+            $allRoles = $rolesResponse->data['roles'] ?? [];
+            
+            // Filtrer les rôles de l'utilisateur
+            // Note: l'API retourne déjà les rôles dans formatUser, donc ce cas ne devrait pas arriver
+            $user['roles'] = array_filter($allRoles, function($role) use ($user) {
+                return in_array($role['id'], $user['role_ids'] ?? []);
+            });
         }
 
         return view('admin.users.show', [
-            'user' => $response->data ?? [],
+            'user' => $user,
         ]);
     }
 
@@ -208,10 +222,32 @@ class UserController extends Controller
     {
         $response = $this->userApi->getAll([
             'search'   => $request->q,
-            'per_page' => 10,
+            'per_page' => 20,
         ]);
-        $users = $response->success ? ($response->data['users'] ?? []) : [];
-        return response()->json($users);
+
+        if (!$response->success) {
+            return response()->json(['success' => false, 'message' => $response->message], 500);
+        }
+
+        return response()->json($response->data['users'] ?? []);
+    }
+
+    /**
+     * Tous les utilisateurs pour select
+     */
+    public function all(Request $request)
+    {
+        $response = $this->userApi->getAll([
+            'per_page' => 1000,
+        ]);
+
+        if (!$response->success) {
+            return response()->json(['success' => false, 'message' => $response->message], 500);
+        }
+
+        return response()->json([
+            'data' => $response->data['users'] ?? []
+        ]);
     }
 
     // =========================================================
