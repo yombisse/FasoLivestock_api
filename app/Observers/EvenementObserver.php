@@ -117,27 +117,32 @@ class EvenementObserver
         }
 
         // Calculer la date du prochain rappel selon le type
-        $joursIntervalle = null;
+        $datePrev = null;
         switch ($typeRappel) {
             case SanteRappel::TYPE_VACCINATION:
+                // Vaccination : utilise la configuration de l'espèce
                 $joursIntervalle = $especeParametre->intervalle_vaccin_jours;
+                if ($joursIntervalle && $joursIntervalle > 0) {
+                    $datePrev = $evenement->date_evenement->addDays($joursIntervalle);
+                }
                 break;
             case SanteRappel::TYPE_TRAITEMENT:
-                // Pour les traitements, intervalle par défaut de 30 jours (à ajuster selon besoin)
-                $joursIntervalle = 30;
+                // Traitement : utilise la date suggérée dans les métadonnées si fournie
+                if (isset($evenement->metadonnees['date_rappel_suggeree'])) {
+                    $datePrev = \Carbon\Carbon::parse($evenement->metadonnees['date_rappel_suggeree']);
+                }
                 break;
             case SanteRappel::TYPE_CONTROLE:
-                // Pour les contrôles, intervalle par défaut de 90 jours
-                $joursIntervalle = 90;
+                // Contrôle : utilise la date suggérée dans les métadonnées si fournie
+                if (isset($evenement->metadonnees['date_prochain_controle'])) {
+                    $datePrev = \Carbon\Carbon::parse($evenement->metadonnees['date_prochain_controle']);
+                }
                 break;
         }
 
-        if (!$joursIntervalle || $joursIntervalle <= 0) {
+        if (!$datePrev) {
             return;
         }
-
-        // Créer le rappel
-        $datePrev = $evenement->date_evenement->addDays($joursIntervalle);
 
         SanteRappel::create([
             'id' => substr(Str::random(20), 0, 20),

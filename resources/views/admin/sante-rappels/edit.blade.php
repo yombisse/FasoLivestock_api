@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Modifier rappel sanitaire')
 @section('page-title', 'Modifier rappel sanitaire')
@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.sante-rappels.index') }}">Rappels sanitaires</a>
+        <a href="{{ route('admin.sante-rappels.index', ['farm' => $farmId]) }}">Rappels sanitaires</a>
     </li>
     <li class="breadcrumb-item active">Modifier</li>
 @endsection
@@ -19,7 +19,7 @@
 
     <form id="rappel-edit-form"
           method="POST"
-          action="{{ route('admin.sante-rappels.update', $rappel['id']) }}">
+          action="{{ route('admin.sante-rappels.update', ['farm' => $farmId, 'sante_rappel' => $rappel['id']]) }}">
         @csrf
         @method('PUT')
 
@@ -198,7 +198,7 @@
 
             {{-- Actions --}}
             <div class="form-actions">
-                <a href="{{ route('admin.sante-rappels.index') }}"
+                <a href="{{ route('admin.sante-rappels.index', ['farm' => $farmId]) }}"
                    class="btn btn-outline-secondary btn-sm">
                     <i class="bi bi-arrow-left"></i>
                     Annuler

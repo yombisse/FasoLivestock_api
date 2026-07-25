@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Import du cheptel existant')
 
@@ -6,7 +6,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.animals.index') }}">Animaux</a>
+        <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}">Animaux</a>
     </li>
     <li class="breadcrumb-item active">Import</li>
 @endsection
@@ -20,7 +20,7 @@
             <h4 class="mb-0">Import cheptel existant</h4>
             <small class="text-muted">Importez les animaux déjà présents dans votre ferme</small>
         </div>
-        <a href="{{ route('admin.animals.index') }}"
+        <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}"
            class="btn btn-outline-secondary btn-sm">
             ← Retour
         </a>
@@ -39,7 +39,7 @@
     @endif
 
     {{-- Formulaire Alpine.js --}}
-    <form action="{{ route('admin.animals.import.store') }}"
+    <form action="{{ route('admin.animals.import.store', ['farm' => $farmId]) }}"
           method="POST"
           x-data="{
               animaux: [
@@ -58,27 +58,8 @@
           }">
         @csrf
 
-        {{-- Sélection de la ferme --}}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Ferme cible</h5>
-            </div>
-            <div class="card-body">
-                <div class="form-group">
-                    <label class="form-label" for="farm_id">
-                        Ferme <span class="text-danger">*</span>
-                    </label>
-                    <select id="farm_id" name="farm_id" class="form-select" required>
-                        <option value="">Sélectionner une ferme</option>
-                        @foreach($farms as $farm)
-                            <option value="{{ $farm['id'] }}">
-                                {{ $farm['name'] }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-        </div>
+        {{-- Ferme (hidden - from route) --}}
+        <input type="hidden" name="farm_id" value="{{ $farmId }}">
 
         {{-- Tableau des animaux --}}
         <div class="card">
@@ -138,8 +119,8 @@
                                                 x-model="animal.sexe"
                                                 required>
                                             <option value="">—</option>
-                                            <option value="M">Mâle</option>
-                                            <option value="F">Femelle</option>
+                                            <option value="male">Mâle</option>
+                                            <option value="femelle">Femelle</option>
                                         </select>
                                     </td>
 

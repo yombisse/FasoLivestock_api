@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Logs d\'activité')
 @section('page-title', 'Logs d\'activité')
@@ -19,7 +19,7 @@
     {{-- Filtres --}}
     <div class="card mb-3">
         <div class="card-body">
-            <form method="GET" action="{{ route('admin.logs.index') }}">
+            <form method="GET" action="{{ route('admin.logs.index', ['farm' => request()->route('farm')]) }}">
                 <div class="row g-3">
                     <div class="col-md-2">
                         <label class="form-label">Action</label>

@@ -26,6 +26,8 @@ return new class extends Migration
     {
         // Revenir à l'ancienne contrainte sans "mixte"
         DB::statement('ALTER TABLE farms DROP CONSTRAINT IF EXISTS farms_type_elevage_check');
+        // Nettoyer les valeurs 'mixte' avant de restaurer la contrainte restrictive
+        DB::statement("UPDATE farms SET type_elevage = 'autre' WHERE type_elevage = 'mixte'");
         DB::statement("ALTER TABLE farms ADD CONSTRAINT farms_type_elevage_check CHECK (type_elevage IN ('bovin', 'ovin', 'caprin', 'porcin', 'volaille', 'cunicole', 'autre'))");
     }
 };

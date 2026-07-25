@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Détail rappel sanitaire')
 @section('page-title', 'Détail rappel sanitaire')
@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.sante-rappels.index') }}">Rappels sanitaires</a>
+        <a href="{{ route('admin.sante-rappels.index', ['farm' => $farmId]) }}">Rappels sanitaires</a>
     </li>
     <li class="breadcrumb-item active">Détail</li>
 @endsection
@@ -47,7 +47,7 @@
             @if(in_array($statut, ['EN_ATTENTE', 'EN_RETARD']))
             <form id="form-realise"
                   method="POST"
-                  action="{{ route('admin.sante-rappels.marquer-realise', $rappel['id']) }}">
+                  action="{{ route('admin.sante-rappels.marquer-realise', ['farm' => $farmId, 'id' => $rappel['id']]) }}">
                 @csrf
             </form>
             <button type="button"
@@ -57,12 +57,12 @@
                 Marquer réalisé
             </button>
             @endif
-            <a href="{{ route('admin.sante-rappels.edit', $rappel['id']) }}"
+            <a href="{{ route('admin.sante-rappels.edit', ['farm' => $farmId, 'sante_rappel' => $rappel['id']]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-pencil"></i>
                 Modifier
             </a>
-            <a href="{{ route('admin.sante-rappels.index') }}"
+            <a href="{{ route('admin.sante-rappels.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i>
                 Retour
@@ -148,7 +148,7 @@
                     <div class="fw-bold">{{ $rappel['animal']['nom'] ?? '—' }}</div>
                     <small class="text-muted">{{ $rappel['animal']['code'] ?? '' }}</small>
                 </div>
-                <a href="{{ route('admin.animals.show', $rappel['animal']['id']) }}"
+                <a href="{{ route('admin.animals.show', ['farm' => $farmId, 'animal' => $rappel['animal']['id']]) }}"
                    class="btn btn-sm btn-outline-primary ms-auto">
                     <i class="bi bi-eye"></i>
                     Voir la fiche

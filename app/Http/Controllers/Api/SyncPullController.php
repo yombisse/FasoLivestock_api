@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Animal;
 use App\Models\Transaction;
@@ -61,6 +62,7 @@ class SyncPullController extends Controller
             }
 
             // Helper function to categorize changes into created/updated/deleted
+            // Simplified WatermelonDB format: all non-deleted records go to "updated"
             $categorizeChanges = function ($records, $lastSyncAt, $snapshotTime) {
                 $categorized = [
                     'created' => [],
@@ -89,17 +91,21 @@ class SyncPullController extends Controller
                     $recordArray['deleted_at'] = $recordArray['deleted_at'] ?? null;
 
                     // Determine the category based on timestamps
+                    // Deleted records go to "deleted" bucket (unchanged)
                     if ($recordArray['deleted_at'] && 
                         Carbon::parse($recordArray['deleted_at'])->gt($lastSyncAt) && 
                         Carbon::parse($recordArray['deleted_at'])->lte($snapshotTime)) {
-                        $categorized['deleted'][] = $recordArray;
-                    } elseif (Carbon::parse($recordArray['created_at'])->gt($lastSyncAt) && 
-                              Carbon::parse($recordArray['created_at'])->lte($snapshotTime)) {
-                        $categorized['created'][] = $recordArray;
-                    } elseif (Carbon::parse($recordArray['updated_at'])->gt($lastSyncAt) && 
-                              Carbon::parse($recordArray['updated_at'])->lte($snapshotTime)) {
+                        $categorized['deleted'][] = $recordArray['id'];
+                    }
+                    // All non-deleted records modified since lastSyncAt go to "updated" bucket
+                    // (includes both created and updated records - simplified WatermelonDB format)
+                    elseif (($recordArray['updated_at'] && Carbon::parse($recordArray['updated_at'])->gt($lastSyncAt) && 
+                              Carbon::parse($recordArray['updated_at'])->lte($snapshotTime)) ||
+                             ($recordArray['created_at'] && Carbon::parse($recordArray['created_at'])->gt($lastSyncAt) && 
+                              Carbon::parse($recordArray['created_at'])->lte($snapshotTime))) {
                         $categorized['updated'][] = $recordArray;
                     }
+                    // "created" bucket remains empty (simplified WatermelonDB format)
                 }
 
                 return $categorized;
@@ -107,49 +113,32 @@ class SyncPullController extends Controller
 
             $changes = [];
 
-            // Get changes for each business table (filtered by farm_id)
-            $businessTables = [
-                'animals' => Animal::class,
-                'transactions' => Transaction::class,
-                'evenements' => Evenement::class,
-                'lots' => Lot::class,
-                'notifications' => Notification::class,
-                'naissances' => Naissance::class,
-            ];
+            // Wrap all read queries in a transaction with REPEATABLE READ isolation
+            // to guarantee a consistent snapshot view (no concurrent writes during reads)
+            $changes = DB::transaction(function () use ($lastSyncAt, $snapshotTime, $farmId, $userId, $categorizeChanges) {
+                DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+                
+                $changes = [];
 
-            foreach ($businessTables as $tableName => $modelClass) {
-                $records = $modelClass::where('farm_id', $farmId)
-                    ->where(function ($query) use ($lastSyncAt, $snapshotTime) {
-                        $query->where('updated_at', '>', $lastSyncAt)
-                            ->where('updated_at', '<=', $snapshotTime)
-                            ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
-                                $q->where('deleted_at', '>', $lastSyncAt)
-                                  ->where('deleted_at', '<=', $snapshotTime);
-                            });
-                    })
-                    ->withTrashed()
-                    ->get();
+                // Get changes for each business table (filtered by farm_id)
+                $businessTables = [
+                    'animals' => Animal::class,
+                    'transactions' => Transaction::class,
+                    'evenements' => Evenement::class,
+                    'lots' => Lot::class,
+                    'notifications' => Notification::class,
+                    'naissances' => Naissance::class,
+                ];
 
-                $changes[$tableName] = $categorizeChanges($records, $lastSyncAt, $snapshotTime);
-            }
-
-            // Reference tables (no farm_id filter, global changes)
-            // Send ALL records on first sync, only changed records on subsequent syncs
-            $referenceTables = [
-                'especes' => Espece::class,
-                'categories' => Categorie::class,
-                'type_evenements' => TypeEvenement::class,
-            ];
-
-            $isFirstSync = $lastSyncAt->year < 2000; // lastSyncAt = 1970-01-01 indicates first sync
-
-            foreach ($referenceTables as $tableName => $modelClass) {
-                if ($isFirstSync) {
-                    // First sync: send ALL active records (not deleted)
-                    $records = $modelClass::whereNull('deleted_at')->get();
-                } else {
-                    // Subsequent sync: send only changed records
-                    $records = $modelClass::where(function ($query) use ($lastSyncAt, $snapshotTime) {
+                foreach ($businessTables as $tableName => $modelClass) {
+                    Log::info("[SyncPull] Querying table {$tableName}", [
+                        'farm_id' => $farmId,
+                        'lastSyncAt' => $lastSyncAt->toIso8601String(),
+                        'snapshotTime' => $snapshotTime->toIso8601String(),
+                    ]);
+                    
+                    $records = $modelClass::where('farm_id', $farmId)
+                        ->where(function ($query) use ($lastSyncAt, $snapshotTime) {
                             $query->where('updated_at', '>', $lastSyncAt)
                                 ->where('updated_at', '<=', $snapshotTime)
                                 ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
@@ -159,66 +148,133 @@ class SyncPullController extends Controller
                         })
                         ->withTrashed()
                         ->get();
+
+                    Log::info("[SyncPull] Found {$records->count()} records for table {$tableName}");
+                    
+                    // Special logging for evenements to debug vaccination event
+                    if ($tableName === 'evenements') {
+                        Log::info("[SyncPull] Evenements details:", [
+                            'total_count' => $records->count(),
+                            'records' => $records->map(function($r) {
+                                return [
+                                    'id' => $r->id,
+                                    'type_evenement_id' => $r->type_evenement_id,
+                                    'categorie' => $r->categorie,
+                                    'animal_id' => $r->animal_id,
+                                    'updated_at' => $r->updated_at,
+                                    'created_at' => $r->created_at,
+                                ];
+                            })->toArray(),
+                        ]);
+                        
+                        // Also log ALL evenements for this farm regardless of timestamp for debugging
+                        $allEvenements = Evenement::where('farm_id', $farmId)->get();
+                        Log::info("[SyncPull] ALL evenements for farm {$farmId} (debug):", [
+                            'total_count' => $allEvenements->count(),
+                            'records' => $allEvenements->map(function($r) {
+                                return [
+                                    'id' => $r->id,
+                                    'type_evenement_id' => $r->type_evenement_id,
+                                    'animal_id' => $r->animal_id,
+                                    'updated_at' => $r->updated_at,
+                                    'created_at' => $r->created_at,
+                                ];
+                            })->toArray(),
+                        ]);
+                    }
+
+                    $changes[$tableName] = $categorizeChanges($records, $lastSyncAt, $snapshotTime);
                 }
 
-                // Make timestamps visible for categorization (some models hide them)
-                $records->makeVisible(['created_at', 'updated_at', 'deleted_at']);
+                // Reference tables (no farm_id filter, global changes)
+                // Send ALL records on first sync, only changed records on subsequent syncs
+                $referenceTables = [
+                    'especes' => Espece::class,
+                    'categories' => Categorie::class,
+                    'type_evenements' => TypeEvenement::class,
+                ];
 
-                $changes[$tableName] = $categorizeChanges($records, $lastSyncAt, $snapshotTime);
-            }
+                $isFirstSync = $lastSyncAt->year < 2000; // lastSyncAt = 1970-01-01 indicates first sync
 
-            // Farms accessible to the user
-            $farmRecords = Farm::where(function ($query) use ($userId) {
-                    $query->where('owner_id', $userId)
-                        ->orWhereHas('users', function ($q) use ($userId) {
-                            $q->where('user_id', $userId);
-                        });
-                })
-                ->where(function ($query) use ($lastSyncAt, $snapshotTime) {
-                    $query->where('updated_at', '>', $lastSyncAt)
-                        ->where('updated_at', '<=', $snapshotTime)
-                        ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
-                            $q->where('deleted_at', '>', $lastSyncAt)
-                              ->where('deleted_at', '<=', $snapshotTime);
-                        });
-                })
-                ->withTrashed()
-                ->with(['owner', 'users'])
-                ->get();
-
-            $changes['farms'] = $categorizeChanges($farmRecords, $lastSyncAt, $snapshotTime);
-
-            // Farm user pivot table
-            $accessibleFarmIds = Farm::where(function ($query) use ($userId) {
-                    $query->where('owner_id', $userId)
-                        ->orWhereHas('users', function ($q) use ($userId) {
-                            $q->where('user_id', $userId);
-                        });
-                })
-                ->pluck('id')
-                ->toArray();
-
-            $farmUserRecords = \DB::table('farm_user')
-                ->whereIn('farm_id', $accessibleFarmIds)
-                ->where('updated_at', '>', $lastSyncAt)
-                ->where('updated_at', '<=', $snapshotTime)
-                ->get()
-                ->map(function ($record) {
-                    // Convertir les timestamps en format ISO 8601 pour cohérence
-                    $recordArray = (array) $record;
-                    if (isset($recordArray['created_at']) && $recordArray['created_at']) {
-                        $recordArray['created_at'] = Carbon::parse($recordArray['created_at'])->toIso8601String();
+                foreach ($referenceTables as $tableName => $modelClass) {
+                    if ($isFirstSync) {
+                        // First sync: send ALL active records (not deleted)
+                        $records = $modelClass::whereNull('deleted_at')->get();
+                    } else {
+                        // Subsequent sync: send only changed records
+                        $records = $modelClass::where(function ($query) use ($lastSyncAt, $snapshotTime) {
+                                $query->where('updated_at', '>', $lastSyncAt)
+                                    ->where('updated_at', '<=', $snapshotTime)
+                                    ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
+                                        $q->where('deleted_at', '>', $lastSyncAt)
+                                          ->where('deleted_at', '<=', $snapshotTime);
+                                    });
+                            })
+                            ->withTrashed()
+                            ->get();
                     }
-                    if (isset($recordArray['updated_at']) && $recordArray['updated_at']) {
-                        $recordArray['updated_at'] = Carbon::parse($recordArray['updated_at'])->toIso8601String();
-                    }
-                    if (isset($recordArray['deleted_at']) && $recordArray['deleted_at']) {
-                        $recordArray['deleted_at'] = Carbon::parse($recordArray['deleted_at'])->toIso8601String();
-                    }
-                    return $recordArray;
-                });
 
-            $changes['farm_user'] = $categorizeChanges($farmUserRecords->toArray(), $lastSyncAt, $snapshotTime);
+                    // Make timestamps visible for categorization (some models hide them)
+                    $records->makeVisible(['created_at', 'updated_at', 'deleted_at']);
+
+                    $changes[$tableName] = $categorizeChanges($records, $lastSyncAt, $snapshotTime);
+                }
+
+                // Farms accessible to the user
+                $farmRecords = Farm::where(function ($query) use ($userId) {
+                        $query->where('owner_id', $userId)
+                            ->orWhereHas('users', function ($q) use ($userId) {
+                                $q->where('user_id', $userId);
+                            });
+                    })
+                    ->where(function ($query) use ($lastSyncAt, $snapshotTime) {
+                        $query->where('updated_at', '>', $lastSyncAt)
+                            ->where('updated_at', '<=', $snapshotTime)
+                            ->orWhere(function ($q) use ($lastSyncAt, $snapshotTime) {
+                                $q->where('deleted_at', '>', $lastSyncAt)
+                                  ->where('deleted_at', '<=', $snapshotTime);
+                            });
+                    })
+                    ->withTrashed()
+                    ->with(['owner', 'users'])
+                    ->get();
+
+                $changes['farms'] = $categorizeChanges($farmRecords, $lastSyncAt, $snapshotTime);
+
+                // Farm user pivot table
+                $accessibleFarmIds = Farm::where(function ($query) use ($userId) {
+                        $query->where('owner_id', $userId)
+                            ->orWhereHas('users', function ($q) use ($userId) {
+                                $q->where('user_id', $userId);
+                            });
+                    })
+                    ->pluck('id')
+                    ->toArray();
+
+                $farmUserRecords = \DB::table('farm_user')
+                    ->whereIn('farm_id', $accessibleFarmIds)
+                    ->where('updated_at', '>', $lastSyncAt)
+                    ->where('updated_at', '<=', $snapshotTime)
+                    ->get()
+                    ->map(function ($record) {
+                        // Convertir les timestamps en format ISO 8601 pour cohérence
+                        $recordArray = (array) $record;
+                        if (isset($recordArray['created_at']) && $recordArray['created_at']) {
+                            $recordArray['created_at'] = Carbon::parse($recordArray['created_at'])->toIso8601String();
+                        }
+                        if (isset($recordArray['updated_at']) && $recordArray['updated_at']) {
+                            $recordArray['updated_at'] = Carbon::parse($recordArray['updated_at'])->toIso8601String();
+                        }
+                        if (isset($recordArray['deleted_at']) && $recordArray['deleted_at']) {
+                            $recordArray['deleted_at'] = Carbon::parse($recordArray['deleted_at'])->toIso8601String();
+                        }
+                        return $recordArray;
+                    });
+
+                $changes['farm_user'] = $categorizeChanges($farmUserRecords->toArray(), $lastSyncAt, $snapshotTime);
+
+                return $changes;
+            }, 3);
 
             return ApiResponse::success([
                 'changes' => $changes,

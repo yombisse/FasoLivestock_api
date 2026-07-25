@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Rappels sanitaires')
 @section('page-title', 'Rappels sanitaires')
@@ -21,17 +21,17 @@
             <p>Gérez les rappels de vaccination et de traitement</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.sante-rappels.a-venir') }}"
+            <a href="{{ route('admin.sante-rappels.a-venir', ['farm' => $farmId]) }}"
                class="btn btn-outline-info btn-sm">
                 <i class="bi bi-calendar-check"></i>
                 À venir
             </a>
-            <a href="{{ route('admin.sante-rappels.en-retard') }}"
+            <a href="{{ route('admin.sante-rappels.en-retard', ['farm' => $farmId]) }}"
                class="btn btn-outline-danger btn-sm">
                 <i class="bi bi-exclamation-triangle"></i>
                 En retard
             </a>
-            <a href="{{ route('admin.sante-rappels.create') }}"
+            <a href="{{ route('admin.sante-rappels.create', ['farm' => $farmId]) }}"
                class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-lg"></i>
                 Nouveau rappel
@@ -42,7 +42,7 @@
     {{-- ── Filtres ────────────────────────────────────────── --}}
     <form id="filter-form"
           method="GET"
-          action="{{ route('admin.sante-rappels.index') }}">
+          action="{{ route('admin.sante-rappels.index', ['farm' => $farmId]) }}">
         <div class="filters-bar">
 
             {{-- Recherche --}}
@@ -97,7 +97,7 @@
                 <i class="bi bi-funnel"></i> Filtrer
             </button>
 
-            <a href="{{ route('admin.sante-rappels.index') }}" class="btn btn-outline-secondary btn-sm">
+            <a href="{{ route('admin.sante-rappels.index', ['farm' => $farmId]) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-x-lg"></i> Réinitialiser
             </a>
 
@@ -181,12 +181,12 @@
                             </td>
                             <td>
                                 <div class="actions-cell justify-content-end">
-                                    <a href="{{ route('admin.sante-rappels.show', $rappel['id']) }}"
+                                    <a href="{{ route('admin.sante-rappels.show', ['farm' => $farmId, 'sante_rappel' => $rappel['id']]) }}"
                                        class="btn btn-sm btn-outline-primary"
                                        title="Voir">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="{{ route('admin.sante-rappels.edit', $rappel['id']) }}"
+                                    <a href="{{ route('admin.sante-rappels.edit', ['farm' => $farmId, 'sante_rappel' => $rappel['id']]) }}"
                                        class="btn btn-sm btn-outline-secondary"
                                        title="Modifier">
                                         <i class="bi bi-pencil"></i>
@@ -194,7 +194,7 @@
                                     @if(in_array($statut, ['EN_ATTENTE', 'EN_RETARD']))
                                     <form id="form-realise-{{ $rappel['id'] }}"
                                           method="POST"
-                                          action="{{ route('admin.sante-rappels.marquer-realise', $rappel['id']) }}"
+                                          action="{{ route('admin.sante-rappels.marquer-realise', ['farm' => $farmId, 'id' => $rappel['id']]) }}"
                                           style="display: none;">
                                         @csrf
                                     </form>
@@ -207,7 +207,7 @@
                                     @endif
                                     <form id="form-delete-{{ $rappel['id'] }}"
                                           method="POST"
-                                          action="{{ route('admin.sante-rappels.destroy', $rappel['id']) }}"
+                                          action="{{ route('admin.sante-rappels.destroy', ['farm' => $farmId, 'sante_rappel' => $rappel['id']]) }}"
                                           style="display: none;">
                                         @csrf
                                         @method('DELETE')

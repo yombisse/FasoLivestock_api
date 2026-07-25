@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Détail événement sanitaire')
 @section('page-title', 'Détail événement sanitaire')
@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.sante-evenements.index') }}">Événements sanitaires</a>
+        <a href="{{ route('admin.sante-evenements.index', ['farm' => $farmId]) }}">Événements sanitaires</a>
     </li>
     <li class="breadcrumb-item active">Détail</li>
 @endsection
@@ -22,10 +22,10 @@
             <p>Informations sur l'événement sanitaire</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.sante-evenements.index') }}" class="btn btn-outline-secondary btn-sm">
+            <a href="{{ route('admin.sante-evenements.index', ['farm' => $farmId]) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i> Retour
             </a>
-            <a href="{{ route('admin.sante-evenements.edit', $evenement['id']) }}" class="btn btn-primary btn-sm">
+            <a href="{{ route('admin.sante-evenements.edit', ['farm' => $farmId, 'sante_evenement' => $evenement['id']]) }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-pencil-square"></i> Modifier
             </a>
         </div>
@@ -46,7 +46,7 @@
                         <div class="label">Animal</div>
                         <div class="value">
                             @if(!empty($evenement['animal']))
-                                <a href="{{ route('admin.animals.show', $evenement['animal']['id']) }}">
+                                <a href="{{ route('admin.animals.show', ['farm' => $farmId, 'animal' => $evenement['animal']['id']]) }}">
                                     {{ $evenement['animal']['nom'] ?? $evenement['animal']['numero_identification'] ?? '—' }}
                                 </a>
                             @else

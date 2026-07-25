@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.mouvements.index') }}">Mouvements</a>
+        <a href="{{ route('admin.mouvements.index', ['farm' => $farmId]) }}">Mouvements</a>
     </li>
     <li class="breadcrumb-item active">Détail</li>
 @endsection
@@ -47,12 +47,12 @@
             </p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.mouvements.edit', $mouvement['id']) }}"
+            <a href="{{ route('admin.mouvements.edit', ['farm' => $farmId, 'mouvement' => $mouvement['id']]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-pencil"></i>
                 Modifier
             </a>
-            <a href="{{ route('admin.mouvements.index') }}"
+            <a href="{{ route('admin.mouvements.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i>
                 Retour
@@ -124,7 +124,7 @@
                     <div class="fw-bold">{{ $mouvement['animal']['nom'] ?? '—' }}</div>
                     <small class="text-muted">{{ $mouvement['animal']['code'] ?? '' }}</small>
                 </div>
-                <a href="{{ route('admin.animals.show', $mouvement['animal']['id']) }}"
+                <a href="{{ route('admin.animals.show', ['farm' => $farmId, 'animal' => $mouvement['animal']['id']]) }}"
                    class="btn btn-sm btn-outline-primary ms-auto">
                     <i class="bi bi-eye"></i>
                     Voir la fiche

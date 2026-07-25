@@ -84,6 +84,11 @@ return new class extends Migration
                 \DB::table('farm_user')
                     ->where('id', $farmUser->id)
                     ->update(['role' => $roleMapping[$farmUser->role_id_old]]);
+            } else {
+                // Supprimer les enregistrements avec des rôles inconnus
+                \DB::table('farm_user')
+                    ->where('id', $farmUser->id)
+                    ->delete();
             }
         });
 

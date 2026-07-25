@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Gestion des lots')
 @section('page-title', 'Gestion des lots')
@@ -21,12 +21,12 @@
             <p>Gérez les lots d'animaux de vos fermes</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.lots.trashed') }}"
+            <a href="{{ route('admin.lots.trashed', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-archive"></i>
                 Archivés
             </a>
-            <a href="{{ route('admin.lots.create') }}"
+            <a href="{{ route('admin.lots.create', ['farm' => $farmId]) }}"
                class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-lg"></i>
                 Nouveau lot
@@ -37,7 +37,7 @@
     {{-- ── Filtres ────────────────────────────────────────── --}}
     <form id="filter-form"
           method="GET"
-          action="{{ route('admin.lots.index') }}">
+          action="{{ route('admin.lots.index', ['farm' => $farmId]) }}">
         <div class="filters-bar">
 
             {{-- Recherche --}}
@@ -58,7 +58,7 @@
 
             {{-- Reset --}}
             @if(request()->hasAny(['search']))
-            <a href="{{ route('admin.lots.index') }}"
+            <a href="{{ route('admin.lots.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-x-lg"></i>
                 Réinitialiser
@@ -123,21 +123,21 @@
                         <td>
                             <div class="table-actions">
                                 {{-- Voir --}}
-                                <a href="{{ route('admin.lots.show', $lot['id']) }}"
+                                <a href="{{ route('admin.lots.show', ['farm' => $farmId, 'lot' => $lot['id']]) }}"
                                    class="btn-icon"
                                    title="Voir">
                                     <i class="bi bi-eye"></i>
                                 </a>
 
                                 {{-- Modifier --}}
-                                <a href="{{ route('admin.lots.edit', $lot['id']) }}"
+                                <a href="{{ route('admin.lots.edit', ['farm' => $farmId, 'lot' => $lot['id']]) }}"
                                    class="btn-icon"
                                    title="Modifier">
                                     <i class="bi bi-pencil"></i>
                                 </a>
 
                                 {{-- Affecter animaux --}}
-                                <a href="{{ route('admin.lots.assign', $lot['id']) }}"
+                                <a href="{{ route('admin.lots.assign', ['farm' => $farmId, 'id' => $lot['id']]) }}"
                                    class="btn-icon btn-outline-info"
                                    title="Affecter animaux">
                                     <i class="bi bi-box2-heart"></i>
@@ -157,7 +157,7 @@
                                 {{-- Formulaire caché --}}
                                 <form id="form-delete-{{ $lot['id'] }}"
                                       method="POST"
-                                      action="{{ route('admin.lots.destroy', $lot['id']) }}"
+                                      action="{{ route('admin.lots.destroy', ['farm' => $farmId, 'lot' => $lot['id']]) }}"
                                       style="display:none">
                                     @csrf @method('DELETE')
                                 </form>
@@ -174,7 +174,7 @@
                                 </div>
                                 <p>Aucun lot trouvé</p>
                                 @if(request()->hasAny(['search']))
-                                    <a href="{{ route('admin.lots.index') }}"
+                                    <a href="{{ route('admin.lots.index', ['farm' => $farmId]) }}"
                                        class="btn btn-outline-primary btn-sm mt-2">
                                         Réinitialiser les filtres
                                     </a>

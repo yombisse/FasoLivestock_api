@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.systeme')
 
 @section('title', 'Fermes')
 @section('page-title', 'Fermes')
@@ -138,17 +138,12 @@
                             {{-- Actions --}}
                             <td>
                                 <div class="table-actions">
-                                    <a href="{{ route('admin.farms.show', $farm['id']) }}"
-                                       class="btn-icon"
-                                       title="Voir">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
                                     <a href="{{ route('admin.farms.edit', $farm['id']) }}"
                                        class="btn-icon"
                                        title="Modifier">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <a href="{{ route('admin.farms.manage', $farm['id']) }}"
+                                    <a href="{{ route('admin.farms.manage', ['farm' => $farm['id']]) }}"
                                        class="btn-icon btn-outline-info"
                                        title="Administrer">
                                         <i class="bi bi-gear"></i>

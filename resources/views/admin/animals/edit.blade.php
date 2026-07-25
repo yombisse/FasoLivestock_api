@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Modifier ' . $animal['nom'])
 @section('page-title', 'Modifier un animal')
@@ -25,7 +25,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.animals.index') }}">Animaux</a>
+        <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}">Animaux</a>
     </li>
     <li class="breadcrumb-item active">Modifier</li>
 @endsection
@@ -44,14 +44,14 @@
                 Mère : <strong>{{ $animal['mother']['nom'] }}</strong>
             @endif
             <span class="sep">|</span>
-            <small>L'origine n'est pas modifiable ici — voir le module <a href="{{ route('admin.naissances.index') }}" style="color:inherit;text-decoration:underline">Naissances</a>.</small>
+            <small>L'origine n'est pas modifiable ici — voir le module <a href="{{ route('admin.naissances.index', ['farm' => request()->route('farm')]) }}" style="color:inherit;text-decoration:underline">Naissances</a>.</small>
         </div>
     @elseif(isset($animal['origine']) && $animal['origine'] === 'achat')
         <div class="origin-info-bar achat">
             <i class="bi bi-cart-check"></i>
             Origine : <strong>Achat</strong>
             <span class="sep">|</span>
-            <small>Les détails financiers sont dans le module <a href="{{ route('admin.mouvements.index') }}" style="color:inherit;text-decoration:underline">Mouvements</a>.</small>
+            <small>Les détails financiers sont dans le module <a href="{{ route('admin.mouvements.index', ['farm' => request()->route('farm')]) }}" style="color:inherit;text-decoration:underline">Mouvements</a>.</small>
         </div>
     @else
         <div class="origin-info-bar reg">
@@ -270,7 +270,7 @@
 
         {{-- ── Actions ─────────────────────────────────── --}}
         <div class="form-actions">
-            <a href="{{ route('admin.animals.index') }}"
+            <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i>
                 Annuler
@@ -289,6 +289,7 @@
 <script>
     function animalEditForm() {
         return {
+            farmId: '{{ $farmId }}',
             farms: @js($farms),
             lots: @js($lots),
             animal: @js($animal),
@@ -300,7 +301,7 @@
                     this.selectedLot = '';
                     return;
                 }
-                fetch(`{{ route('admin.animals.lots-by-farm') }}?farm_id=${farmId}`)
+                fetch(`/admin/fermes/${farmId}/animals/lots-by-farm`)
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
@@ -314,8 +315,8 @@
 
             init() {
                 // Charger les lots de la ferme actuelle au montage
-                if (this.animal.farm_id) {
-                    this.loadLots(this.animal.farm_id);
+                if (this.farmId) {
+                    this.loadLots(this.farmId);
                 }
             }
         };

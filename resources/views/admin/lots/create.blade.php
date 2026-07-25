@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Nouveau lot')
 @section('page-title', 'Nouveau lot')
@@ -33,32 +33,8 @@
             <div class="form-section-body">
                 <div class="row g-3">
 
-                    {{-- Ferme --}}
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label" for="farm_id">
-                                Ferme <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-with-icon">
-                                <select id="farm_id"
-                                        name="farm_id"
-                                        class="form-select @error('farm_id') is-invalid @enderror"
-                                        required>
-                                    <option value="">Sélectionner une ferme</option>
-                                    @foreach($farms as $farm)
-                                    <option value="{{ $farm['id'] }}"
-                                            {{ old('farm_id') === $farm['id'] ? 'selected' : '' }}>
-                                        {{ $farm['name'] }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                                <i class="bi bi-house field-icon"></i>
-                            </div>
-                            @error('farm_id')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
+                    {{-- Ferme (hidden - from route) --}}
+                    <input type="hidden" name="farm_id" value="{{ $farmId }}">
 
                     {{-- Nom --}}
                     <div class="col-md-6">

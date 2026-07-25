@@ -4,54 +4,29 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\Admin\DashboardApiService;
-use App\Services\Admin\StatisticsApiService;
+use App\Services\Admin\FarmApiService;
 
 class DashboardController extends Controller
 {
     public function __construct(
         private DashboardApiService $dashboardApi,
-        private StatisticsApiService $statisticsApi
+        private FarmApiService $farmApi
     ) {}
 
     public function index()
     {
-        // Récupérer la ferme courante depuis la session
-        $farmId = session('current_farm_id');
-        
-        // Si pas de ferme courante, récupérer la première ferme de l'utilisateur
-        if (empty($farmId)) {
-            $user = auth()->user();
-            if ($user) {
-                $firstFarm = $user->farms()->first();
-                if ($firstFarm) {
-                    $farmId = $firstFarm->id;
-                    session(['current_farm_id' => $farmId]);
-                }
-            }
-        }
-
         // Récupérer les statistiques globales (indépendantes de la ferme)
         $globalResponse = $this->dashboardApi->getGlobalStats();
 
-        // Récupérer les données du tableau de bord (ferme courante)
-        $dashboardResponse = $this->dashboardApi->getDashboard([
-            'current_farm_id' => $farmId,
-        ]);
-
-        // Récupérer les données des graphiques
-        $chartsResponse = $this->statisticsApi->getDashboardCharts([
-            'current_farm_id' => $farmId,
-        ]);
+        // Récupérer la liste des fermes accessibles à l'utilisateur
+        $farmsResponse = $this->farmApi->getAll();
 
         $global = $globalResponse->success ? $globalResponse->data : [];
-        $dashboard = $dashboardResponse->success ? $dashboardResponse->data : [];
-        $charts = $chartsResponse->success ? $chartsResponse->data : [];
+        $farms = $farmsResponse->success ? ($farmsResponse->data['farms'] ?? []) : [];
 
-        return view('admin.dashboard.index', [
+        return view('admin.dashboard.global', [
             'global' => $global,
-            'dashboard' => $dashboard,
-            'charts' => $charts,
-            'current_farm_id' => $farmId,
+            'farms' => $farms,
         ]);
     }
 }

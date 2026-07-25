@@ -15,8 +15,22 @@ class StoreFarmRequest extends FormRequest
 
     public function rules(): array
     {
+        $ownerId = $this->owner_id ?? auth()->id();
+
         return [
-            'name'             => 'required|string|max:255',
+            'name'             => [
+                'required',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) use ($ownerId) {
+                    $exists = \App\Models\Farm::where('name', $value)
+                        ->where('owner_id', $ownerId)
+                        ->exists();
+                    if ($exists) {
+                        $fail('Une ferme avec ce nom existe déjà pour ce propriétaire.');
+                    }
+                },
+            ],
             'location'         => 'nullable|string|max:255',
             'description'      => 'nullable|string',
             'type_elevage'     => 'nullable|in:bovin,ovin,caprin,porcin,volaille,cunicole,mixte,autre',

@@ -44,7 +44,7 @@ class EvenementTransactionService
         }
 
         $categorie = Categorie::firstOrCreate(
-            ['nom_categorie' => $libelleCategorieDefaut, 'farm_id' => null],
+            ['nom_categorie' => $libelleCategorieDefaut],
             [
                 'type' => 'DEPENSE',
                 'description' => "Frais liés aux événements de type {$libelleCategorieDefaut}",

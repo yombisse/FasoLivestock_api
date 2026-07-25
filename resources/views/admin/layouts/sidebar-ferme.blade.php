@@ -1,6 +1,11 @@
 {{-- ═══════════════════════════════════════════════════════
-     FasoLivestock Admin — Sidebar
+     FasoLivestock Admin — Sidebar Ferme
 ═══════════════════════════════════════════════════════ --}}
+
+@php
+$farmId = is_array($farm) ? ($farm['id'] ?? null) : $farm;
+$farmName = is_array($farm) ? ($farm['name'] ?? 'Ferme') : 'Ferme';
+@endphp
 
 <aside id="sidebar">
 
@@ -11,49 +16,34 @@
         </div>
         <div class="sidebar-brand-text">
             FasoLivestock
-            <small>Administration</small>
+            <small>{{ $farmName }}</small>
         </div>
     </a>
 
     {{-- Navigation --}}
     <nav class="sidebar-nav">
 
-        {{-- ── Principal ──────────────────────────────── --}}
-        <div class="nav-section-label">Principal</div>
+        {{-- ── Ferme ───────────────────────────────────── --}}
+        <div class="nav-section-label">{{ $farmName }}</div>
 
-        <a href="{{ route('admin.dashboard') }}"
-           class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+        {{-- Dashboard ferme --}}
+        <a href="{{ $farmId ? route('admin.ferme.dashboard', ['farm' => $farmId]) : '#' }}"
+           class="nav-link {{ request()->routeIs('admin.ferme.dashboard') ? 'active' : '' }}">
             <i class="bi bi-speedometer2 nav-icon"></i>
             Dashboard
         </a>
-        {{-- ── Administration ──────────────────────────── --}}
-        <div class="nav-section-label">Administration</div>
 
-        {{-- Utilisateurs --}}
-        <a href="{{ route('admin.users.index') }}"
-           class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-            <i class="bi bi-people nav-icon"></i>
-            Utilisateurs
+        {{-- Administration --}}
+        <a href="{{ $farmId ? route('admin.farms.manage', ['farm' => $farmId]) : '#' }}"
+           class="nav-link {{ request()->routeIs('admin.farms.manage') ? 'active' : '' }}">
+            <i class="bi bi-gear nav-icon"></i>
+            Administration
         </a>
 
-        {{-- Rôles --}}
-        <a href="{{ route('admin.roles.index') }}"
-           class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
-            <i class="bi bi-shield-check nav-icon"></i>
-            Rôles & Permissions
-        </a>
-        {{-- ── Gestion ─────────────────────────────────── --}}
-        <div class="nav-section-label">Gestion</div>
-
-        {{-- Fermes --}}
-        <a href="{{ route('admin.farms.index') }}"
-           class="nav-link {{ request()->routeIs('admin.farms.*') ? 'active' : '' }}">
-            <i class="bi bi-house-heart nav-icon"></i>
-            Fermes
-        </a>
+        {{-- ── Opérations ─────────────────────────────── --}}
+        <div class="nav-section-label">Opérations</div>
 
         {{-- Animaux avec sous-menu --}}
-        @if(isset($farmId))
         <div x-data="navSubmenu({{ request()->routeIs('admin.animals.*') || request()->routeIs('admin.lots.*') ? 'true' : 'false' }})">
             <button class="nav-link {{ request()->routeIs('admin.animals.*') || request()->routeIs('admin.lots.*') ? 'active' : '' }}"
                     @click="toggle()">
@@ -65,45 +55,42 @@
                  x-transition:enter-start="opacity-0 transform -translate-y-1"
                  x-transition:enter-end="opacity-100 transform translate-y-0"
                  x-cloak>
-                        {{-- Espèces --}}
-                <a href="{{ route('admin.especes.index') }}"
-                    class="nav-link {{ request()->routeIs('admin.especes.*') ? 'active' : '' }}">
-                        <i class="bi bi-tree nav-icon"></i>
-                        Espèces
-                </a>
-                <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}"
+                <a href="{{ $farmId ? route('admin.animals.index', ['farm' => $farmId]) : '#' }}"
                    class="nav-link {{ request()->routeIs('admin.animals.index') ? 'active' : '' }}">
                     <i class="bi bi-list-ul nav-icon"></i>
                     Liste des animaux
                 </a>
-                <a href="{{ route('admin.lots.index', ['farm' => $farmId]) }}"
+                <a href="{{ $farmId ? route('admin.lots.index', ['farm' => $farmId]) : '#' }}"
                    class="nav-link {{ request()->routeIs('admin.lots.*') ? 'active' : '' }}">
                     <i class="bi bi-collection nav-icon"></i>
                     Lots
                 </a>
             </div>
         </div>
-        @endif
 
-        {{-- ── Opérations ─────────────────────────────── --}}
-        <div class="nav-section-label">Opérations</div>
+        {{-- Santé --}}
+        <a href="{{ $farmId ? route('admin.sante-evenements.index', ['farm' => $farmId]) : '#' }}"
+           class="nav-link {{ request()->routeIs('admin.sante-evenements.*', 'admin.sante-rappels.*') ? 'active' : '' }}">
+            <i class="bi bi-heart-pulse nav-icon"></i>
+            Santé
+        </a>
 
         {{-- Reproduction --}}
-        <a href="{{ isset($farmId) ? route('admin.evenements-reproduction.index', ['farm' => $farmId]) : '#' }}"
+        <a href="{{ $farmId ? route('admin.evenements-reproduction.index', ['farm' => $farmId]) : '#' }}"
            class="nav-link {{ request()->routeIs('admin.evenements-reproduction.*', 'admin.naissances.*') ? 'active' : '' }}">
             <i class="bi bi-calendar-event nav-icon"></i>
             Reproduction
         </a>
 
         {{-- Finances --}}
-        <a href="{{ isset($farmId) ? route('admin.finance.index', ['farm' => $farmId]) : '#' }}"
+        <a href="{{ $farmId ? route('admin.finance.index', ['farm' => $farmId]) : '#' }}"
            class="nav-link {{ request()->routeIs('admin.finance.*') ? 'active' : '' }}">
             <i class="bi bi-cash-stack nav-icon"></i>
             Finances
         </a>
 
         {{-- Mouvements --}}
-        <a href="{{ isset($farmId) ? route('admin.mouvements.index', ['farm' => $farmId]) : '#' }}"
+        <a href="{{ $farmId ? route('admin.mouvements.index', ['farm' => $farmId]) : '#' }}"
            class="nav-link {{ request()->routeIs('admin.mouvements.*') ? 'active' : '' }}">
             <i class="bi bi-arrow-left-right nav-icon"></i>
             Mouvements
@@ -113,13 +100,13 @@
         <div class="nav-section-label">Système</div>
 
         {{-- Rapports --}}
-        <a href="{{ isset($farmId) ? route('admin.rapports.index', ['farm' => $farmId]) : '#' }}" class="nav-link {{ request()->routeIs('admin.rapports.*') ? 'active' : '' }}">
+        <a href="{{ $farmId ? route('admin.rapports.index', ['farm' => $farmId]) : '#' }}" class="nav-link {{ request()->routeIs('admin.rapports.*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-bar-graph nav-icon"></i>
             Rapports
         </a>
 
         {{-- Logs --}}
-        <a href="{{ isset($farmId) ? route('admin.logs.index', ['farm' => $farmId]) : '#' }}" class="nav-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
+        <a href="{{ $farmId ? route('admin.logs.index', ['farm' => $farmId]) : '#' }}" class="nav-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
             <i class="bi bi-journal-text nav-icon"></i>
             Logs d'audit
         </a>

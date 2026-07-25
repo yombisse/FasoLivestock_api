@@ -17,7 +17,7 @@ class FinanceTransactionController extends Controller
     /**
      * Liste des transactions
      */
-    public function index(Request $request)
+    public function index(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
@@ -26,6 +26,7 @@ class FinanceTransactionController extends Controller
             'date_fin' => $request->date_fin,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->financeTransactionApi->getAll($params);
@@ -38,14 +39,21 @@ class FinanceTransactionController extends Controller
         $bilanParams = array_filter([
             'date_debut' => $request->date_debut,
             'date_fin' => $request->date_fin,
+            'current_farm_id' => $farm,
         ]);
         $bilanResponse = $this->financeTransactionApi->bilan($bilanParams);
         $bilan = $bilanResponse->success ? ($bilanResponse->data ?? []) : [];
+
+        // Récupérer les données de la ferme pour le banner
+        $farmResponse = app(\App\Services\Admin\FarmApiService::class)->find($farm);
+        $farmData = $farmResponse->success ? $farmResponse->data : null;
 
         return view('admin.finance.index', [
             'transactions' => $response->data['transactions'] ?? [],
             'meta'         => $response->data['meta'] ?? [],
             'bilan'        => $bilan,
+            'farmId'       => $farm,
+            'farm'         => $farmData,
         ]);
     }
 
@@ -191,28 +199,16 @@ class FinanceTransactionController extends Controller
     /**
      * Bilan financier
      */
-    public function bilan(Request $request)
+    public function bilan(Request $request, string $farm)
     {
         $bilanParams = array_filter([
             'date_debut' => $request->date_debut,
             'date_fin' => $request->date_fin,
+            'current_farm_id' => $farm,
         ]);
         
-        // Si une ferme est sélectionnée, utiliser l'endpoint par ferme
-        if ($request->farm_id) {
-            $response = $this->financeTransactionApi->bilanParFerme($request->farm_id, $bilanParams);
-            $stats = []; // Pas de stats globales quand on filtre par ferme
-        } else {
-            $response = $this->financeTransactionApi->bilan($bilanParams);
-            
-            // Récupérer les statistiques globales pour plus de détails (seulement si pas de filtre ferme)
-            $statsParams = array_filter([
-                'date_debut' => $request->date_debut,
-                'date_fin' => $request->date_fin,
-            ]);
-            $statsResponse = $this->financeTransactionApi->statistiquesGlobales($statsParams);
-            $stats = $statsResponse->success ? ($statsResponse->data ?? []) : [];
-        }
+        $response = $this->financeTransactionApi->bilanParFerme($farm, $bilanParams);
+        $stats = []; // Pas de stats globales quand on filtre par ferme
 
         if (!$response->success) {
             return $this->handleApiError($response);
@@ -226,7 +222,8 @@ class FinanceTransactionController extends Controller
             'bilan' => $response->data ?? [],
             'stats' => $stats,
             'farms' => $farms,
-            'selectedFarm' => $request->farm_id,
+            'selectedFarm' => $farm,
+            'farmId' => $farm,
             'filters' => [
                 'date_debut' => $request->date_debut,
                 'date_fin' => $request->date_fin,

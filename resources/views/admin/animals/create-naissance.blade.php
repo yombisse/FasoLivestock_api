@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Enregistrer une naissance')
 @section('page-title', 'Enregistrer une naissance')
@@ -22,14 +22,15 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.animals.index') }}">Animaux</a>
+        <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}">Animaux</a>
     </li>
     <li class="breadcrumb-item active">Naissance</li>
 @endsection
 
 @section('content')
 <div class="form-page fade-in"
-     x-data="animalCreateForm()">
+     x-data="animalCreateForm()"
+     x-init="init()">
 
     <div class="mode-badge naissance">
         <i class="bi bi-heart"></i>
@@ -39,7 +40,7 @@
     <form id="animal-create-form"
           method="POST"
           enctype="multipart/form-data"
-          action="{{ route('admin.animals.naissance') }}">
+          action="{{ route('admin.animals.naissance', ['farm' => $farmId]) }}">
         @csrf
 
         {{-- ── Informations générales de l'animal ─────────────────── --}}
@@ -51,30 +52,8 @@
             <div class="form-section-body">
                 <div class="row g-3">
 
-                    {{-- Ferme --}}
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label" for="farm_id">
-                                Ferme <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-with-icon">
-                                <select id="farm_id" name="farm_id"
-                                        class="form-select @error('farm_id') is-invalid @enderror"
-                                        @change="loadLots($event.target.value)"
-                                        required>
-                                    <option value="">Sélectionner une ferme</option>
-                                    @foreach($farms as $farm)
-                                    <option value="{{ $farm['id'] }}"
-                                            {{ (old('farm_id') ?? ($farm_id ?? null)) === $farm['id'] ? 'selected' : '' }}>
-                                        {{ $farm['name'] }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                                <i class="bi bi-house field-icon"></i>
-                            </div>
-                            @error('farm_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
+                    {{-- Ferme (hidden - from route) --}}
+                    <input type="hidden" name="farm_id" value="{{ $farmId }}">
 
                     {{-- Nom --}}
                     <div class="col-md-6">
@@ -300,7 +279,7 @@
 
         {{-- ── Actions ─────────────────────────────────── --}}
         <div class="form-actions">
-            <a href="{{ route('admin.animals.index') }}"
+            <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i>
                 Annuler
@@ -321,7 +300,8 @@
         window.farmsData = @js($farms);
         window.lotsData = @js($lots);
         window.modeData = 'naissance';
-        window.lotsByFarmUrl = '{{ route('admin.animals.lots-by-farm') }}';
-        window.eligibleMothersUrl = '{{ route('api.animals.eligible.reproduction') }}';
+        window.lotsByFarmUrl = '{{ route('admin.animals.lots-by-farm', ['farm' => $farmId]) }}';
+        window.eligibleMothersUrl = '/api/animals/eligible/reproduction';
+        window.currentFarmId = '{{ $farmId }}';
     </script>
 @endpush

@@ -175,12 +175,16 @@ class AnimalController extends Controller
     {
         $this->authorize('restore', Animal::class);
 
-        $animal = $this->animalService->restore($id);
+        try {
+            $animal = $this->animalService->restore($id);
 
-        return ApiResponse::success(
-            $this->animalService->formatAnimal($animal->load('farm', 'espece', 'lot', 'mother')),
-            'Animal restauré avec succès.'
-        );
+            return ApiResponse::success(
+                $this->animalService->formatAnimal($animal->load('farm', 'espece', 'lot', 'mother')),
+                'Animal restauré avec succès.'
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return ApiResponse::error('Animal introuvable dans la corbeille.', 404);
+        }
     }
 
     // =========================================================
@@ -466,10 +470,17 @@ class AnimalController extends Controller
 
     public function importBatch(ImportAnimalRequest $request): JsonResponse
     {
+        \Log::info('ImportBatch called', [
+            'animaux' => $request->validated('animaux'),
+            'farm_id' => $request->validated('farm_id'),
+        ]);
+
         $resultats = $this->animalService->importBatch(
             $request->validated('animaux'),
             $request->validated('farm_id')
         );
+
+        \Log::info('ImportBatch results', $resultats);
 
         $code = empty($resultats['erreurs']) ? 201 : 207;
 

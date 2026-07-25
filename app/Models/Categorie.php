@@ -17,7 +17,6 @@ class Categorie extends Model
         'nom_categorie',
         'type',
         'description',
-        'farm_id',
         'sync_status',
         'last_modified_by',
         'version',
@@ -42,10 +41,5 @@ class Categorie extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
-    }
-
-    public function farm()
-    {
-        return $this->belongsTo(Farm::class);
     }
 }

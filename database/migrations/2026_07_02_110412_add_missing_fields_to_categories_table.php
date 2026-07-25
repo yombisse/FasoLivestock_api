@@ -21,10 +21,7 @@ return new class extends Migration
             }
             
             $table->text('description')->nullable()->after('type');
-            $table->string('farm_id', 20)->nullable()->after('description');
-            $table->foreign('farm_id')->references('id')->on('farms')->nullOnDelete();
             $table->integer('version')->default(1)->after('last_modified_by');
-            $table->index('farm_id');
         });
     }
 
@@ -34,9 +31,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('categories', function (Blueprint $table) {
-            $table->dropForeign(['farm_id']);
-            $table->dropIndex(['farm_id']);
-            $table->dropColumn(['description', 'farm_id', 'version']);
+            $table->dropColumn(['description', 'version']);
             
             // Ne pas supprimer sync_status et last_modified_by car ils existent dans la migration originale
         });

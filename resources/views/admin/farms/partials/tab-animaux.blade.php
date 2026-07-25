@@ -4,15 +4,15 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">Animaux de cette ferme</h5>
         <div class="btn-group">
-            <a href="{{ route('admin.animals.create') }}?mode=achat&farm_id={{ $farm['id'] }}"
+            <a href="{{ route('admin.animals.create', ['farm' => $farm['id']]) }}?mode=achat"
                class="btn btn-primary btn-sm">
                 <i class="bi bi-cart-plus"></i> Achat
             </a>
-            <a href="{{ route('admin.animals.create') }}?mode=naissance&farm_id={{ $farm['id'] }}"
+            <a href="{{ route('admin.animals.create', ['farm' => $farm['id']]) }}?mode=naissance"
                class="btn btn-success btn-sm">
                 <i class="bi bi-heart"></i> Naissance
             </a>
-            <a href="{{ route('admin.animals.create') }}?mode=import&farm_id={{ $farm['id'] }}"
+            <a href="{{ route('admin.animals.create', ['farm' => $farm['id']]) }}?mode=import"
                class="btn btn-outline-primary btn-sm">
                 <i class="bi bi-box-arrow-in-down"></i> Import
             </a>
@@ -20,7 +20,7 @@
     </div>
 
     {{-- Filtres --}}
-    <form method="GET" action="{{ route('admin.farms.manage', $farm['id']) }}" class="mb-4">
+    <form method="GET" action="{{ route('admin.farms.manage', ['farm' => $farm['id']]) }}" class="mb-4">
         <input type="hidden" name="tab" value="animaux">
         <div class="row g-2 align-items-end">
             <div class="col-md-3">
@@ -67,7 +67,7 @@
                         <i class="bi bi-search"></i> Filtrer
                     </button>
                     @if(request()->hasAny(['search', 'espece_id', 'sexe', 'statut']))
-                        <a href="{{ route('admin.farms.manage', ['id' => $farm['id'], 'tab' => 'animaux']) }}"
+                        <a href="{{ route('admin.farms.manage', ['farm' => $farm['id'], 'tab' => 'animaux']) }}"
                            class="btn btn-outline-secondary btn-sm">
                             <i class="bi bi-x-lg"></i> Réinitialiser
                         </a>
@@ -145,19 +145,19 @@
                             {{-- Actions --}}
                             <td class="text-end">
                                 <div class="actions-cell justify-content-end">
-                                    <a href="{{ route('admin.animals.show', $animal['id']) }}"
+                                    <a href="{{ route('admin.animals.show', ['farm' => $farm['id'], 'animal' => $animal['id']]) }}"
                                        class="btn btn-icon btn-outline-secondary btn-sm"
                                        title="Voir">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="{{ route('admin.animals.edit', $animal['id']) }}"
+                                    <a href="{{ route('admin.animals.edit', ['farm' => $farm['id'], 'animal' => $animal['id']]) }}"
                                        class="btn btn-icon btn-outline-primary btn-sm"
                                        title="Modifier">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form id="form-archive-{{ $animal['id'] }}"
                                           method="POST"
-                                          action="{{ route('admin.animals.destroy', $animal['id']) }}"
+                                          action="{{ route('admin.animals.destroy', ['farm' => $farm['id'], 'animal' => $animal['id']]) }}"
                                           style="display:none">
                                         @csrf @method('DELETE')
                                     </form>
@@ -179,7 +179,7 @@
                                     </div>
                                     <p>Aucun animal trouvé</p>
                                     @if(request()->hasAny(['search', 'espece_id', 'sexe', 'statut']))
-                                        <a href="{{ route('admin.farms.manage', ['id' => $farm['id'], 'tab' => 'animaux']) }}"
+                                        <a href="{{ route('admin.farms.manage', ['farm' => $farm['id'], 'tab' => 'animaux']) }}"
                                            class="btn btn-outline-primary btn-sm mt-2">
                                             Réinitialiser les filtres
                                         </a>

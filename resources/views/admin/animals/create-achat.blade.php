@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Achat d\'un animal')
 @section('page-title', 'Achat d\'un animal')
@@ -22,7 +22,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.animals.index') }}">Animaux</a>
+        <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}">Animaux</a>
     </li>
     <li class="breadcrumb-item active">Achat</li>
 @endsection
@@ -39,7 +39,7 @@
     <form id="animal-create-form"
           method="POST"
           enctype="multipart/form-data"
-          action="{{ route('admin.animals.purchase') }}">
+          action="{{ route('admin.animals.purchase', ['farm' => $farmId]) }}">
         @csrf
 
         {{-- ── Informations générales de l'animal ─────────────────── --}}
@@ -51,30 +51,8 @@
             <div class="form-section-body">
                 <div class="row g-3">
 
-                    {{-- Ferme --}}
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label" for="farm_id">
-                                Ferme <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-with-icon">
-                                <select id="farm_id" name="farm_id"
-                                        class="form-select @error('farm_id') is-invalid @enderror"
-                                        @change="loadLots($event.target.value)"
-                                        required>
-                                    <option value="">Sélectionner une ferme</option>
-                                    @foreach($farms as $farm)
-                                    <option value="{{ $farm['id'] }}"
-                                            {{ (old('farm_id') ?? ($farm_id ?? null)) === $farm['id'] ? 'selected' : '' }}>
-                                        {{ $farm['name'] }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                                <i class="bi bi-house field-icon"></i>
-                            </div>
-                            @error('farm_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
+                    {{-- Ferme (hidden - from route) --}}
+                    <input type="hidden" name="farm_id" value="{{ $farmId }}">
 
                     {{-- Nom --}}
                     <div class="col-md-6">
@@ -210,7 +188,7 @@
                         </div>
                     </div>
 
-                    {{-- Statut --}}
+                    <!-- {{-- Statut --}}
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="form-label" for="statut">Statut</label>
@@ -229,7 +207,7 @@
                             </div>
                             @error('statut') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
-                    </div>
+                    </div> -->
 
                     {{-- Photo --}}
                     <div class="col-md-6">
@@ -294,7 +272,7 @@
                         </div>
                     </div>
 
-                    {{-- Catégorie de transaction --}}
+                    <!-- {{-- Catégorie de transaction --}}
                     <div class="col-md-4">
                         <div class="form-group">
                             <label class="form-label" for="categorie_id">Catégorie de dépense</label>
@@ -313,7 +291,7 @@
                             </div>
                             @error('categorie_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
-                    </div>
+                    </div> -->
 
                     {{-- Source de l'animal --}}
                     <div class="col-md-4">
@@ -374,7 +352,7 @@
 
         {{-- ── Actions ─────────────────────────────────── --}}
         <div class="form-actions">
-            <a href="{{ route('admin.animals.index') }}"
+            <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i>
                 Annuler
@@ -395,6 +373,7 @@
         window.farmsData = @js($farms);
         window.lotsData = @js($lots);
         window.modeData = 'achat';
-        window.lotsByFarmUrl = '{{ route('admin.animals.lots-by-farm') }}';
+        window.farmId = '{{ $farmId }}';
+        window.lotsByFarmUrl = '/admin/fermes/{{ $farmId }}/animals/lots-by-farm';
     </script>
 @endpush

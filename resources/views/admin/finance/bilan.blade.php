@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Bilan financier')
 @section('page-title', 'Bilan financier')
@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.finance.index') }}">Finance</a>
+        <a href="{{ route('admin.finance.index', ['farm' => $farmId]) }}">Finance</a>
     </li>
     <li class="breadcrumb-item active">Bilan</li>
 @endsection
@@ -24,15 +24,15 @@
             <p>Aperçu global des entrées et sorties</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.finance.index') }}" class="btn btn-outline-secondary btn-sm">
+            <a href="{{ route('admin.finance.index', ['farm' => $farmId]) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i> Retour
             </a>
             @if($selectedFarm)
-            <a href="{{ route('admin.rapports.export.transactions', ['farm_id' => $selectedFarm, 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin')]) }}"
+            <a href="{{ route('admin.rapports.export.transactions', ['farm' => $selectedFarm, 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin')]) }}"
                class="btn btn-success btn-sm">
                 <i class="bi bi-file-earmark-excel"></i> Excel
             </a>
-            <a href="{{ route('admin.rapports.pdf.financier', ['farm_id' => $selectedFarm, 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin')]) }}"
+            <a href="{{ route('admin.rapports.pdf.financier', ['farm' => $selectedFarm, 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin')]) }}"
                class="btn btn-danger btn-sm">
                 <i class="bi bi-file-earmark-pdf"></i> PDF
             </a>
@@ -50,19 +50,10 @@
     {{-- ── Filtres ───────────────────────────────────────── --}}
     <div class="card mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ route('admin.finance.bilan') }}">
+            <form method="GET" action="{{ route('admin.finance.bilan', ['farm' => $farmId]) }}">
                 <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Ferme</label>
-                        <select name="farm_id" class="form-select">
-                            <option value="">Toutes les fermes</option>
-                            @foreach($farms as $farm)
-                                <option value="{{ $farm['id'] }}" {{ $selectedFarm == $farm['id'] ? 'selected' : '' }}>
-                                    {{ $farm['name'] }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    {{-- Ferme (hidden - from route) --}}
+                    <input type="hidden" name="farm_id" value="{{ $farmId }}">
                     <div class="col-md-3">
                         <label class="form-label">Date début</label>
                         <input type="date" name="date_debut" class="form-control" value="{{ request('date_debut') }}">
@@ -76,7 +67,7 @@
                             <i class="bi bi-search"></i> Filtrer
                         </button>
                         @if(request()->hasAny(['farm_id', 'date_debut', 'date_fin']))
-                        <a href="{{ route('admin.finance.bilan') }}" class="btn btn-outline-secondary ms-2">
+                        <a href="{{ route('admin.finance.bilan', ['farm' => $farmId]) }}" class="btn btn-outline-secondary ms-2">
                             <i class="bi bi-x-lg"></i> Réinitialiser
                         </a>
                         @endif

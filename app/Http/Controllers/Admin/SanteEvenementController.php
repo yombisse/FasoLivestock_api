@@ -19,25 +19,8 @@ class SanteEvenementController extends Controller
     /**
      * Liste des événements sanitaires
      */
-    public function index(Request $request)
+    public function index(Request $request, string $farm)
     {
-        // Récupérer ou définir current_farm_id (comme DashboardController)
-        $farmId = session('current_farm_id');
-        
-        if (empty($farmId)) {
-            $adminUser = session('admin_user');
-            if ($adminUser && isset($adminUser['id'])) {
-                $user = \App\Models\User::find($adminUser['id']);
-                if ($user) {
-                    $firstFarm = $user->farms()->first();
-                    if ($firstFarm) {
-                        $farmId = $firstFarm->id;
-                        session(['current_farm_id' => $farmId]);
-                    }
-                }
-            }
-        }
-
         $params = [
             'search'   => $request->search,
             'type'     => $request->type,
@@ -46,7 +29,7 @@ class SanteEvenementController extends Controller
             'date_fin' => $request->date_fin,
             'page'     => $request->page,
             'per_page' => 15,
-            'current_farm_id' => $farmId,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->santeApi->getAll($params);
@@ -55,20 +38,27 @@ class SanteEvenementController extends Controller
             return $this->handleApiError($response);
         }
 
+        // Récupérer les données de la ferme pour le banner
+        $farmResponse = app(\App\Services\Admin\FarmApiService::class)->find($farm);
+        $farmData = $farmResponse->success ? $farmResponse->data : null;
+
         return view('admin.sante-evenements.index', [
             'evenements' => $response->data['evenements'] ?? [],
             'meta'       => $response->data['meta'] ?? [],
+            'farmId'     => $farm,
+            'farm'       => $farmData,
         ]);
     }
 
     /**
      * Formulaire création
      */
-    public function create(Request $request)
+    public function create(Request $request, string $farm)
     {
         $farmsResponse = $this->farmApiService->getAll();
 
         return view('admin.sante-evenements.create', [
+            'farmId' => $farm,
             'farms' => $farmsResponse->success ? ($farmsResponse->data['farms'] ?? []) : [],
         ]);
     }
@@ -76,11 +66,11 @@ class SanteEvenementController extends Controller
     /**
      * Enregistrer un événement sanitaire
      */
-    public function store(Request $request)
+    public function store(Request $request, string $farm)
     {
         // Ajouter current_farm_id pour l'API
         $data = $request->all();
-        $data['current_farm_id'] = $request->input('farm_id');
+        $data['current_farm_id'] = $farm;
 
         $response = $this->santeApi->create($data);
 
@@ -104,50 +94,52 @@ class SanteEvenementController extends Controller
         }
 
         return redirect()
-            ->route('admin.sante-evenements.index')
+            ->route('admin.sante-evenements.index', ['farm' => $farm])
             ->with('success', 'Événement sanitaire créé avec succès.');
     }
 
     /**
      * Détail d'un événement sanitaire
      */
-    public function show(string $id)
+    public function show(string $farm, string $id)
     {
         $response = $this->santeApi->find($id);
 
         if (!$response->success) {
             return redirect()
-                ->route('admin.sante-evenements.index')
+                ->route('admin.sante-evenements.index', ['farm' => $farm])
                 ->with('error', 'Événement sanitaire introuvable.');
         }
 
         return view('admin.sante-evenements.show', [
             'evenement' => $response->data ?? [],
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Formulaire édition
      */
-    public function edit(string $id)
+    public function edit(string $farm, string $id)
     {
         $response = $this->santeApi->find($id);
 
         if (!$response->success) {
             return redirect()
-                ->route('admin.sante-evenements.index')
+                ->route('admin.sante-evenements.index', ['farm' => $farm])
                 ->with('error', 'Événement sanitaire introuvable.');
         }
 
         return view('admin.sante-evenements.edit', [
             'evenement' => $response->data ?? [],
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Mettre à jour un événement sanitaire
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $farm, string $id)
     {
         $response = $this->santeApi->update($id, $request->all());
 
@@ -159,19 +151,19 @@ class SanteEvenementController extends Controller
         }
 
         return redirect()
-            ->route('admin.sante-evenements.index')
+            ->route('admin.sante-evenements.index', ['farm' => $farm])
             ->with('success', 'Événement sanitaire mis à jour avec succès.');
     }
 
     /**
      * Archiver un événement sanitaire
      */
-    public function destroy(string $id)
+    public function destroy(string $farm, string $id)
     {
         $response = $this->santeApi->deleteEvenement($id);
 
         return redirect()
-            ->route('admin.sante-evenements.index')
+            ->route('admin.sante-evenements.index', ['farm' => $farm])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success
@@ -183,12 +175,13 @@ class SanteEvenementController extends Controller
     /**
      * Événements sanitaires archivés
      */
-    public function trashed(Request $request)
+    public function trashed(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->santeApi->trashed($params);
@@ -200,18 +193,19 @@ class SanteEvenementController extends Controller
         return view('admin.sante-evenements.trashed', [
             'evenements' => $response->data['evenements'] ?? [],
             'meta'       => $response->data['meta'] ?? [],
+            'farmId'     => $farm,
         ]);
     }
 
     /**
      * Restaurer un événement sanitaire archivé
      */
-    public function restore(string $id)
+    public function restore(string $farm, string $id)
     {
         $response = $this->santeApi->restore($id);
 
         return redirect()
-            ->route('admin.sante-evenements.index')
+            ->route('admin.sante-evenements.index', ['farm' => $farm])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success
@@ -223,9 +217,9 @@ class SanteEvenementController extends Controller
     /**
      * Statistiques sanitaires
      */
-    public function statistiques()
+    public function statistiques(string $farm)
     {
-        $response = $this->santeApi->statistiques();
+        $response = $this->santeApi->statistiques(['current_farm_id' => $farm]);
 
         if (!$response->success) {
             return $this->handleApiError($response);
@@ -233,6 +227,7 @@ class SanteEvenementController extends Controller
 
         return view('admin.sante-evenements.statistiques', [
             'statistiques' => $response->data ?? [],
+            'farmId' => $farm,
         ]);
     }
 

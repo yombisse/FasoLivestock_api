@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Détails Naissance')
 
@@ -7,7 +7,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <h1>Détails Naissance</h1>
-            <a href="{{ route('admin.naissances.index') }}" class="btn btn-secondary">
+            <a href="{{ route('admin.naissances.index', ['farm' => $farmId]) }}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Retour
             </a>
         </div>
@@ -56,10 +56,10 @@
                     </div>
 
                     <div class="mt-4">
-                        <a href="{{ route('admin.naissances.edit', $naissance->id) }}" class="btn btn-warning">
+                        <a href="{{ route('admin.naissances.edit', ['farm' => $farmId, 'naissance' => $naissance->id]) }}" class="btn btn-warning">
                             <i class="bi bi-pencil"></i> Modifier
                         </a>
-                        <form method="POST" action="{{ route('admin.naissances.destroy', $naissance->id) }}" style="display: inline;">
+                        <form method="POST" action="{{ route('admin.naissances.destroy', ['farm' => $farmId, 'naissance' => $naissance->id]) }}" style="display: inline;">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette naissance ?')">

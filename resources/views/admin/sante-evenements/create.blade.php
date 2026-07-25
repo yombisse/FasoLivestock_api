@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Créer un événement sanitaire')
 @section('page-title', 'Créer un événement sanitaire')
@@ -59,7 +59,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.sante-evenements.index') }}">Événements sanitaires</a>
+        <a href="{{ route('admin.sante-evenements.index', ['farm' => $farmId]) }}">Événements sanitaires</a>
     </li>
     <li class="breadcrumb-item active">Créer un événement</li>
 @endsection
@@ -67,7 +67,7 @@
 @section('content')
 <div class="form-page fade-in"
      x-data="santeEvenementForm()"
-     x-init="initForm()">
+     x-init="initForm(); $watch('type', value => loadEligibleAnimals(farmId))">
 
     {{-- Tabs pour le type d'événement --}}
     <div class="type-tabs">
@@ -103,7 +103,7 @@
 
     <form id="sante-evenement-form"
           method="POST"
-          action="{{ route('admin.sante-evenements.store') }}">
+          action="{{ route('admin.sante-evenements.store', ['farm' => $farmId]) }}">
         @csrf
         <input type="hidden" name="type" x-model="type">
 
@@ -116,27 +116,8 @@
             <div class="form-section-body">
                 <div class="row g-3">
 
-                    {{-- Ferme --}}
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label" for="farm_id">
-                                Ferme <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-with-icon">
-                                <select id="farm_id" name="farm_id"
-                                        class="form-select @error('farm_id') is-invalid @enderror"
-                                        @change="loadEligibleAnimals($event.target.value)"
-                                        required>
-                                    <option value="">Sélectionner une ferme</option>
-                                    <template x-for="farm in farms" :key="farm.id">
-                                        <option :value="farm.id" x-text="farm.name"></option>
-                                    </template>
-                                </select>
-                                <i class="bi bi-house field-icon"></i>
-                            </div>
-                            @error('farm_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
+                    {{-- Ferme (hidden - from route) --}}
+                    <input type="hidden" name="farm_id" value="{{ $farmId }}">
 
                     {{-- Date de l'événement --}}
                     <div class="col-md-6">
@@ -426,7 +407,7 @@
 
         {{-- ── Actions ─────────────────────────────────────────── --}}
         <div class="form-actions">
-            <a href="{{ route('admin.sante-evenements.index') }}"
+            <a href="{{ route('admin.sante-evenements.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i>
                 Annuler
@@ -451,8 +432,9 @@
                     'TRAITEMENT': 'Traitement',
                     'MALADIE': 'Maladie',
                     'CONTROLE': 'Contrôle',
+                    'CONSULTATION': 'Contrôle',
                 },
-                farms: @js($farms),
+                farmId: '{{ $farmId }}',
                 selectedFarmId: null,
                 eligibleAnimals: [],
                 loadingAnimals: false,
@@ -465,9 +447,16 @@
                     // Initialize type from URL parameter if provided
                     const urlParams = new URLSearchParams(window.location.search);
                     const typeParam = urlParams.get('type');
-                    if (typeParam && this.typeLabels[typeParam]) {
-                        this.type = typeParam;
+                    if (typeParam) {
+                        // Map CONSULTATION to CONTROLE
+                        if (typeParam === 'CONSULTATION') {
+                            this.type = 'CONTROLE';
+                        } else if (this.typeLabels[typeParam]) {
+                            this.type = typeParam;
+                        }
                     }
+                    // Load eligible animals for the current farm
+                    await this.loadEligibleAnimals(this.farmId);
                 },
 
                 async loadEligibleAnimals(farmId) {
@@ -479,7 +468,7 @@
 
                     this.loadingAnimals = true;
                     try {
-                        const response = await fetch('/admin/animals/eligible/sanitaire?farm_id=' + farmId + '&type_evenement=' + this.type, {
+                        const response = await fetch('/admin/fermes/' + farmId + '/animals/eligible/sanitaire?type_evenement=' + this.type, {
                             headers: {
                                 'Accept': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest'

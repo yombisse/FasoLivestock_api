@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Historique animal')
 @section('page-title', 'Historique animal')
@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.mouvements.index') }}">Mouvements</a>
+        <a href="{{ route('admin.mouvements.index', ['farm' => $farmId]) }}">Mouvements</a>
     </li>
     <li class="breadcrumb-item active">Historique animal</li>
 @endsection
@@ -24,7 +24,7 @@
             <p>Historique complet des mouvements de cet animal</p>
         </div>
         @if(isset($animal['id']))
-        <a href="{{ route('admin.animals.show', $animal['id']) }}"
+        <a href="{{ route('admin.animals.show', ['farm' => $farmId, 'animal' => $animal['id']]) }}"
            class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i>
             Retour à la fiche animal

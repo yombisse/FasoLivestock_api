@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Détail lot')
 @section('page-title', 'Détail lot')
@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.lots.index') }}">Lots</a>
+        <a href="{{ route('admin.lots.index', ['farm' => $farmId]) }}">Lots</a>
     </li>
     <li class="breadcrumb-item active">Détail</li>
 @endsection
@@ -22,13 +22,13 @@
             <p>Informations détaillées du lot</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.lots.index') }}" class="btn btn-outline-secondary btn-sm">
+            <a href="{{ route('admin.lots.index', ['farm' => $farmId]) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i> Retour
             </a>
-            <a href="{{ route('admin.lots.assign', $lot['id']) }}" class="btn btn-info btn-sm">
+            <a href="{{ route('admin.lots.assign', ['farm' => $farmId, 'lot' => $lot['id']]) }}" class="btn btn-info btn-sm">
                 <i class="bi bi-box2-heart"></i> Affecter animaux
             </a>
-            <a href="{{ route('admin.lots.edit', $lot['id']) }}" class="btn btn-primary btn-sm">
+            <a href="{{ route('admin.lots.edit', ['farm' => $farmId, 'lot' => $lot['id']]) }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-pencil-square"></i> Modifier
             </a>
         </div>
@@ -125,7 +125,7 @@
                                 </span>
                             </td>
                             <td class="text-end">
-                                <a href="{{ route('admin.animals.show', $animal['id']) }}"
+                                <a href="{{ route('admin.animals.show', ['farm' => $farmId, 'animal' => $animal['id']]) }}"
                                    class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-eye"></i> Voir
                                 </a>

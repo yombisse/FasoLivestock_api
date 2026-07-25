@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Mouvements')
 @section('page-title', 'Mouvements')
@@ -21,18 +21,20 @@
             <p>Historique des mouvements du cheptel</p>
         </div>
             <div class="d-flex gap-2">
-                <a href="{{ route('admin.mouvements.statistiques') }}"
+                @if(isset($farm_id))
+                <a href="{{ route('admin.mouvements.statistiques', ['farm' => $farm_id]) }}"
                    class="btn btn-outline-info btn-sm">
                     <i class="bi bi-bar-chart"></i>
                     Statistiques
                 </a>
+                @endif
             </div>
     </div>
 
     {{-- ── Filtres ────────────────────────────────────────── --}}
     <form id="filter-form"
           method="GET"
-          action="{{ route('admin.mouvements.index') }}">
+          action="{{ isset($farm_id) ? route('admin.mouvements.index', ['farm' => $farm_id]) : '#' }}">
         <div class="filters-bar">
 
             {{-- Recherche --}}
@@ -74,7 +76,7 @@
                 <i class="bi bi-funnel"></i> Filtrer
             </button>
 
-            <a href="{{ route('admin.mouvements.index') }}" class="btn btn-outline-secondary btn-sm">
+            <a href="{{ isset($farm_id) ? route('admin.mouvements.index', ['farm' => $farm_id]) : '#' }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-x-lg"></i> Réinitialiser
             </a>
 
@@ -167,17 +169,19 @@
                             </td>
                             <td>
                                 <div class="table-actions">
-                                    <a href="{{ route('admin.mouvements.show', $mouvement['id']) }}"
+                                    @if(isset($farm_id))
+                                    <a href="{{ route('admin.mouvements.show', ['farm' => $farm_id, 'mouvement' => $mouvement['id']]) }}"
                                        class="btn-icon"
                                        title="Voir">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                     @if(isset($mouvement['animal']))
-                                    <a href="{{ route('admin.mouvements.animal-history', $mouvement['animal']['id']) }}"
+                                    <a href="{{ route('admin.mouvements.animal-history', ['farm' => $farm_id, 'animalId' => $mouvement['animal']['id']]) }}"
                                        class="btn-icon btn-outline-info"
                                        title="Historique animal">
                                         <i class="bi bi-clock-history"></i>
                                     </a>
+                                    @endif
                                     @endif
                                 </div>
                             </td>

@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Événements Reproduction')
 @section('page-title', 'Événements Reproduction')
@@ -62,19 +62,19 @@
                     <div class="d-flex gap-2 align-items-center">
                         <ul class="nav nav-pills mb-0 gap-2">
                             <li class="nav-item">
-                                <a class="nav-link bg-danger text-white" href="{{ route('admin.evenements-reproduction.create') }}?type=SAILLIE">
+                                <a class="nav-link bg-danger text-white" href="{{ route('admin.evenements-reproduction.create', ['farm' => $farmId]) }}?type=SAILLIE">
                                     <i class="bi bi-heart-pulse me-1"></i>
                                     Saillie
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link bg-warning text-dark" href="{{ route('admin.evenements-reproduction.create') }}?type=GESTATION">
+                                <a class="nav-link bg-warning text-dark" href="{{ route('admin.evenements-reproduction.create', ['farm' => $farmId]) }}?type=GESTATION">
                                     <i class="bi bi-calendar-check me-1"></i>
                                     Gestation
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link bg-success text-white" href="{{ route('admin.evenements-reproduction.create') }}?type=MISE_BAS">
+                                <a class="nav-link bg-success text-white" href="{{ route('admin.evenements-reproduction.create', ['farm' => $farmId]) }}?type=MISE_BAS">
                                     <i class="bi bi-baby me-1"></i>
                                     Mise bas
                                 </a>
@@ -126,11 +126,11 @@
                                                 </span>
                                             </td>
                                             <td class="actions">
-                                                <a href="{{ route('admin.evenements-reproduction.show', $evenement['id']) }}" 
+                                                <a href="{{ route('admin.evenements-reproduction.show', ['farm' => $farmId, 'evenements_reproduction' => $evenement['id']]) }}"
                                                    class="btn btn-icon btn-outline-primary" title="Voir">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a href="{{ route('admin.evenements-reproduction.edit', $evenement['id']) }}" 
+                                                <a href="{{ route('admin.evenements-reproduction.edit', ['farm' => $farmId, 'evenements_reproduction' => $evenement['id']]) }}"
                                                    class="btn btn-icon btn-outline-warning" title="Modifier">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>

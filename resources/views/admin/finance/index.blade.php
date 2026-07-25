@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Gestion des transactions')
 @section('page-title', 'Gestion des transactions')
@@ -21,22 +21,22 @@
             <p>Suivez vos revenus et dépenses</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.finance.bilan') }}"
+            <a href="{{ route('admin.finance.bilan', ['farm' => $farmId]) }}"
                class="btn btn-outline-success btn-sm">
                 <i class="bi bi-graph-up"></i>
                 Bilan
             </a>
-            <a href="{{ route('admin.animals.purchase') }}"
+            <a href="{{ route('admin.animals.purchase', ['farm' => $farmId]) }}"
                class="btn btn-primary btn-sm">
                 <i class="bi bi-cart-plus"></i>
                 Acheter animal
             </a>
-            <a href="{{ route('admin.animals.create-sale') }}"
+            <a href="{{ route('admin.animals.create-sale', ['farm' => $farmId]) }}"
                class="btn btn-danger btn-sm">
                 <i class="bi bi-cart-x"></i>
                 Vendre animal
             </a>
-            <a href="{{ route('admin.finance.create') }}"
+            <a href="{{ route('admin.finance.create', ['farm' => $farmId]) }}"
                class="btn btn-outline-primary btn-sm">
                 <i class="bi bi-plus-lg"></i>
                 Nouvelle transaction
@@ -73,7 +73,7 @@
     {{-- ── Filtres ────────────────────────────────────────── --}}
     <form id="filter-form"
           method="GET"
-          action="{{ route('admin.finance.index') }}">
+          action="{{ route('admin.finance.index', ['farm' => $farmId]) }}">
         <div class="filters-bar">
 
             {{-- Recherche --}}
@@ -116,7 +116,7 @@
 
             {{-- Reset --}}
             @if(request()->hasAny(['search', 'type_transaction', 'date_debut', 'date_fin']))
-            <a href="{{ route('admin.finance.index') }}"
+            <a href="{{ route('admin.finance.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-x-lg"></i>
                 Réinitialiser
@@ -180,14 +180,14 @@
                         <td>
                             <div class="table-actions">
                                 {{-- Voir --}}
-                                <a href="{{ route('admin.finance.show', $transaction['id']) }}"
+                                <a href="{{ route('admin.finance.show', ['farm' => $farmId, 'finance' => $transaction['id']]) }}"
                                    class="btn-icon"
                                    title="Voir">
                                     <i class="bi bi-eye"></i>
                                 </a>
 
                                 {{-- Modifier --}}
-                                <a href="{{ route('admin.finance.edit', $transaction['id']) }}"
+                                <a href="{{ route('admin.finance.edit', ['farm' => $farmId, 'finance' => $transaction['id']]) }}"
                                    class="btn-icon"
                                    title="Modifier">
                                     <i class="bi bi-pencil"></i>
@@ -207,7 +207,7 @@
                                 {{-- Formulaire caché --}}
                                 <form id="form-delete-{{ $transaction['id'] }}"
                                       method="POST"
-                                      action="{{ route('admin.finance.destroy', $transaction['id']) }}"
+                                      action="{{ route('admin.finance.destroy', ['farm' => $farmId, 'finance' => $transaction['id']]) }}"
                                       style="display:none">
                                     @csrf @method('DELETE')
                                 </form>
@@ -224,7 +224,7 @@
                                 </div>
                                 <p>Aucune transaction trouvée</p>
                                 @if(request()->hasAny(['search', 'type_transaction', 'date_debut', 'date_fin']))
-                                    <a href="{{ route('admin.finance.index') }}"
+                                    <a href="{{ route('admin.finance.index', ['farm' => $farmId]) }}"
                                        class="btn btn-outline-primary btn-sm mt-2">
                                         Réinitialiser les filtres
                                     </a>

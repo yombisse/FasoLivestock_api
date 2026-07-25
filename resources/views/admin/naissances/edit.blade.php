@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Modifier Naissance')
 
@@ -7,7 +7,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <h1>Modifier Naissance</h1>
-            <a href="{{ route('admin.naissances.index') }}" class="btn btn-secondary">
+            <a href="{{ route('admin.naissances.index', ['farm' => request()->route('farm')]) }}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Retour
             </a>
         </div>
@@ -20,7 +20,7 @@
                     <h5 class="card-title mb-0">Modifier les informations de naissance</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('admin.naissances.update', $naissance->id) }}">
+                    <form method="POST" action="{{ route('admin.naissances.update', ['farm' => request()->route('farm'), 'naissance' => $naissance->id]) }}">
                         @csrf
                         @method('PUT')
                         

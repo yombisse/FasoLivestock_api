@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\FarmMembershipService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\Permission\Models\Role;  
 
 class FarmController extends Controller
 {
@@ -126,11 +127,13 @@ class FarmController extends Controller
         ]);
 
         // Attacher le owner dans farm_user avec le rôle owner
-        $farm->users()->attach($ownerId, ['role' => 'owner']);
+        $ownerRole =Role::where('name', 'owner')->where('guard_name', 'api')->first();
+        $farm->users()->attach($ownerId, ['role_id' => $ownerRole->id]);
 
         // Si l'utilisateur connecté n'est pas le owner, l'attacher avec un rôle par défaut (manager)
         if ($ownerId !== $user->id) {
-            $farm->users()->attach($user->id, ['role' => 'manager']);
+            $managerRole =Role::where('name', 'manager')->where('guard_name', 'api')->first();
+            $farm->users()->attach($user->id, ['role_id' => $managerRole->id]);
         }
 
         // Attacher les autres utilisateurs si fournis
@@ -320,7 +323,7 @@ class FarmController extends Controller
                 'id'    => $u->id,
                 'name'  => $u->name,
                 'email' => $u->email,
-                'role'  => $u->pivot->role,
+                'role_id' => $u->pivot->role_id,
             ]);
             $data['lots_count'] = $farm->lots_count ?? 0;
         }

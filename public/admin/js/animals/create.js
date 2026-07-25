@@ -7,9 +7,17 @@ function animalCreateForm() {
         farms: window.farmsData || [],
         lots: window.lotsData || [],
         mode: window.modeData || 'enregistrement',
-        selectedFarmId: null,
+        selectedFarmId: window.currentFarmId || null,
         eligibleMothers: [],
         loadingMothers: false,
+
+        init() {
+            // Initialize with current farm ID if available
+            if (window.currentFarmId) {
+                this.selectedFarmId = window.currentFarmId;
+                this.loadLots(window.currentFarmId);
+            }
+        },
 
         isMode(mode) {
             return this.mode === mode;

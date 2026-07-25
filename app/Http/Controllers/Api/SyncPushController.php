@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Models\Animal;
 use App\Models\Transaction;
@@ -419,6 +420,37 @@ class SyncPushController extends Controller
                             'data_keys' => array_keys($recordData),
                         ]);
 
+                        // Validate required fields for create operations
+                        if ($action === 'create') {
+                            $validationRules = $this->getValidationRules($table);
+                            if ($validationRules) {
+                                $validator = Validator::make($recordData, $validationRules);
+                                if ($validator->fails()) {
+                                    Log::warning('SYNC/PUSH - Validation failed', [
+                                        'table' => $table,
+                                        'record_id' => $recordData['id'] ?? null,
+                                        'errors' => $validator->errors()->toArray(),
+                                    ]);
+                                    DB::statement("ROLLBACK TO SAVEPOINT {$savepointName}");
+                                    $reason = 'Validation failed: ' . implode(', ', $validator->errors()->all());
+                                    $moduleResults[$table]['rejected'][] = [
+                                        'id' => $recordData['id'] ?? null,
+                                        'reason' => $reason,
+                                        'code' => self::ERROR_CODE_VALIDATION_ERROR,
+                                        'errors' => $validator->errors()->toArray(),
+                                    ];
+                                    $rejectedItems[] = [
+                                        'module' => $table,
+                                        'record_id' => $recordData['id'] ?? null,
+                                        'farm_id' => $farmId,
+                                        'reason' => $reason,
+                                        'payload_snapshot' => $recordData,
+                                    ];
+                                    continue;
+                                }
+                            }
+                        }
+
                         // Process the change with idempotence (updateOrCreate)
                         $result = $this->processChangeWithIdempotence($table, $action, $recordData, $userId);
 
@@ -744,6 +776,24 @@ class SyncPushController extends Controller
                         }
                     }
 
+                    // Pour les animaux avec origine='achat', utiliser EvenementMouvementService::achat()
+                    // pour créer automatiquement la transaction et l'événement ACHAT
+                    if ($table === 'animals' && isset($data['origine']) && $data['origine'] === 'achat') {
+                        $evenementMouvementService = app(\App\Services\EvenementMouvementService::class);
+                        $record = $evenementMouvementService->achat($data, $data['farm_id']);
+
+                        Log::info('SYNC/PUSH - Animal created with EvenementMouvementService::achat() (transaction + event)', [
+                            'table' => $table,
+                            'id' => $record->id,
+                            'origine' => 'achat',
+                        ]);
+
+                        return [
+                            'status' => 'created',
+                            'id' => $record->id,
+                        ];
+                    }
+
                     // Pour les événements de reproduction, utiliser le service avec skipValidation pour le mode offline-first
                     if ($table === 'evenements' && isset($data['type_evenement_id'])) {
                         $typeEvenement = TypeEvenement::find($data['type_evenement_id']);
@@ -894,57 +944,41 @@ class SyncPushController extends Controller
 
             case 'deleted':
                 try {
-                    $record = $modelClass::withTrashed()->lockForUpdate()->find($data['id']);
+                    // $data est maintenant un ID (string) conformément au protocole WatermelonDB
+                    $recordId = $data;
+                    $record = $modelClass::withTrashed()->lockForUpdate()->find($recordId);
+                    
                     if (!$record) {
-                        Log::error('SYNC/PUSH - Record not found for delete', [
+                        // Si introuvable, ignorer silencieusement (protocole WatermelonDB)
+                        Log::info('SYNC/PUSH - Record not found for delete, ignoring silently', [
                             'table' => $table,
-                            'id' => $data['id'],
+                            'id' => $recordId,
                         ]);
-                        return ['status' => 'error', 'reason' => 'Enregistrement non trouvé'];
+                        return ['status' => 'deleted'];
                     }
 
-                    // Strict optimistic locking for business tables
+                    // Mettre à jour sync_status et last_modified_by si table métier
                     if ($isBusinessTable) {
-                        $clientVersion = $data['version'] ?? 0;
-                        $serverVersion = $record->version ?? 1;
-
-                        // Strict version check: client version must match server version exactly
-                        if ($clientVersion !== $serverVersion) {
-                            Log::warning('SYNC/PUSH - Version conflict on delete (strict optimistic locking)', [
-                                'table' => $table,
-                                'id' => $data['id'],
-                                'client_version' => $clientVersion,
-                                'server_version' => $serverVersion,
-                            ]);
-                            return [
-                                'status' => 'conflict',
-                                'reason' => 'Version mismatch (client: ' . $clientVersion . ', server: ' . $serverVersion . ')',
-                                'client_version' => $clientVersion,
-                                'server_version' => $serverVersion,
-                                'code' => self::ERROR_CODE_VERSION_CONFLICT,
-                            ];
-                        }
-
                         $record->sync_status = 'synced';
                         $record->last_modified_by = $userId;
-                        $record->version = $serverVersion + 1;
+                        $record->version = ($record->version ?? 1) + 1;
                         $record->save();
                     }
 
                     Log::debug('SYNC/PUSH - Deleting record', [
                         'table' => $table,
-                        'id' => $data['id'],
+                        'id' => $recordId,
                     ]);
                     $record->delete();
                     Log::info('SYNC/PUSH - Record deleted', [
                         'table' => $table,
-                        'id' => $data['id'],
+                        'id' => $recordId,
                     ]);
                     return ['status' => 'deleted'];
                 } catch (\Exception $e) {
                     Log::error('SYNC/PUSH - Delete failed', [
                         'table' => $table,
-                        'id' => $data['id'],
+                        'id' => $data,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]);
@@ -1067,6 +1101,49 @@ class SyncPushController extends Controller
         ];
 
         return $modelMap[$table] ?? null;
+    }
+
+    /**
+     * Obtenir les règles de validation pour une table (champs NOT NULL sans défaut)
+     * Basé sur les migrations de base de données
+     */
+    private function getValidationRules(string $table): ?array
+    {
+        $rules = [
+            'animals' => [
+                'id' => 'required|string|min:16|max:20',
+                'farm_id' => 'required|string|min:16|max:20',
+                'espece_id' => 'required|string|min:16|max:20',
+            ],
+            'transactions' => [
+                'id' => 'required|string|min:16|max:20',
+                'farm_id' => 'required|string|min:16|max:20',
+                'montant' => 'required|numeric|min:0',
+                'date_transaction' => 'required|date',
+                'user_id' => 'required|string|min:16|max:20',
+                'categorie_id' => 'required|string|min:16|max:20',
+            ],
+            'evenements' => [
+                'id' => 'required|string|min:16|max:20',
+                'farm_id' => 'required|string|min:16|max:20',
+                'type_evenement_id' => 'required|string|min:16|max:20',
+                'animal_id' => 'required|string|min:16|max:20',
+                'date_evenement' => 'required|date',
+            ],
+            'lots' => [
+                'id' => 'required|string|min:16|max:20',
+                'farm_id' => 'required|string|min:16|max:20',
+                'nom_lot' => 'required|string',
+            ],
+            'naissances' => [
+                'id' => 'required|string|min:16|max:20',
+                'farm_id' => 'required|string|min:16|max:20',
+                'mother_id' => 'required|string|min:16|max:20',
+                'date_naissance' => 'required|date',
+            ],
+        ];
+
+        return $rules[$table] ?? null;
     }
 
     /**

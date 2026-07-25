@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Détail événement de reproduction')
 @section('page-title', 'Détail événement de reproduction')
@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.evenements-reproduction.index') }}">Événements de reproduction</a>
+        <a href="{{ route('admin.evenements-reproduction.index', ['farm' => $farmId]) }}">Événements de reproduction</a>
     </li>
     <li class="breadcrumb-item active">Détail</li>
 @endsection
@@ -22,10 +22,10 @@
             <p>Informations sur l'événement de reproduction</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.evenements-reproduction.index') }}" class="btn btn-outline-secondary btn-sm">
+            <a href="{{ route('admin.evenements-reproduction.index', ['farm' => $farmId]) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i> Retour
             </a>
-            <a href="{{ route('admin.evenements-reproduction.edit', $evenement['id']) }}" class="btn btn-primary btn-sm">
+            <a href="{{ route('admin.evenements-reproduction.edit', ['farm' => $farmId, 'evenement_reproduction' => $evenement['id']]) }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-pencil-square"></i> Modifier
             </a>
         </div>
@@ -46,7 +46,7 @@
                         <div class="label">Animal femelle</div>
                         <div class="value">
                             @if(!empty($evenement['animal']))
-                                <a href="{{ route('admin.animals.show', $evenement['animal']['id']) }}">
+                                <a href="{{ route('admin.animals.show', ['farm' => $farmId, 'animal' => $evenement['animal']['id']]) }}">
                                     {{ $evenement['animal']['nom'] ?? $evenement['animal']['numero_identification'] ?? '—' }}
                                 </a>
                             @else
@@ -61,7 +61,7 @@
                     <div class="field">
                         <div class="label">Animal mâle</div>
                         <div class="value">
-                            <a href="{{ route('admin.animals.show', $evenement['male']['id']) }}">
+                            <a href="{{ route('admin.animals.show', ['farm' => $farmId, 'animal' => $evenement['male']['id']]) }}">
                                 {{ $evenement['male']['nom'] ?? $evenement['male']['numero_identification'] ?? '—' }}
                             </a>
                         </div>

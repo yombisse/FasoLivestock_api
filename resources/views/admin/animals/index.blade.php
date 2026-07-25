@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Animaux')
 @section('page-title', 'Animaux')
@@ -111,22 +111,22 @@
             <p>Gérez le cheptel de vos fermes</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.animals.trashed') }}"
+            <a href="{{ route('admin.animals.trashed', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-archive"></i>
                 Archivés
             </a>
-            <a href="{{ route('admin.animals.import') }}"
+            <a href="{{ route('admin.animals.import', ['farm' => $farmId]) }}"
                class="btn btn-outline-warning btn-sm">
                 <i class="bi bi-upload"></i>
                 Import cheptel
             </a>
-            <a href="{{ route('admin.animals.create-achat') }}"
+            <a href="{{ route('admin.animals.create-achat', ['farm' => $farmId]) }}"
                class="btn btn-primary btn-sm">
                 <i class="bi bi-cart-plus"></i>
                 Achat
             </a>
-            <a href="{{ route('admin.animals.create-naissance') }}"
+            <a href="{{ route('admin.animals.create-naissance', ['farm' => $farmId]) }}"
                class="btn btn-success btn-sm">
                 <i class="bi bi-heart"></i>
                 Naissance
@@ -137,7 +137,7 @@
     {{-- ── Filtres ────────────────────────────────────────── --}}
     <form id="filter-form"
           method="GET"
-          action="{{ route('admin.animals.index') }}">
+          action="{{ route('admin.animals.index', ['farm' => $farmId]) }}">
         <div class="filters-bar">
 
             <div class="filter-search">
@@ -176,7 +176,7 @@
             </button>
 
             @if(request()->hasAny(['search', 'statut', 'etat_sante']))
-            <a href="{{ route('admin.animals.index') }}"
+            <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-x-lg"></i>
                 Réinitialiser
@@ -258,12 +258,12 @@
                         </td>
                         <td>
                             <div class="table-actions">
-                                <a href="{{ route('admin.animals.show', $animal['id']) }}"
+                                <a href="{{ route('admin.animals.show', ['farm' => $farmId, 'animal' => $animal['id']]) }}"
                                    class="btn-icon"
                                    title="Voir">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{{ route('admin.animals.edit', $animal['id']) }}"
+                                <a href="{{ route('admin.animals.edit', ['farm' => $farmId, 'animal' => $animal['id']]) }}"
                                    class="btn-icon"
                                    title="Modifier">
                                     <i class="bi bi-pencil"></i>
@@ -276,7 +276,7 @@
                                 </button>
                                 <form id="form-delete-{{ $animal['id'] }}"
                                       method="POST"
-                                      action="{{ route('admin.animals.destroy', $animal['id']) }}"
+                                      action="{{ route('admin.animals.destroy', ['farm' => $farmId, 'animal' => $animal['id']]) }}"
                                       style="display:none">
                                     @csrf @method('DELETE')
                                 </form>
@@ -290,7 +290,7 @@
                                 <div class="table-empty-state-icon"><i class="bi bi-cow"></i></div>
                                 <p>Aucun animal trouvé</p>
                                 @if(request()->hasAny(['search', 'statut']))
-                                    <a href="{{ route('admin.animals.index') }}"
+                                    <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}"
                                        class="btn btn-outline-primary btn-sm mt-2">
                                         Réinitialiser les filtres
                                     </a>
@@ -366,7 +366,7 @@
             <div class="origin-cards">
 
                 {{-- Naissance --}}
-                <a href="{{ route('admin.animals.create', ['mode' => 'naissance']) }}"
+                <a href="{{ route('admin.animals.create', ['farm' => $farmId, 'mode' => 'naissance']) }}"
                    class="origin-card oc-birth">
                     <div class="oc-icon"><i class="bi bi-stars"></i></div>
                     <div class="oc-label">Naissance</div>
@@ -374,7 +374,7 @@
                 </a>
 
                 {{-- Achat --}}
-                <a href="{{ route('admin.animals.create', ['mode' => 'achat']) }}"
+                <a href="{{ route('admin.animals.create', ['farm' => $farmId, 'mode' => 'achat']) }}"
                    class="origin-card oc-buy">
                     <div class="oc-icon"><i class="bi bi-cart-plus"></i></div>
                     <div class="oc-label">Achat</div>
@@ -382,7 +382,7 @@
                 </a>
 
                 {{-- Import cheptel existant --}}
-                <a href="{{ route('admin.animals.create', ['mode' => 'import']) }}"
+                <a href="{{ route('admin.animals.create', ['farm' => $farmId, 'mode' => 'import']) }}"
                    class="origin-card oc-reg">
                     <div class="oc-icon"><i class="bi bi-box-arrow-in-down"></i></div>
                     <div class="oc-label">Import</div>

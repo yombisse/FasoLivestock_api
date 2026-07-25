@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Naissances')
 
@@ -8,7 +8,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h1>Naissances</h1>
-                <a href="{{ route('admin.naissances.create') }}" class="btn btn-primary">
+                <a href="{{ route('admin.naissances.create', ['farm' => request()->route('farm')]) }}" class="btn btn-primary">
                     <i class="bi bi-plus-circle"></i> Nouvelle Naissance
                 </a>
             </div>
@@ -50,10 +50,10 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <a href="{{ route('admin.naissances.show', $naissance->id) }}" class="btn btn-sm btn-info">
+                                            <a href="{{ route('admin.naissances.show', ['farm' => request()->route('farm'), 'naissance' => $naissance->id]) }}" class="btn btn-sm btn-info">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{{ route('admin.naissances.edit', $naissance->id) }}" class="btn btn-sm btn-warning">
+                                            <a href="{{ route('admin.naissances.edit', ['farm' => request()->route('farm'), 'naissance' => $naissance->id]) }}" class="btn btn-sm btn-warning">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         </td>

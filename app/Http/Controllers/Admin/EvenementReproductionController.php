@@ -19,12 +19,13 @@ class EvenementReproductionController extends Controller
     /**
      * Liste des événements de reproduction
      */
-    public function index(Request $request)
+    public function index(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->evenementReproductionApi->getAll($params);
@@ -33,21 +34,28 @@ class EvenementReproductionController extends Controller
             return $this->handleApiError($response);
         }
 
+        // Récupérer les données de la ferme pour le banner
+        $farmResponse = app(\App\Services\Admin\FarmApiService::class)->find($farm);
+        $farmData = $farmResponse->success ? $farmResponse->data : null;
+
         return view('admin.evenements-reproduction.index', [
             'evenements' => $response->data['evenements'] ?? [],
             'meta'       => $response->data['meta'] ?? [],
+            'farmId'     => $farm,
+            'farm'       => $farmData,
         ]);
     }
 
     /**
      * Formulaire création
      */
-    public function create(Request $request)
+    public function create(Request $request, string $farm)
     {
         $farmsResponse = $this->farmApiService->getAll();
 
         return view('admin.evenements-reproduction.create', [
             'farms' => $farmsResponse->success ? ($farmsResponse->data['farms'] ?? []) : [],
+            'farmId' => $farm,
         ]);
     }
 
@@ -100,50 +108,52 @@ class EvenementReproductionController extends Controller
         }
 
         return redirect()
-            ->route('admin.evenements-reproduction.index')
+            ->route('admin.evenements-reproduction.index', ['farm' => $request->input('farm_id')])
             ->with('success', 'Événement de reproduction créé avec succès.');
     }
 
     /**
      * Détail d'un événement de reproduction
      */
-    public function show(string $id)
+    public function show(string $farm, string $id)
     {
         $response = $this->evenementReproductionApi->find($id);
 
         if (!$response->success) {
             return redirect()
-                ->route('admin.evenements-reproduction.index')
+                ->route('admin.evenements-reproduction.index', ['farm' => $farm])
                 ->with('error', 'Événement de reproduction introuvable.');
         }
 
         return view('admin.evenements-reproduction.show', [
             'evenement' => $response->data ?? [],
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Formulaire édition
      */
-    public function edit(string $id)
+    public function edit(string $farm, string $id)
     {
         $response = $this->evenementReproductionApi->find($id);
 
         if (!$response->success) {
             return redirect()
-                ->route('admin.evenements-reproduction.index')
+                ->route('admin.evenements-reproduction.index', ['farm' => $farm])
                 ->with('error', 'Événement de reproduction introuvable.');
         }
 
         return view('admin.evenements-reproduction.edit', [
             'evenement' => $response->data ?? [],
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Mettre à jour un événement de reproduction
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $farm, string $id)
     {
         $response = $this->evenementReproductionApi->update($id, $request->all());
 
@@ -155,7 +165,7 @@ class EvenementReproductionController extends Controller
         }
 
         return redirect()
-            ->route('admin.evenements-reproduction.index')
+            ->route('admin.evenements-reproduction.index', ['farm' => $farm])
             ->with('success', 'Événement de reproduction mis à jour avec succès.');
     }
 
@@ -167,7 +177,7 @@ class EvenementReproductionController extends Controller
         $response = $this->evenementReproductionApi->deleteEvenement($id);
 
         return redirect()
-            ->route('admin.evenements-reproduction.index')
+            ->route('admin.evenements-reproduction.index', ['farm' => $farm])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success
@@ -179,12 +189,13 @@ class EvenementReproductionController extends Controller
     /**
      * Événements de reproduction archivés
      */
-    public function trashed(Request $request)
+    public function trashed(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->evenementReproductionApi->trashed($params);
@@ -196,18 +207,19 @@ class EvenementReproductionController extends Controller
         return view('admin.evenements-reproduction.trashed', [
             'evenements' => $response->data['evenements'] ?? [],
             'meta'       => $response->data['meta'] ?? [],
+            'farmId'     => $farm,
         ]);
     }
 
     /**
      * Restaurer un événement de reproduction archivé
      */
-    public function restore(string $id)
+    public function restore(string $farm, string $id)
     {
         $response = $this->evenementReproductionApi->restore($id);
 
         return redirect()
-            ->route('admin.evenements-reproduction.index')
+            ->route('admin.evenements-reproduction.index', ['farm' => $farm])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success

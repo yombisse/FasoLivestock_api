@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Rappels en retard')
 @section('page-title', 'Rappels en retard')
@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.sante-rappels.index') }}">Rappels sanitaires</a>
+        <a href="{{ route('admin.sante-rappels.index', ['farm' => $farmId]) }}">Rappels sanitaires</a>
     </li>
     <li class="breadcrumb-item active">En retard</li>
 @endsection
@@ -23,7 +23,7 @@
             <h2><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Rappels en retard</h2>
             <p>Rappels sanitaires non effectués après la date prévue</p>
         </div>
-        <a href="{{ route('admin.sante-rappels.index') }}"
+        <a href="{{ route('admin.sante-rappels.index', ['farm' => $farmId]) }}"
            class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i>
             Retour
@@ -95,14 +95,14 @@
                             </td>
                             <td>
                                 <div class="actions-cell justify-content-end">
-                                    <a href="{{ route('admin.sante-rappels.show', $rappel['id']) }}"
+                                    <a href="{{ route('admin.sante-rappels.show', ['farm' => $farmId, 'sante_rappel' => $rappel['id']]) }}"
                                        class="btn btn-sm btn-outline-primary"
                                        title="Voir">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                     <form id="form-realise-{{ $rappel['id'] }}"
                                           method="POST"
-                                          action="{{ route('admin.sante-rappels.marquer-realise', $rappel['id']) }}"
+                                          action="{{ route('admin.sante-rappels.marquer-realise', ['farm' => $farmId, 'id' => $rappel['id']]) }}"
                                           style="display: none;">
                                         @csrf
                                     </form>

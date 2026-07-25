@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Créer un événement de reproduction')
 @section('page-title', 'Créer un événement de reproduction')
@@ -59,7 +59,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.evenements-reproduction.index') }}">Événements de reproduction</a>
+        <a href="{{ route('admin.evenements-reproduction.index', ['farm' => $farmId]) }}">Événements de reproduction</a>
     </li>
     <li class="breadcrumb-item active">Créer un événement</li>
 @endsection
@@ -96,7 +96,7 @@
 
     <form id="reproduction-evenement-form"
           method="POST"
-          action="{{ route('admin.evenements-reproduction.store') }}">
+          action="{{ route('admin.evenements-reproduction.store', ['farm' => $farmId]) }}">
         @csrf
         <input type="hidden" name="type" x-model="type">
 
@@ -109,27 +109,8 @@
             <div class="form-section-body">
                 <div class="row g-3">
 
-                    {{-- Ferme --}}
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label" for="farm_id">
-                                Ferme <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-with-icon">
-                                <select id="farm_id" name="farm_id"
-                                        class="form-select @error('farm_id') is-invalid @enderror"
-                                        @change="loadEligibleAnimals($event.target.value)"
-                                        required>
-                                    <option value="">Sélectionner une ferme</option>
-                                    <template x-for="farm in farms" :key="farm.id">
-                                        <option :value="farm.id" x-text="farm.name"></option>
-                                    </template>
-                                </select>
-                                <i class="bi bi-house field-icon"></i>
-                            </div>
-                            @error('farm_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
+                    {{-- Ferme (hidden - from route) --}}
+                    <input type="hidden" name="farm_id" value="{{ $farmId }}">
 
                     {{-- Date de l'événement --}}
                     <div class="col-md-6">
@@ -296,7 +277,7 @@
 
         {{-- ── Actions ─────────────────────────────────────────── --}}
         <div class="form-actions">
-            <a href="{{ route('admin.evenements-reproduction.index') }}"
+            <a href="{{ route('admin.evenements-reproduction.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i>
                 Annuler
@@ -321,7 +302,7 @@
                     'GESTATION': 'Gestation',
                     'MISE_BAS': 'Mise bas',
                 },
-                farms: @js($farms),
+                farmId: '{{ $farmId }}',
                 selectedFarmId: null,
                 eligibleAnimals: [],
                 eligibleMales: [],
@@ -339,6 +320,8 @@
                     if (typeParam && this.typeLabels[typeParam]) {
                         this.type = typeParam;
                     }
+                    // Load eligible animals for the current farm
+                    await this.loadEligibleAnimals(this.farmId);
                 },
 
                 async loadEligibleAnimals(farmId) {
@@ -351,7 +334,7 @@
 
                     this.loadingAnimals = true;
                     try {
-                        const response = await fetch('/admin/animals/eligible/reproduction?farm_id=' + farmId + '&type_reproduction=' + this.type.toLowerCase(), {
+                        const response = await fetch('/admin/fermes/' + farmId + '/animals/eligible/reproduction?type_reproduction=' + this.type.toLowerCase(), {
                             headers: {
                                 'Accept': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest'
@@ -381,7 +364,7 @@
 
                     this.loadingMales = true;
                     try {
-                        const response = await fetch('/admin/animals/eligible/male?farm_id=' + farmId, {
+                        const response = await fetch('/admin/fermes/' + farmId + '/animals/eligible/male', {
                             headers: {
                                 'Accept': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest'

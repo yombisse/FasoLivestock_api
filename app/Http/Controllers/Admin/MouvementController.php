@@ -15,12 +15,13 @@ class MouvementController extends Controller
     /**
      * Liste des mouvements
      */
-    public function index(Request $request)
+    public function index(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->mouvementApi->getAll($params);
@@ -29,9 +30,15 @@ class MouvementController extends Controller
             return $this->handleApiError($response);
         }
 
+        // Récupérer les données de la ferme pour le banner
+        $farmResponse = app(\App\Services\Admin\FarmApiService::class)->find($farm);
+        $farmData = $farmResponse->success ? $farmResponse->data : null;
+
         return view('admin.mouvements.index', [
             'mouvements' => $response->data['mouvements'] ?? [],
             'meta'       => $response->data['meta'] ?? [],
+            'farmId'     => $farm,
+            'farm'       => $farmData,
         ]);
     }
 
@@ -54,19 +61,19 @@ class MouvementController extends Controller
     /**
      * Détail d'un mouvement
      */
-    public function show(string $id)
-
+    public function show(string $farm, string $id)
     {
         $response = $this->mouvementApi->find($id);
 
         if (!$response->success) {
             return redirect()
-                ->route('admin.mouvements.index')
+                ->route('admin.mouvements.index', ['farm' => $farm])
                 ->with('error', 'Mouvement introuvable.');
         }
 
         return view('admin.mouvements.show', [
             'mouvement' => $response->data ?? [],
+            'farmId' => $farm,
         ]);
     }
 
@@ -98,7 +105,7 @@ class MouvementController extends Controller
     /**
      * Historique des mouvements d'un animal
      */
-    public function animalHistory(string $animalId)
+    public function animalHistory(string $farm, string $animalId)
     {
         $response = $this->mouvementApi->animalHistory($animalId);
 
@@ -109,13 +116,14 @@ class MouvementController extends Controller
         return view('admin.mouvements.animal-history', [
             'animal'      => $response->data['animal'] ?? [],
             'historique'  => $response->data['historique'] ?? [],
+            'farmId'      => $farm,
         ]);
     }
 
     /**
      * Traçabilité complète d'un animal
      */
-    public function trace(string $animalId)
+    public function trace(string $farm, string $animalId)
     {
         $response = $this->mouvementApi->trace($animalId);
 
@@ -126,6 +134,7 @@ class MouvementController extends Controller
         return view('admin.mouvements.trace', [
             'animal'  => $response->data['animal'] ?? [],
             'trace'   => $response->data['trace'] ?? [],
+            'farmId' => $farm,
         ]);
     }
 

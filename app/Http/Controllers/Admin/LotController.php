@@ -20,12 +20,13 @@ class LotController extends Controller
     /**
      * Liste des lots
      */
-    public function index(Request $request)
+    public function index(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->lotApi->getAll($params);
@@ -33,9 +34,15 @@ class LotController extends Controller
             return $this->handleApiError($response);
         }
 
+        // Récupérer les données de la ferme pour le banner
+        $farmResponse = app(\App\Services\Admin\FarmApiService::class)->find($farm);
+        $farmData = $farmResponse->success ? $farmResponse->data : null;
+
         return view('admin.lots.index', [
             'lots' => $response->data['lots'] ?? [],
             'meta' => $response->data['meta'] ?? [],
+            'farmId' => $farm,
+            'farm' => $farmData,
         ]);
     }
 
@@ -75,12 +82,12 @@ class LotController extends Controller
     /**
      * Détail d'un lot
      */
-    public function show(string $id)
+    public function show(string $farm, string $id)
     {
         $response = $this->lotApi->find($id);
         if (!$response->success) {
             return redirect()
-                ->route('admin.lots.index')
+                ->route('admin.lots.index', ['farm' => $farm])
                 ->with('error', 'Lot introuvable.');
         }
 
@@ -92,18 +99,19 @@ class LotController extends Controller
 
         return view('admin.lots.show', [
             'lot' => $lot,
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Formulaire édition
      */
-    public function edit(string $id)
+    public function edit(string $farm, string $id)
     {
         $response = $this->lotApi->find($id);
         if (!$response->success) {
             return redirect()
-                ->route('admin.lots.index')
+                ->route('admin.lots.index', ['farm' => $farm])
                 ->with('error', 'Lot introuvable.');
         }
 
@@ -113,13 +121,14 @@ class LotController extends Controller
         return view('admin.lots.edit', [
             'lot' => $response->data ?? [],
             'farms' => $farms,
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Mettre à jour un lot
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $farm, string $id)
     {
         $response = $this->lotApi->update($id, $request->all());
 
@@ -131,18 +140,18 @@ class LotController extends Controller
         }
 
         return redirect()
-            ->route('admin.lots.index')
+            ->route('admin.lots.index', ['farm' => $farm])
             ->with('success', 'Lot mis à jour avec succès.');
     }
 
     /**
      * Archiver un lot
      */
-    public function destroy(string $id)
+    public function destroy(string $farm, string $id)
     {
         $response = $this->lotApi->deleteLot($id);
         return redirect()
-            ->route('admin.lots.index')
+            ->route('admin.lots.index', ['farm' => $farm])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success
@@ -192,12 +201,12 @@ class LotController extends Controller
     /**
      * Formulaire d'affectation d'animaux à un lot
      */
-    public function assign(string $id)
+    public function assign(string $farm, string $id)
     {
         $lotResponse = $this->lotApi->find($id);
         if (!$lotResponse->success) {
             return redirect()
-                ->route('admin.lots.index')
+                ->route('admin.lots.index', ['farm' => $farm])
                 ->with('error', 'Lot introuvable.');
         }
 
@@ -219,13 +228,14 @@ class LotController extends Controller
             'lot' => $lot,
             'animals' => $animals,
             'lotAnimals' => $lotAnimals,
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Affecter des animaux à un lot
      */
-    public function storeAssign(Request $request, string $id)
+    public function storeAssign(Request $request, string $farm, string $id)
     {
         $animalIds = $request->input('animal_ids', []);
 
@@ -244,19 +254,19 @@ class LotController extends Controller
         }
 
         return redirect()
-            ->route('admin.lots.show', $id)
+            ->route('admin.lots.show', ['farm' => $farm, 'lot' => $id])
             ->with('success', 'Animaux affectés avec succès.');
     }
 
     /**
      * Retirer un animal d'un lot
      */
-    public function removeAnimal(string $lotId, string $animalId)
+    public function removeAnimal(string $farm, string $lotId, string $animalId)
     {
         $response = $this->lotApi->removeAnimal($lotId, $animalId);
 
         return redirect()
-            ->route('admin.lots.show', $lotId)
+            ->route('admin.lots.show', ['farm' => $farm, 'lot' => $lotId])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success

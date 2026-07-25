@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Animaux archivés')
 @section('page-title', 'Animaux archivés')
@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.animals.index') }}">Animaux</a>
+        <a href="{{ route('admin.animals.index', ['farm' => request()->route('farm')]) }}">Animaux</a>
     </li>
     <li class="breadcrumb-item active">Archivés</li>
 @endsection
@@ -24,7 +24,7 @@
             <p>Animaux supprimés (soft delete)</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.animals.index') }}"
+            <a href="{{ route('admin.animals.index', ['farm' => request()->route('farm')]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i>
                 Retour
@@ -35,7 +35,7 @@
     {{-- ── Filtres ────────────────────────────────────────── --}}
     <form id="filter-form"
           method="GET"
-          action="{{ route('admin.animals.trashed') }}">
+          action="{{ route('admin.animals.trashed', ['farm' => request()->route('farm')]) }}">
         <div class="filters-bar">
 
             {{-- Recherche --}}
@@ -57,7 +57,7 @@
 
             {{-- Reset --}}
             @if(request()->has('search'))
-            <a href="{{ route('admin.animals.trashed') }}"
+            <a href="{{ route('admin.animals.trashed', ['farm' => request()->route('farm')]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-x-lg"></i>
                 Réinitialiser

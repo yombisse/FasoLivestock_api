@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Tableau de bord')
 @section('page-title', 'Tableau de bord')
@@ -15,7 +15,7 @@
 @endsection
 
 @section('content')
-<div x-data="dashboardIndex()" x-init="init()" class="fade-in" data-farm-id="{{ $current_farm_id }}">
+<div x-data="dashboardIndex()" x-init="init()" class="fade-in" data-farm-id="{{ $farmId }}">
 
     {{-- ── En-tête page ──────────────────────────────────── --}}
     <div class="page-header">

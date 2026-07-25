@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Détail animal')
 @section('page-title', 'Détail animal')
@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.animals.index') }}">Animaux</a>
+        <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}">Animaux</a>
     </li>
     <li class="breadcrumb-item active">Détail</li>
 @endsection
@@ -22,10 +22,10 @@
             <p>Informations détaillées de l'animal</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.animals.index') }}" class="btn btn-outline-secondary btn-sm">
+            <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i> Retour
             </a>
-            <a href="{{ route('admin.animals.edit', $animal['id']) }}" class="btn btn-primary btn-sm">
+            <a href="{{ route('admin.animals.edit', ['farm' => $farmId, 'animal' => $animal['id']]) }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-pencil-square"></i> Modifier
             </a>
         </div>

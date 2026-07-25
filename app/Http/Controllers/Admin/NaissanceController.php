@@ -9,18 +9,20 @@ use Illuminate\Http\Request;
 class NaissanceController extends Controller
 {
     public function __construct(
-        private NaissanceApiService $naissanceApi
+        private NaissanceApiService $naissanceApi,
+        private \App\Services\Admin\ReproductionApiService $reproductionApi
     ) {}
 
     /**
      * Liste des naissances
      */
-    public function index(Request $request)
+    public function index(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->naissanceApi->getAll($params);
@@ -29,36 +31,40 @@ class NaissanceController extends Controller
             return $this->handleApiError($response);
         }
 
+        // Récupérer les données de la ferme pour le banner
+        $farmResponse = app(\App\Services\Admin\FarmApiService::class)->find($farm);
+        $farmData = $farmResponse->success ? $farmResponse->data : null;
+
         return view('admin.naissances.index', [
             'naissances' => $response->data['naissances'] ?? [],
             'meta'       => $response->data['meta'] ?? [],
+            'farmId'     => $farm,
+            'farm'       => $farmData,
         ]);
     }
 
     /**
      * Formulaire création
      */
-    public function create()
+    public function create(Request $request, string $farm)
     {
-        $farmId = session('current_farm_id');
         $femellesEligibles = [];
         $warningMessage = null;
 
-        if ($farmId) {
-            $response = $this->reproductionApi->femellesEligibles($farmId);
+        $response = $this->reproductionApi->femellesEligibles($farm);
+        
+        if ($response->success) {
+            $femellesEligibles = $response->data ?? [];
             
-            if ($response->success) {
-                $femellesEligibles = $response->data ?? [];
-                
-                if (empty($femellesEligibles)) {
-                    $warningMessage = 'Aucune femelle avec une gestation confirmée en cours. Veuillez d\'abord enregistrer une GESTATION_CONFIRMEE dans les événements reproductifs.';
-                }
+            if (empty($femellesEligibles)) {
+                $warningMessage = 'Aucune femelle avec une gestation confirmée en cours. Veuillez d\'abord enregistrer une GESTATION_CONFIRMEE dans les événements reproductifs.';
             }
         }
 
         return view('admin.naissances.create', [
             'femellesEligibles' => $femellesEligibles,
             'warningMessage' => $warningMessage,
+            'farmId' => $farm,
         ]);
     }
 
@@ -77,50 +83,52 @@ class NaissanceController extends Controller
         }
 
         return redirect()
-            ->route('admin.naissances.index')
+            ->route('admin.naissances.index', ['farm' => $request->route('farm')])
             ->with('success', 'Naissance créée avec succès.');
     }
 
     /**
      * Détail d'une naissance
      */
-    public function show(string $id)
+    public function show(string $farm, string $id)
     {
         $response = $this->naissanceApi->find($id);
 
         if (!$response->success) {
             return redirect()
-                ->route('admin.naissances.index')
+                ->route('admin.naissances.index', ['farm' => $farm])
                 ->with('error', 'Naissance introuvable.');
         }
 
         return view('admin.naissances.show', [
             'naissance' => $response->data ?? [],
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Formulaire édition
      */
-    public function edit(string $id)
+    public function edit(string $farm, string $id)
     {
         $response = $this->naissanceApi->find($id);
 
         if (!$response->success) {
             return redirect()
-                ->route('admin.naissances.index')
+                ->route('admin.naissances.index', ['farm' => $farm])
                 ->with('error', 'Naissance introuvable.');
         }
 
         return view('admin.naissances.edit', [
             'naissance' => $response->data ?? [],
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Mettre à jour une naissance
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $farm, string $id)
     {
         $response = $this->naissanceApi->update($id, $request->all());
 
@@ -132,7 +140,7 @@ class NaissanceController extends Controller
         }
 
         return redirect()
-            ->route('admin.naissances.index')
+            ->route('admin.naissances.index', ['farm' => $farm])
             ->with('success', 'Naissance mise à jour avec succès.');
     }
 
@@ -144,7 +152,7 @@ class NaissanceController extends Controller
         $response = $this->naissanceApi->deleteNaissance($id);
 
         return redirect()
-            ->route('admin.naissances.index')
+            ->route('admin.naissances.index', ['farm' => $request->route('farm')])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success
@@ -156,12 +164,13 @@ class NaissanceController extends Controller
     /**
      * Naissances archivées
      */
-    public function trashed(Request $request)
+    public function trashed(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->naissanceApi->trashed($params);
@@ -173,18 +182,19 @@ class NaissanceController extends Controller
         return view('admin.naissances.trashed', [
             'naissances' => $response->data['naissances'] ?? [],
             'meta'       => $response->data['meta'] ?? [],
+            'farmId'     => $farm,
         ]);
     }
 
     /**
      * Restaurer une naissance archivée
      */
-    public function restore(string $id)
+    public function restore(string $farm, string $id)
     {
         $response = $this->naissanceApi->restore($id);
 
         return redirect()
-            ->route('admin.naissances.index')
+            ->route('admin.naissances.index', ['farm' => $farm])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success
@@ -196,12 +206,13 @@ class NaissanceController extends Controller
     /**
      * Prévisions de mises bas
      */
-    public function previsions(Request $request)
+    public function previsions(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->naissanceApi->previsions($params);
@@ -213,6 +224,7 @@ class NaissanceController extends Controller
         return view('admin.naissances.previsions', [
             'previsions' => $response->data['previsions'] ?? [],
             'meta'       => $response->data['meta'] ?? [],
+            'farmId'     => $farm,
         ]);
     }
 

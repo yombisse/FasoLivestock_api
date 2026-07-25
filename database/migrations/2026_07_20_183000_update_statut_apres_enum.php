@@ -21,6 +21,8 @@ return new class extends Migration
     {
         DB::statement("ALTER TABLE evenements DROP CONSTRAINT IF EXISTS evenements_statut_apres_check");
         DB::statement("ALTER TABLE evenements ALTER COLUMN statut_apres TYPE VARCHAR(50)");
+        // Nettoyer les statuts temporaires avant de restaurer la contrainte restrictive
+        DB::statement("UPDATE evenements SET statut_apres = NULL WHERE statut_apres NOT IN ('SAIN', 'VENDU', 'MORT', 'PERDU')");
         DB::statement("ALTER TABLE evenements ADD CONSTRAINT evenements_statut_apres_check CHECK (statut_apres IN ('SAIN', 'VENDU', 'MORT', 'PERDU') OR statut_apres IS NULL)");
     }
 };

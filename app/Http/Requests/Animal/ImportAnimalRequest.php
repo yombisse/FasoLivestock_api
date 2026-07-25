@@ -18,12 +18,12 @@ class ImportAnimalRequest extends FormRequest
             'farm_id'                         => ['required', 'string', 'min:16', 'max:20', 'exists:farms,id'],
             'animaux'                          => ['required', 'array', 'min:1', 'max:500'],
             'animaux.*.espece_id'             => ['required', 'string', 'min:16', 'max:20', 'exists:especes,id'],
-            'animaux.*.sexe'                  => ['required', Rule::in(['M', 'F'])],
+            'animaux.*.sexe'                  => ['required', Rule::in(['male', 'femelle'])],
             'animaux.*.nom'                   => ['nullable', 'string', 'max:100'],
             'animaux.*.race'                  => ['nullable', 'string', 'max:100'],
             'animaux.*.date_naissance'        => ['nullable', 'date', 'before_or_equal:today'],
             'animaux.*.poids'                 => ['nullable', 'numeric', 'min:0'],
-            'animaux.*.numero_identification' => ['required', 'string', 'max:100'],
+            'animaux.*.numero_identification' => ['nullable', 'string', 'max:100'],
         ];
     }
 
@@ -35,7 +35,7 @@ class ImportAnimalRequest extends FormRequest
             'animaux.max'               => '500 animaux maximum par import.',
             'animaux.*.espece_id.required' => 'L\'espèce est obligatoire (ligne :index).',
             'animaux.*.sexe.required'   => 'Le sexe est obligatoire (ligne :index).',
-            'animaux.*.sexe.in'         => 'Le sexe doit être M ou F (ligne :index).',
+            'animaux.*.sexe.in'         => 'Le sexe doit être male ou femelle (ligne :index).',
         ];
     }
 }

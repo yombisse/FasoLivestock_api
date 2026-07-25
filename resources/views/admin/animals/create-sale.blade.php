@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Vente d\'un animal')
 @section('page-title', 'Vente d\'un animal')
@@ -17,12 +17,13 @@
             margin-bottom: 1.25rem;
         }
         .mode-badge.vente { background: #ffebee; color: #c62828; }
+        .form-page { padding: 1.5rem; }
     </style>
 @endpush
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.animals.index') }}">Animaux</a>
+        <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}">Animaux</a>
     </li>
     <li class="breadcrumb-item active">Vente</li>
 @endsection
@@ -38,7 +39,7 @@
 
     <form id="animal-sale-form"
           method="POST"
-          action="{{ route('admin.animals.sell') }}">
+          action="{{ route('admin.animals.sell', ['farm' => $farmId]) }}">
         @csrf
 
         {{-- ── Sélection de l'animal ──────────────────────────────── --}}
@@ -49,21 +50,12 @@
             </div>
 
             <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Ferme *</label>
-                    <select name="farm_id" class="form-select" required x-model="selectedFarm" @change="loadAnimals()">
-                        <option value="">-- Sélectionner une ferme --</option>
-                        @foreach($farms as $farm)
-                            <option value="{{ is_array($farm) ? $farm['id'] : $farm->id }}">
-                                {{ is_array($farm) ? $farm['name'] : $farm->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                {{-- Ferme (hidden - from route) --}}
+                <input type="hidden" name="farm_id" value="{{ $farmId }}">
 
                 <div class="form-group">
                     <label class="form-label">Animal *</label>
-                    <select name="animal_id" class="form-select" required x-model="selectedAnimal" :disabled="!selectedFarm">
+                    <select name="animal_id" class="form-select" required x-model="selectedAnimal">
                         <option value="">-- Sélectionner un animal --</option>
                         <template x-for="animal in filteredAnimals" :key="animal.id">
                             <option :value="animal.id" x-text="animal.code + ' - ' + animal.nom"></option>
@@ -105,7 +97,7 @@
 
         {{-- ── Actions ────────────────────────────────────────────── --}}
         <div class="form-actions">
-            <a href="{{ route('admin.finance.index') }}" class="btn btn-outline-secondary">
+            <a href="{{ route('admin.finance.index', ['farm' => $farmId]) }}" class="btn btn-outline-secondary">
                 <i class="bi bi-x-lg"></i>
                 Annuler
             </a>
@@ -122,7 +114,7 @@
     <script>
         function animalSaleForm() {
             return {
-                selectedFarm: '',
+                selectedFarm: '{{ $farmId }}',
                 selectedAnimal: '',
                 formData: {
                     date_vente: new Date().toISOString().split('T')[0],
@@ -133,9 +125,13 @@
                 animals: @json($animals ?? []),
                 filteredAnimals: [],
 
+                init() {
+                    this.loadAnimals();
+                },
+
                 loadAnimals() {
                     if (this.selectedFarm) {
-                        this.filteredAnimals = this.animals.filter(animal => 
+                        this.filteredAnimals = this.animals.filter(animal =>
                             animal.farm_id === this.selectedFarm
                         );
                     } else {

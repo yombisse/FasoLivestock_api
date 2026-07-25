@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @php
     $mode = request('mode', 'import'); // 'achat' | 'naissance' | 'import'
@@ -39,14 +39,15 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.animals.index') }}">Animaux</a>
+        <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}">Animaux</a>
     </li>
     <li class="breadcrumb-item active">{{ $pageTitle }}</li>
 @endsection
 
 @section('content')
 <div class="form-page fade-in"
-     x-data="animalCreateForm()">
+     x-data="animalCreateForm()"
+     x-init="init()">
 
     {{-- Badge de mode --}}
     @if($isAchat)
@@ -69,7 +70,7 @@
     <form id="animal-create-form"
           method="POST"
           enctype="multipart/form-data"
-          action="{{ $isAchat ? route('admin.animals.purchase') : ($isNaissance ? route('admin.animals.naissance') : route('admin.animals.store')) }}">
+          action="{{ $isAchat ? route('admin.animals.purchase', ['farm' => $farmId]) : ($isNaissance ? route('admin.animals.naissance', ['farm' => $farmId]) : route('admin.animals.store', ['farm' => $farmId])) }}">
         @csrf
         <input type="hidden" name="mode" value="{{ $mode }}">
 
@@ -82,29 +83,8 @@
             <div class="form-section-body">
                 <div class="row g-3">
 
-                    {{-- Ferme --}}
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label" for="farm_id">
-                                Ferme <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-with-icon">
-                                <select id="farm_id" name="farm_id"
-                                        class="form-select @error('farm_id') is-invalid @enderror"
-                                        required>
-                                    <option value="">Sélectionner une ferme</option>
-                                    @foreach($farms as $farm)
-                                    <option value="{{ $farm['id'] }}"
-                                            {{ (old('farm_id') ?? ($farm_id ?? null)) === $farm['id'] ? 'selected' : '' }}>
-                                        {{ $farm['name'] }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                                <i class="bi bi-house-door field-icon"></i>
-                            </div>
-                            @error('farm_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
+                    {{-- Ferme (hidden - auto-filled from route) --}}
+                    <input type="hidden" name="farm_id" value="{{ $farmId }}" id="farm_id">
 
                     {{-- Nom --}}
                     <div class="col-md-6">
@@ -408,7 +388,7 @@
 
         {{-- ── Actions ─────────────────────────────────── --}}
         <div class="form-actions">
-            <a href="{{ route('admin.animals.index') }}"
+            <a href="{{ route('admin.animals.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i>
                 Annuler
@@ -435,5 +415,6 @@
         window.farmsData = @js($farms);
         window.lotsData = @js($lots);
         window.modeData = '{{ $mode }}';
+        window.currentFarmId = '{{ $farmId }}';
     </script>
 @endpush

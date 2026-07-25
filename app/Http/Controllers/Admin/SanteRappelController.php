@@ -15,12 +15,13 @@ class SanteRappelController extends Controller
     /**
      * Liste des rappels sanitaires
      */
-    public function index(Request $request)
+    public function index(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->santeRappelApi->getAll($params);
@@ -32,23 +33,29 @@ class SanteRappelController extends Controller
         return view('admin.sante-rappels.index', [
             'rappels' => $response->data['rappels'] ?? [],
             'meta'    => $response->data['meta'] ?? [],
+            'farmId'  => $farm,
         ]);
     }
 
     /**
      * Formulaire création
      */
-    public function create()
+    public function create(string $farm)
     {
-        return view('admin.sante-rappels.create');
+        return view('admin.sante-rappels.create', [
+            'farmId' => $farm,
+        ]);
     }
 
     /**
      * Enregistrer un rappel sanitaire
      */
-    public function store(Request $request)
+    public function store(Request $request, string $farm)
     {
-        $response = $this->santeRappelApi->create($request->all());
+        $data = $request->all();
+        $data['current_farm_id'] = $farm;
+
+        $response = $this->santeRappelApi->create($data);
 
         if (!$response->success) {
             return back()
@@ -58,50 +65,52 @@ class SanteRappelController extends Controller
         }
 
         return redirect()
-            ->route('admin.sante-rappels.index')
+            ->route('admin.sante-rappels.index', ['farm' => $farm])
             ->with('success', 'Rappel sanitaire créé avec succès.');
     }
 
     /**
      * Détail d'un rappel sanitaire
      */
-    public function show(string $id)
+    public function show(string $farm, string $id)
     {
         $response = $this->santeRappelApi->find($id);
 
         if (!$response->success) {
             return redirect()
-                ->route('admin.sante-rappels.index')
+                ->route('admin.sante-rappels.index', ['farm' => $farm])
                 ->with('error', 'Rappel sanitaire introuvable.');
         }
 
         return view('admin.sante-rappels.show', [
             'rappel' => $response->data ?? [],
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Formulaire édition
      */
-    public function edit(string $id)
+    public function edit(string $farm, string $id)
     {
         $response = $this->santeRappelApi->find($id);
 
         if (!$response->success) {
             return redirect()
-                ->route('admin.sante-rappels.index')
+                ->route('admin.sante-rappels.index', ['farm' => $farm])
                 ->with('error', 'Rappel sanitaire introuvable.');
         }
 
         return view('admin.sante-rappels.edit', [
             'rappel' => $response->data ?? [],
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Mettre à jour un rappel sanitaire
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $farm, string $id)
     {
         $response = $this->santeRappelApi->update($id, $request->all());
 
@@ -113,19 +122,19 @@ class SanteRappelController extends Controller
         }
 
         return redirect()
-            ->route('admin.sante-rappels.index')
+            ->route('admin.sante-rappels.index', ['farm' => $farm])
             ->with('success', 'Rappel sanitaire mis à jour avec succès.');
     }
 
     /**
      * Archiver un rappel sanitaire
      */
-    public function destroy(string $id)
+    public function destroy(string $farm, string $id)
     {
         $response = $this->santeRappelApi->deleteRappel($id);
 
         return redirect()
-            ->route('admin.sante-rappels.index')
+            ->route('admin.sante-rappels.index', ['farm' => $farm])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success
@@ -137,12 +146,13 @@ class SanteRappelController extends Controller
     /**
      * Rappels sanitaires archivés
      */
-    public function trashed(Request $request)
+    public function trashed(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->santeRappelApi->trashed($params);
@@ -154,18 +164,19 @@ class SanteRappelController extends Controller
         return view('admin.sante-rappels.trashed', [
             'rappels' => $response->data['rappels'] ?? [],
             'meta'    => $response->data['meta'] ?? [],
+            'farmId'  => $farm,
         ]);
     }
 
     /**
      * Restaurer un rappel sanitaire archivé
      */
-    public function restore(string $id)
+    public function restore(string $farm, string $id)
     {
         $response = $this->santeRappelApi->restore($id);
 
         return redirect()
-            ->route('admin.sante-rappels.index')
+            ->route('admin.sante-rappels.index', ['farm' => $farm])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success
@@ -177,12 +188,13 @@ class SanteRappelController extends Controller
     /**
      * Rappels à venir
      */
-    public function aVenir(Request $request)
+    public function aVenir(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->santeRappelApi->aVenir($params);
@@ -194,18 +206,20 @@ class SanteRappelController extends Controller
         return view('admin.sante-rappels.a-venir', [
             'rappels' => $response->data['rappels'] ?? [],
             'meta'    => $response->data['meta'] ?? [],
+            'farmId'  => $farm,
         ]);
     }
 
     /**
      * Rappels en retard
      */
-    public function enRetard(Request $request)
+    public function enRetard(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->santeRappelApi->enRetard($params);
@@ -217,13 +231,14 @@ class SanteRappelController extends Controller
         return view('admin.sante-rappels.en-retard', [
             'rappels' => $response->data['rappels'] ?? [],
             'meta'    => $response->data['meta'] ?? [],
+            'farmId'  => $farm,
         ]);
     }
 
     /**
      * Marquer un rappel comme réalisé
      */
-    public function marquerRealise(string $id)
+    public function marquerRealise(string $farm, string $id)
     {
         $response = $this->santeRappelApi->marquerRealise($id);
 

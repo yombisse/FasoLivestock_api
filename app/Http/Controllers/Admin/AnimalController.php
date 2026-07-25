@@ -29,13 +29,14 @@ class AnimalController extends Controller
     /**
      * Liste des animaux
      */
-    public function index(Request $request)
+    public function index(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'statut'   => $request->statut,
             'page'     => $request->page,
             'per_page' => 15,
+            'current_farm_id' => $farm,
         ];
 
         $response = $this->animalApi->getAll($params);
@@ -44,16 +45,22 @@ class AnimalController extends Controller
             return $this->handleApiError($response);
         }
 
+        // Récupérer les données de la ferme pour le banner
+        $farmResponse = app(\App\Services\Admin\FarmApiService::class)->find($farm);
+        $farmData = $farmResponse->success ? $farmResponse->data : null;
+
         return view('admin.animals.index', [
             'animals' => $response->data['animals'] ?? [],
             'meta'    => $response->data['meta'] ?? [],
+            'farmId'  => $farm,
+            'farm'    => $farmData,
         ]);
     }
 
     /**
      * Formulaire création — le mode ((achat|enregistrement) est passé en query param
      */
-    public function create()
+    public function create(Request $request, string $farm)
     {
         $farmsResponse   = app(FarmApiService::class)->getAll();
         $especesResponse = app(EspeceApiService::class)->getAll();
@@ -62,34 +69,41 @@ class AnimalController extends Controller
             'farms'   => $farmsResponse->success  ? ($farmsResponse->data['farms']     ?? []) : [],
             'especes' => $especesResponse->success ? ($especesResponse->data['especes'] ?? []) : [],
             'lots'    => [], // chargés dynamiquement via AJAX selon la ferme choisie
-            'farm_id' => request('farm_id'), // Pré-remplir si passé en paramètre
+            'farmId'  => $farm,
         ]);
     }
 
     /**
      * Formulaire création par achat
      */
-    public function createAchat(Request $request)
+    public function createAchat(Request $request, string $farm)
     {
         $farmsResponse   = app(FarmApiService::class)->getAll();
         $especesResponse  = app(EspeceApiService::class)->getAll();
 
-        // Pour l'instant, catégories vide - à implémenter via API finance si nécessaire
-        $categories = [];
+        // Charger les catégories de dépenses pour l'achat
+        $categories = \App\Models\Categorie::whereIn('type', ['SORTIE', 'DEPENSE'])
+            ->orderBy('nom_categorie')
+            ->get()
+            ->map(fn ($cat) => [
+                'id' => $cat->id,
+                'nom_categorie' => $cat->nom_categorie,
+            ])
+            ->toArray();
 
         return view('admin.animals.create-achat', [
             'farms'      => $farmsResponse->success  ? ($farmsResponse->data['farms']     ?? []) : [],
             'especes'    => $especesResponse->success ? ($especesResponse->data['especes'] ?? []) : [],
             'categories' => $categories,
             'lots'       => [], // chargés dynamiquement via AJAX selon la ferme choisie
-            'farm_id'    => $request->query('farm_id'), // Pré-remplir si passé en paramètre
+            'farmId'     => $farm,
         ]);
     }
 
     /**
      * Formulaire création par naissance
      */
-    public function createNaissance(Request $request)
+    public function createNaissance(Request $request, string $farm)
     {
         $farmsResponse   = app(FarmApiService::class)->getAll();
         $especesResponse = app(EspeceApiService::class)->getAll();
@@ -98,23 +112,23 @@ class AnimalController extends Controller
             'farms'   => $farmsResponse->success  ? ($farmsResponse->data['farms']     ?? []) : [],
             'especes' => $especesResponse->success ? ($especesResponse->data['especes'] ?? []) : [],
             'lots'    => [], // chargés dynamiquement via AJAX selon la ferme choisie
-            'farm_id' => $request->query('farm_id'), // Pré-remplir si passé en paramètre
+            'farmId'  => $farm,
         ]);
     }
 
     /**
      * Enregistrer un animal — délègue vers purchase() ou naissance() selon le mode
      */
-    public function store(Request $request)
+    public function store(Request $request, string $farm)
     {
         $mode = $request->input('mode', 'import');
 
         if ($mode === 'achat') {
-            return $this->purchase($request);
+            return $this->purchase($request, $farm);
         }
 
         if ($mode === 'naissance') {
-            return $this->naissance($request);
+            return $this->naissance($request, $farm);
         }
 
         // Mode import : aucun événement créé
@@ -132,14 +146,14 @@ class AnimalController extends Controller
         $animal = $response->data['animal'] ?? $response->data ?? [];
 
         return redirect()
-            ->route('admin.animals.show', $animal['id'] ?? '')
+            ->route('admin.animals.show', ['farm' => $farm, 'animal' => $animal['id'] ?? ''])
             ->with('success', 'Animal importé avec succès.');
     }
 
     /**
      * Achat d'un animal — crée l'animal + Transaction SORTIE + Evenement ACHAT
      */
-    public function purchase(Request $request)
+    public function purchase(Request $request, string $farm)
     {
         $response = $this->animalApi->purchase($request->except(['mode']));
 
@@ -161,14 +175,14 @@ class AnimalController extends Controller
         );
 
         return redirect()
-            ->route('admin.animals.show', $animal['id'] ?? '')
+            ->route('admin.animals.show', ['farm' => $farm, 'animal' => $animal['id'] ?? ''])
             ->with('success', 'Animal acheté et enregistré avec succès.');
     }
 
     /**
      * Naissance d'un animal — crée l'animal + Evenement NAISSANCE
      */
-    public function naissance(Request $request)
+    public function naissance(Request $request, string $farm)
     {
         $response = $this->animalApi->birth($request->except(['mode']));
 
@@ -190,28 +204,29 @@ class AnimalController extends Controller
         );
 
         return redirect()
-            ->route('admin.animals.show', $animal['id'] ?? '')
+            ->route('admin.animals.show', ['farm' => $farm, 'animal' => $animal['id'] ?? ''])
             ->with('success', 'Animal créé par naissance avec succès.');
     }
 
     /**
      * Formulaire de vente d'un animal
      */
-    public function createSale()
+    public function createSale(Request $request, string $farm)
     {
         $farmsResponse = $this->farmApiService->getAll();
-        $animalsResponse = $this->animalApi->getAll(['per_page' => 1000]);
+        $animalsResponse = $this->animalApi->getAll(['per_page' => 1000, 'current_farm_id' => $farm]);
 
         return view('admin.animals.create-sale', [
             'farms' => $farmsResponse->success ? ($farmsResponse->data['farms'] ?? []) : [],
             'animals' => $animalsResponse->success ? ($animalsResponse->data['animals'] ?? []) : [],
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Vente d'un animal — crée Transaction ENTREE + Evenement VENTE
      */
-    public function sell(Request $request)
+    public function sell(Request $request, string $farm)
     {
         $animalId = $request->input('animal_id');
         
@@ -232,38 +247,39 @@ class AnimalController extends Controller
         }
 
         return redirect()
-            ->route('admin.finance.index')
+            ->route('admin.finance.index', ['farm' => $farm])
             ->with('success', 'Animal vendu avec succès.');
     }
 
     /**
      * Détail d'un animal
      */
-    public function show(string $id)
+    public function show(string $farm, string $id)
     {
         $response = $this->animalApi->find($id);
 
         if (!$response->success) {
             return redirect()
-                ->route('admin.animals.index')
+                ->route('admin.animals.index', ['farm' => $farm])
                 ->with('error', 'Animal introuvable.');
         }
 
         return view('admin.animals.show', [
             'animal' => $response->data ?? [],
+            'farmId' => $farm,
         ]);
     }
 
     /**
      * Formulaire édition
      */
-    public function edit(string $id)
+    public function edit(string $farm, string $id)
     {
         $response = $this->animalApi->find($id);
 
         if (!$response->success) {
             return redirect()
-                ->route('admin.animals.index')
+                ->route('admin.animals.index', ['farm' => $farm])
                 ->with('error', 'Animal introuvable.');
         }
 
@@ -276,25 +292,18 @@ class AnimalController extends Controller
             'farms'   => $farmsResponse->success   ? ($farmsResponse->data['farms']     ?? []) : [],
             'especes' => $especesResponse->success  ? ($especesResponse->data['especes'] ?? []) : [],
             'lots'    => $lotsResponse->success     ? ($lotsResponse->data['lots']       ?? []) : [],
+            'farmId'  => $farm,
         ]);
     }
 
     /**
      * Obtenir les animaux éligibles aux événements sanitaires
      */
-    public function getEligibleForSanitaire(Request $request)
+    public function getEligibleForSanitaire(Request $request, string $farm)
     {
-        $farmId = $request->query('farm_id');
         $typeEvenement = $request->query('type_evenement');
 
-        if (!$farmId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'farm_id parameter is required'
-            ], 400);
-        }
-
-        $animals = $this->animalService->getEligiblesForSanitaire($farmId, $typeEvenement);
+        $animals = $this->animalService->getEligiblesForSanitaire($farm, $typeEvenement);
 
         return response()->json([
             'success' => true,
@@ -308,17 +317,9 @@ class AnimalController extends Controller
     /**
      * Obtenir les animaux éligibles aux événements de reproduction
      */
-    public function getEligibleForReproduction(Request $request)
+    public function getEligibleForReproduction(Request $request, string $farm)
     {
-        $farmId = $request->query('farm_id');
         $typeReproduction = $request->query('type_reproduction');
-
-        if (!$farmId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'farm_id parameter is required'
-            ], 400);
-        }
 
         if (!$typeReproduction) {
             return response()->json([
@@ -327,7 +328,7 @@ class AnimalController extends Controller
             ], 400);
         }
 
-        $animals = $this->animalService->getEligiblesForReproduction($farmId, $typeReproduction);
+        $animals = $this->animalService->getEligiblesForReproduction($farm, $typeReproduction);
 
         return response()->json([
             'success' => true,
@@ -341,18 +342,9 @@ class AnimalController extends Controller
     /**
      * Obtenir les mâles éligibles pour saillie
      */
-    public function getEligibleMales(Request $request)
+    public function getEligibleMales(Request $request, string $farm)
     {
-        $farmId = $request->query('farm_id');
-
-        if (!$farmId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'farm_id parameter is required'
-            ], 400);
-        }
-
-        $males = $this->animalService->getEligibleMales($farmId);
+        $males = $this->animalService->getEligibleMales($farm);
 
         return response()->json([
             'success' => true,
@@ -366,7 +358,7 @@ class AnimalController extends Controller
     /**
      * Mettre à jour un animal
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $farm, string $id)
     {
         $response = $this->animalApi->update($id, $request->all());
 
@@ -378,7 +370,7 @@ class AnimalController extends Controller
         }
 
         return redirect()
-            ->route('admin.animals.show', $id)
+            ->route('admin.animals.show', ['farm' => $farm, 'animal' => $id])
             ->with('success', 'Animal mis à jour avec succès.');
     }
 
@@ -390,7 +382,7 @@ class AnimalController extends Controller
         $response = $this->animalApi->deleteAnimal($id);
 
         return redirect()
-            ->route('admin.animals.index')
+            ->route('admin.animals.index', ['farm' => $request->route('farm')])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success
@@ -406,12 +398,13 @@ class AnimalController extends Controller
     /**
      * Liste des animaux archivés
      */
-    public function trashed(Request $request)
+    public function trashed(Request $request, string $farm)
     {
         $params = [
             'search'   => $request->search,
             'page'     => $request->page,
             'per_page' => 15,
+            'farm_id' => $farm,
         ];
 
         $response = $this->animalApi->trashed($params);
@@ -423,6 +416,7 @@ class AnimalController extends Controller
         return view('admin.animals.trashed', [
             'animals' => $response->data['animals'] ?? [],
             'meta'    => $response->data['meta'] ?? [],
+            'farmId'  => $farm,
         ]);
     }
 
@@ -434,7 +428,7 @@ class AnimalController extends Controller
         $response = $this->animalApi->restore($id);
 
         return redirect()
-            ->route('admin.animals.index')
+            ->route('admin.animals.index', ['farm' => $request->route('farm')])
             ->with(
                 $response->success ? 'success' : 'error',
                 $response->success
@@ -450,15 +444,13 @@ class AnimalController extends Controller
     /**
      * Charger les lots d'une ferme donnée (appelé dynamiquement depuis le formulaire)
      */
-    public function getLotsByFarm(Request $request)
+    public function getLotsByFarm(Request $request, string $farm)
     {
-        $farmId = $request->farm_id;
-
         $lotsResponse = app(LotApiService::class)->getAll();
         $allLots = $lotsResponse->success ? ($lotsResponse->data['lots'] ?? []) : [];
 
         $filteredLots = collect($allLots)
-            ->filter(fn ($lot) => $lot['farm_id'] === $farmId)
+            ->filter(fn ($lot) => $lot['farm_id'] === $farm)
             ->values();
 
         return response()->json([
@@ -492,7 +484,7 @@ class AnimalController extends Controller
     // IMPORT CHEPTEL
     // =========================================================
 
-    public function importWizard()
+    public function importWizard(Request $request, string $farm)
     {
         $especesResponse = app(EspeceApiService::class)->getAll();
         $especes = $especesResponse->success ? ($especesResponse->data['especes'] ?? []) : [];
@@ -500,10 +492,14 @@ class AnimalController extends Controller
         $farmsResponse = app(FarmApiService::class)->getAll();
         $farms = $farmsResponse->success ? ($farmsResponse->data['farms'] ?? []) : [];
 
-        return view('admin.animals.import', compact('especes', 'farms'));
+        return view('admin.animals.import', [
+            'especes' => $especes,
+            'farms' => $farms,
+            'farmId' => $farm,
+        ]);
     }
 
-    public function importStore(Request $request)
+    public function importStore(Request $request, string $farm)
     {
         $request->validate([
             'farm_id' => 'required|string|min:16|max:20|exists:farms,id',
@@ -516,16 +512,34 @@ class AnimalController extends Controller
                 'animaux' => $request->input('animaux', []),
             ]);
 
-            $redirect = redirect()->route('admin.animals.index')
+            // Log response for debugging
+            \Log::info('Import API Response', [
+                'success' => $response->success,
+                'message' => $response->message,
+                'data' => $response->data,
+                'status' => $response->status,
+            ]);
+
+            if (!$response->success) {
+                return back()
+                    ->withInput()
+                    ->with('error', $response->message ?? 'Erreur lors de l\'import API.');
+            }
+
+            $redirect = redirect()->route('admin.animals.index', ['farm' => $farm])
                 ->with('success', $response->message ?? 'Import terminé.');
 
-            if (!empty($response->erreurs)) {
-                $redirect->with('erreurs_import', $response->erreurs);
+            if (!empty($response->data['erreurs'])) {
+                $redirect->with('erreurs_import', $response->data['erreurs']);
             }
 
             return $redirect;
 
         } catch (\Exception $e) {
+            \Log::error('Import Exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return back()
                 ->withInput()
                 ->with('error', 'Import échoué : ' . $e->getMessage());

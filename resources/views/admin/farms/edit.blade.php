@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.systeme')
 
 @section('title', 'Modifier ' . ($farm['name'] ?? 'Ferme'))
 @section('page-title', 'Modifier une ferme')

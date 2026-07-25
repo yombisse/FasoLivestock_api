@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">
-        <a href="{{ route('admin.mouvements.index') }}">Mouvements</a>
+        <a href="{{ route('admin.mouvements.index', ['farm' => $farmId]) }}">Mouvements</a>
     </li>
     <li class="breadcrumb-item active">Traçabilité</li>
 @endsection
@@ -24,7 +24,7 @@
             <p>Historique complet de traçabilité de cet animal</p>
         </div>
         @if(isset($animal['id']))
-        <a href="{{ route('admin.animals.show', $animal['id']) }}"
+        <a href="{{ route('admin.animals.show', ['farm' => $farmId, 'animal' => $animal['id']]) }}"
            class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i>
             Retour à la fiche animal

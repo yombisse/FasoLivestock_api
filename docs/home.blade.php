@@ -72,7 +72,7 @@
         </div>
         <div class="farms-grid">
             @forelse($global['fermes'] ?? [] as $farm)
-            <a href="{{ route('admin.farms.show', $farm['id']) }}" class="farm-card">
+            <a href="{{ route('admin.ferme.dashboard', $farm['id']) }}" class="farm-card">
                 <div class="farm-card-header">
                     <div class="farm-icon">
                         <i class="bi bi-house-door"></i>

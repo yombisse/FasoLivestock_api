@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Rapports')
 @section('page-title', 'Rapports & Exportations')
@@ -13,30 +13,6 @@
         <div class="page-header-left">
             <h2><i class="bi bi-file-earmark-text me-2 text-primary"></i>Rapports & Exportations</h2>
             <p>Exportez vos données et générez des rapports PDF</p>
-        </div>
-    </div>
-
-    {{-- Sélection de ferme --}}
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-3">
-                    <label class="form-label fw-bold">Sélectionner une ferme:</label>
-                </div>
-                <div class="col-md-5">
-                    <select id="farm-selector" class="form-select">
-                        <option value="">-- Choisir une ferme --</option>
-                        @foreach($farms ?? [] as $farm)
-                            <option value="{{ is_array($farm) ? $farm['id'] : $farm->id }}">
-                                {{ is_array($farm) ? $farm['name'] : $farm->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <small class="text-muted">Sélectionnez une ferme avant d'exporter les données</small>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -105,27 +81,20 @@
 
 @push('scripts')
     <script>
-        const exportRoutes = {
-            'animaux': '{{ route('admin.rapports.export.animaux') }}',
-            'transactions': '{{ route('admin.rapports.export.transactions') }}',
-            'sante-rappels': '{{ route('admin.rapports.export.sante-rappels') }}',
-            'naissances': '{{ route('admin.rapports.export.naissances') }}',
-            'cheptel': '{{ route('admin.rapports.pdf.cheptel') }}',
-            'sanitaire': '{{ route('admin.rapports.pdf.sanitaire') }}',
-            'financier': '{{ route('admin.rapports.pdf.financier') }}'
-        };
+        const farmId = '{{ $farmId }}';
 
         function exportWithFarm(type, format = 'excel') {
-            const farmId = document.getElementById('farm-selector').value;
-            
-            if (!farmId) {
-                alert('Veuillez sélectionner une ferme avant d\'exporter les données.');
-                return;
-            }
+            const routes = {
+                'animaux': '{{ route('admin.rapports.export.animaux', ['farm' => $farmId]) }}',
+                'transactions': '{{ route('admin.rapports.export.transactions', ['farm' => $farmId]) }}',
+                'sante-rappels': '{{ route('admin.rapports.export.sante-rappels', ['farm' => $farmId]) }}',
+                'naissances': '{{ route('admin.rapports.export.naissances', ['farm' => $farmId]) }}',
+                'cheptel': '{{ route('admin.rapports.pdf.cheptel', ['farm' => $farmId]) }}',
+                'sanitaire': '{{ route('admin.rapports.pdf.sanitaire', ['farm' => $farmId]) }}',
+                'financier': '{{ route('admin.rapports.pdf.financier', ['farm' => $farmId]) }}'
+            };
 
-            const url = exportRoutes[type];
-            const separator = url.includes('?') ? '&' : '?';
-            window.location.href = url + separator + 'farm_id=' + farmId;
+            window.location.href = routes[type];
         }
     </script>
 @endpush

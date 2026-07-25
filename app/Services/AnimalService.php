@@ -181,7 +181,12 @@ class AnimalService
 
     public function restore(string $id): Animal
     {
-        $animal = Animal::onlyTrashed()->findOrFail($id);
+        $animal = Animal::onlyTrashed()->find($id);
+
+        if (!$animal) {
+            throw new \Illuminate\Database\Eloquent\ModelNotFoundException('Animal not found in trash');
+        }
+
         $animal->restore();
 
         $this->activityLog->log('restored', $animal, null, $animal->toArray());
@@ -313,8 +318,8 @@ class AnimalService
         // Filtrer selon le type d'événement sanitaire
         switch (strtoupper($typeEvenement)) {
             case 'VACCINATION':
-                // Vaccination: animaux SAIN (prévention)
-                $query->where('statut', 'SAIN');
+                // Vaccination: tous les animaux vivants dans la ferme
+                // Pas de filtre de statut - tous peuvent être vaccinés
                 break;
             case 'TRAITEMENT':
                 // Traitement: animaux MALADE ou EN_TRAITEMENT
@@ -325,8 +330,9 @@ class AnimalService
                 $query->whereIn('statut', ['SAIN', 'MALADE', 'EN_TRAITEMENT']);
                 break;
             case 'CONSULTATION':
-                // Consultation: tous les animaux
-                $query->whereIn('statut', ['SAIN', 'MALADE', 'EN_TRAITEMENT']);
+            case 'CONTROLE':
+                // Consultation/Contrôle: tous les animaux vivants dans la ferme
+                // Pas de filtre de statut - tous peuvent être contrôlés
                 break;
             default:
                 // Par défaut: tous les animaux actifs
@@ -376,14 +382,16 @@ class AnimalService
 
         switch (strtoupper($typeReproduction)) {
             case 'SAILLIE':
-                // Femelles adultes en âge de reproduction
-                // Si date_naissance est null, considérer comme éligible
+                // Femelles SAIN sans saillie en cours
                 $query->where('sexe', 'femelle')
                     ->where('statut', 'SAIN')
-                    ->where(function ($q) {
-                        $q->whereNull('date_naissance') // Âge indéfini = éligible
-                          ->orWhereHas('espece.parametre'); // A des paramètres d'espèce
-                    });
+                    ->whereDoesntHave('evenements', fn ($q) =>
+                        $q->whereHas('type', fn ($t) => $t->where('nom_type', 'Saillie'))
+                            ->whereDoesntHave('animal.evenements', fn ($e) =>
+                                $e->whereHas('type', fn ($t) => $t->where('nom_type', 'Mise bas'))
+                                    ->where('date_evenement', '>', $q->select('date_evenement'))
+                            )
+                    );
                 break;
 
             case 'GESTATION':
@@ -438,14 +446,27 @@ class AnimalService
 
     public function importBatch(array $animaux, string $farmId): array
     {
+        \Log::info('importBatch started', [
+            'farm_id' => $farmId,
+            'animaux_count' => count($animaux),
+            'animaux_data' => $animaux,
+        ]);
+
         return DB::transaction(function () use ($animaux, $farmId) {
             $resultats = ['succes' => 0, 'erreurs' => []];
             $typeImport = TypeEvenement::where('nom_type', 'STOCK_INITIAL')
                 ->whereNull('farm_id')
                 ->first();
 
+            \Log::info('TypeImport found', ['type_import' => $typeImport ? $typeImport->id : null]);
+
             foreach ($animaux as $index => $data) {
                 try {
+                    \Log::info('Processing animal', [
+                        'index' => $index,
+                        'data' => $data,
+                    ]);
+
                     $animal = Animal::create(array_merge($data, [
                         'farm_id' => $farmId,
                         'origine' => Animal::ORIGINE_IMPORT,
@@ -453,6 +474,11 @@ class AnimalService
                         'sync_status' => 'synced',
                         'version' => 1,
                     ]));
+
+                    \Log::info('Animal created', [
+                        'animal_id' => $animal->id ?? null,
+                        'success' => (bool)$animal,
+                    ]);
 
                     if ($animal) {
                         // Créer un événement traçable d'entrée

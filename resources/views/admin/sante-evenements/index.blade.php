@@ -1,75 +1,85 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Événements sanitaires')
 @section('page-title', 'Événements sanitaires')
 
 @push('styles')
+<link rel="stylesheet" href="{{ asset('admin/css/shared/table-list.css') }}">
 <style>
     .sante-table {
-        font-size: 1rem;
+        font-size: 0.875rem;
     }
     .sante-table th {
-        font-size: 1.1rem;
+        font-size: 0.85rem;
         font-weight: 600;
-        padding: 1rem;
+        padding: 0.75rem;
         background-color: #f8f9fa;
     }
     .sante-table td {
-        padding: 1rem;
+        padding: 0.75rem;
         vertical-align: middle;
     }
     .sante-table .animal-info {
-        font-size: 1rem;
+        font-size: 0.875rem;
     }
     .sante-table .animal-number {
         font-weight: 600;
         color: #333;
+        font-size: 0.85rem;
     }
     .sante-table .animal-espece {
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         color: #666;
     }
     .sante-table .badge {
-        font-size: 0.95rem;
-        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+        padding: 0.35rem 0.75rem;
     }
     .sante-table .description {
-        font-size: 0.95rem;
+        font-size: 0.85rem;
         color: #555;
-        max-width: 300px;
+        max-width: 250px;
     }
     .sante-table .date {
         font-weight: 500;
         color: #333;
+        font-size: 0.85rem;
     }
     .sante-table .cost {
         font-weight: 600;
         color: #333;
+        font-size: 0.85rem;
     }
     .sante-table .actions {
-        font-size: 1rem;
+        font-size: 0.875rem;
     }
     .sante-table .btn-icon {
-        padding: 0.5rem;
-        font-size: 1.1rem;
+        padding: 0.35rem;
+        font-size: 0.9rem;
     }
     .page-header h2 {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
     }
     .page-header p {
-        font-size: 1rem;
+        font-size: 0.9rem;
+    }
+    .filters-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
     }
     .filters-bar input,
     .filters-bar select {
-        font-size: 1rem;
-        padding: 0.6rem;
+        font-size: 0.875rem;
+        padding: 0.5rem;
     }
     .filters-bar button {
-        font-size: 1rem;
-        padding: 0.6rem 1rem;
+        font-size: 0.875rem;
+        padding: 0.5rem 0.875rem;
     }
     .filter-count {
-        font-size: 1rem;
+        font-size: 0.875rem;
     }
 </style>
 @endpush
@@ -88,32 +98,32 @@
             <p>Suivez les vaccinations, traitements et consultations</p>
         </div>
         <div class="d-flex gap-2 flex-wrap align-items-center justify-content-between w-100">
-            <a href="{{ route('admin.sante-evenements.statistiques') }}"
+            <a href="{{ route('admin.sante-evenements.statistiques', ['farm' => $farmId]) }}"
                class="btn btn-outline-info btn-sm">
                 <i class="bi bi-graph-up"></i>
                 Statistiques
             </a>
             <ul class="nav nav-pills mb-0 gap-2">
                 <li class="nav-item">
-                    <a class="nav-link bg-primary text-white" href="{{ route('admin.sante-evenements.create') }}?type=VACCINATION">
+                    <a class="nav-link bg-primary text-white" href="{{ route('admin.sante-evenements.create', ['farm' => $farmId]) }}?type=VACCINATION">
                         <i class="bi bi-syringe me-1"></i>
                         Vacciner
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link bg-warning text-dark" href="{{ route('admin.sante-evenements.create') }}?type=TRAITEMENT">
+                    <a class="nav-link bg-warning text-dark" href="{{ route('admin.sante-evenements.create', ['farm' => $farmId]) }}?type=TRAITEMENT">
                         <i class="bi bi-capsule me-1"></i>
                         Traiter
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link bg-danger text-white" href="{{ route('admin.sante-evenements.create') }}?type=MALADIE">
+                    <a class="nav-link bg-danger text-white" href="{{ route('admin.sante-evenements.create', ['farm' => $farmId]) }}?type=MALADIE">
                         <i class="bi bi-thermometer-high me-1"></i>
                         Maladie
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link bg-info text-white" href="{{ route('admin.sante-evenements.create') }}?type=CONSULTATION">
+                    <a class="nav-link bg-info text-white" href="{{ route('admin.sante-evenements.create', ['farm' => $farmId]) }}?type=CONTROLE">
                         <i class="bi bi-clipboard2-pulse me-1"></i>
                         Contrôler
                     </a>
@@ -125,7 +135,7 @@
     {{-- ── Filtres ────────────────────────────────────────── --}}
     <form id="filter-form"
           method="GET"
-          action="{{ route('admin.sante-evenements.index') }}">
+          action="{{ route('admin.sante-evenements.index', ['farm' => $farmId]) }}">
         <div class="filters-bar">
 
             {{-- Recherche --}}
@@ -169,7 +179,7 @@
 
             {{-- Reset --}}
             @if(request()->hasAny(['search', 'type', 'date_debut', 'date_fin']))
-            <a href="{{ route('admin.sante-evenements.index') }}"
+            <a href="{{ route('admin.sante-evenements.index', ['farm' => $farmId]) }}"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-x-lg"></i>
                 Réinitialiser
@@ -193,7 +203,7 @@
                         <th>Type</th>
                         <th>Animal</th>
                         <th>Coût</th>
-                        <th>Statut avant/après</th>
+                        <th>Statut actuel</th>
                         <th>Description</th>
                         <th class="text-end">Actions</th>
                     </tr>
@@ -215,14 +225,10 @@
 
                         {{-- Animal --}}
                         <td>
-                            @if(isset($evenement['animal']))
-                                <div class="animal-info">
-                                    <div class="animal-number">{{ $evenement['animal']['numero_identification'] ?? '—' }}</div>
-                                    <div class="animal-espece">{{ $evenement['animal']['espece']['nom_espece'] ?? '—' }}</div>
-                                </div>
-                            @else
-                                —
-                            @endif
+                            <div class="animal-info">
+                                <div class="animal-number">{{ $evenement['animal']['numero_identification'] ?? '—' }}</div>
+                                <div class="animal-espece">{{ $evenement['animal']['espece']['nom_espece'] ?? '—' }}</div>
+                            </div>
                         </td>
 
                         {{-- Coût --}}
@@ -234,18 +240,9 @@
                             @endif
                         </td>
 
-                        {{-- Statut avant/après --}}
+                        {{-- Statut actuel --}}
                         <td>
-                            <div style="font-size: 0.9rem;">
-                                <div>
-                                    <span class="text-muted">Avant:</span> 
-                                    <span class="badge bg-secondary">{{ $evenement['statut_avant'] ?? '—' }}</span>
-                                </div>
-                                <div style="margin-top: 0.25rem;">
-                                    <span class="text-muted">Après:</span> 
-                                    <span class="badge bg-success">{{ $evenement['statut_apres'] ?? '—' }}</span>
-                                </div>
-                            </div>
+                            <span class="badge bg-success">{{ $evenement['statut_apres'] ?? '—' }}</span>
                         </td>
 
                         {{-- Description --}}
@@ -257,14 +254,14 @@
                         <td>
                             <div class="actions-cell justify-content-end">
                                 {{-- Voir --}}
-                                <a href="{{ route('admin.sante-evenements.show', $evenement['id']) }}"
+                                <a href="{{ route('admin.sante-evenements.show', ['farm' => $farmId, 'sante_evenement' => $evenement['id']]) }}"
                                    class="btn btn-icon btn-outline-primary"
                                    title="Voir">
                                     <i class="bi bi-eye"></i>
                                 </a>
 
                                 {{-- Modifier --}}
-                                <a href="{{ route('admin.sante-evenements.edit', $evenement['id']) }}"
+                                <a href="{{ route('admin.sante-evenements.edit', ['farm' => $farmId, 'sante_evenement' => $evenement['id']]) }}"
                                    class="btn btn-icon btn-outline-warning"
                                    title="Modifier">
                                     <i class="bi bi-pencil"></i>
@@ -284,7 +281,7 @@
                                 {{-- Formulaire caché --}}
                                 <form id="form-delete-{{ $evenement['id'] }}"
                                       method="POST"
-                                      action="{{ route('admin.sante-evenements.destroy', $evenement['id']) }}"
+                                      action="{{ route('admin.sante-evenements.destroy', ['farm' => $farmId, 'sante_evenement' => $evenement['id']]) }}"
                                       style="display:none">
                                     @csrf @method('DELETE')
                                 </form>
@@ -301,7 +298,7 @@
                                 </div>
                                 <p>Aucun événement sanitaire trouvé</p>
                                 @if(request()->hasAny(['search', 'type', 'date_debut', 'date_fin']))
-                                    <a href="{{ route('admin.sante-evenements.index') }}"
+                                    <a href="{{ route('admin.sante-evenements.index', ['farm' => $farmId]) }}"
                                        class="btn btn-outline-primary btn-sm mt-2">
                                         Réinitialiser les filtres
                                     </a>

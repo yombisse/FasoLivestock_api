@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('admin.layouts.ferme')
 
 @section('title', 'Administrer la ferme')
 @section('page-title', 'Administrer la ferme')
@@ -9,7 +9,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('admin.farms.index') }}">Fermes</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.farms.show', $farm['id']) }}">{{ $farm['name'] ?? 'Ferme' }}</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.ferme.dashboard', $farm['id']) }}">{{ $farm['name'] ?? 'Ferme' }}</a></li>
     <li class="breadcrumb-item active">Administration</li>
 @endsection
 

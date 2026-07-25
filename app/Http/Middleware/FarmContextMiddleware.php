@@ -18,7 +18,12 @@ class FarmContextMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
+        // Récupérer l'utilisateur depuis l'auth API (Sanctum) ou depuis la session admin
         $user = Auth::user();
+        if (!$user && session('admin_user')) {
+            $user = \App\Models\User::find(session('admin_user')['id']);
+        }
+
         $farmId = $request->header('X-Farm-ID') ?? $request->input('farm_id') ?? $request->input('current_farm_id');
 
         if (!$user) {
